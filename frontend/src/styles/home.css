@@ -480,7 +480,9 @@
 .carrossel-slide img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
+  object-position: center top;
+  background: var(--branco);
 }
 
 .carrossel-slide .slide-overlay {
@@ -773,11 +775,11 @@
 .marmita-foto {
   width: 100%;
   height: 220px;
-  object-fit: contain;
+  object-fit: fill;
   object-position: center;
   display: block;
-  padding: 14px;
-  background: linear-gradient(135deg, #F7FBF4 0%, #FFFFFF 55%, #EEF7E9 100%);
+  padding: 0;
+  background: var(--branco);
 }
 
 .marmita-conteudo {
