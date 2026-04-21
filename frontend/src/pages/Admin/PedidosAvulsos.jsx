@@ -21,8 +21,8 @@ function gerarHtmlComanda(pedido) {
       </head>
       <body>
         <div class="print-area">
-          <section class="pagina-impressao">
-            <article class="comanda-impressao">
+          <article class="comanda">
+            <div class="comanda-conteudo">
               <header class="comanda-topo">
                 ${LOGO_MARKUP}
                 <div class="fone-destaque">${TELEFONE_RESTAURANTE}</div>
@@ -65,8 +65,8 @@ function gerarHtmlComanda(pedido) {
                 <hr class="linha-divisoria" />
                 <div class="data-hora">${escapeHtml(new Date(pedido.createdAt).toLocaleString('pt-BR'))}</div>
               </footer>
-            </article>
-          </section>
+            </div>
+          </article>
         </div>
       </body>
     </html>

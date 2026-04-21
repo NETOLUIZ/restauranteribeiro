@@ -13,8 +13,8 @@ const gerarHtmlComandas = (comandas) => {
       : '<li>-</li>';
 
     return `
-      <section class="pagina-impressao">
-        <article class="comanda-impressao">
+      <article class="comanda">
+        <div class="comanda-conteudo">
           <header class="comanda-topo">
             ${LOGO_MARKUP}
             <div class="fone-destaque">${TELEFONE_RESTAURANTE}</div>
@@ -52,8 +52,8 @@ const gerarHtmlComandas = (comandas) => {
             <hr class="linha-divisoria" />
             <div class="data-hora">${escapeHtml(new Date().toLocaleString('pt-BR'))}</div>
           </footer>
-        </article>
-      </section>
+        </div>
+      </article>
     `;
   }).join('');
 

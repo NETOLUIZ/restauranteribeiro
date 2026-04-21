@@ -18,10 +18,7 @@ export const COMANDA_PRINT_CSS = `
     --cinza-borda: #D7EEDF;
   }
 
-  /*
-    Papel fisico da Elgin L42 configurado no navegador:
-    largura total 105mm, altura total 70mm, sem margem automatica.
-  */
+  /* Papel real da Elgin L42PRO: 105mm x 70mm em horizontal. */
   @page {
     size: 105mm 70mm;
     margin: 0;
@@ -34,7 +31,7 @@ export const COMANDA_PRINT_CSS = `
   html,
   body {
     width: 105mm;
-    min-height: 70mm;
+    height: 70mm;
     margin: 0;
     padding: 0;
     overflow: visible;
@@ -49,7 +46,7 @@ export const COMANDA_PRINT_CSS = `
     display: block;
   }
 
-  /* Area raiz: no print window ela e o unico conteudo visivel. */
+  /* Raiz do documento de impressao. Nao recebe margem para evitar folha extra. */
   .print-area {
     width: 105mm;
     margin: 0;
@@ -59,50 +56,41 @@ export const COMANDA_PRINT_CSS = `
   }
 
   /*
-    Pagina real: ocupa o papel inteiro 105mm x 70mm.
-    O flex centraliza horizontalmente a comanda util de 80mm.
+    A classe .comanda e a etiqueta inteira.
+    Nao existe rotate, scale, margem externa nem page-break manual.
   */
-  .pagina-impressao {
+  .comanda {
     width: 105mm;
     height: 70mm;
     margin: 0;
     padding: 0;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: center;
-    overflow: visible;
+    overflow: hidden;
     background: var(--branco);
-    page-break-inside: avoid;
-    break-inside: avoid;
-    page-break-after: always;
-    break-after: page;
-  }
-
-  .pagina-impressao:last-child {
-    page-break-after: auto;
-    break-after: auto;
-  }
-
-  /*
-    Conteudo util da comanda: 80mm x 70mm.
-    Nao usamos transform/scale; tudo e medido em mm para impressao real.
-  */
-  .comanda-impressao {
-    width: 80mm;
-    height: 70mm;
-    margin: 0 auto;
-    padding: 1.6mm 2mm 1.3mm;
-    overflow: visible;
-    display: flex;
-    flex-direction: column;
-    gap: 1mm;
-    background: var(--branco);
-    border: 0.45mm solid var(--verde-principal);
-    border-radius: 1.8mm;
     color: var(--preto);
     page-break-inside: avoid;
     break-inside: avoid;
     box-shadow: none;
+    text-shadow: none;
+  }
+
+  /* Conteudo visual centralizado dentro da etiqueta horizontal. */
+  .comanda-conteudo {
+    width: 101mm;
+    height: 66mm;
+    margin: 0 auto;
+    padding: 1.1mm 1.4mm;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75mm;
+    overflow: hidden;
+    background: var(--branco);
+    border: 0.35mm solid var(--verde-principal);
+    border-radius: 1.5mm;
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 
   .comanda-topo {
@@ -112,38 +100,38 @@ export const COMANDA_PRINT_CSS = `
 
   .logo-img {
     width: 48mm;
-    height: 10mm;
+    height: 8mm;
     display: block;
     object-fit: contain;
-    margin: 0 auto 0.6mm;
+    margin: 0 auto 0.4mm;
   }
 
   .fone-destaque {
     color: var(--verde-principal);
-    font-size: 3.8mm;
+    font-size: 3.15mm;
     font-weight: 900;
-    letter-spacing: 0.25mm;
+    letter-spacing: 0.2mm;
     line-height: 1;
     text-align: center;
   }
 
   .linha-divisoria {
     width: 100%;
-    margin: 0.8mm 0;
+    margin: 0.55mm 0;
     border: 0;
-    border-top: 0.28mm solid var(--verde-escuro);
+    border-top: 0.25mm solid var(--verde-escuro);
   }
 
   .pedido-faixa {
     flex: 0 0 auto;
-    min-height: 6.5mm;
+    min-height: 5.4mm;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 2mm;
-    padding: 0.8mm 1.5mm;
-    border: 0.3mm solid var(--verde-escuro);
-    border-radius: 1.4mm;
+    padding: 0.6mm 1.2mm;
+    border: 0.28mm solid var(--verde-escuro);
+    border-radius: 1.2mm;
     background: #EEF9F3;
     page-break-inside: avoid;
     break-inside: avoid;
@@ -151,15 +139,15 @@ export const COMANDA_PRINT_CSS = `
 
   .pedido-titulo {
     color: var(--verde-escuro);
-    font-size: 3mm;
+    font-size: 2.75mm;
     font-weight: 900;
     line-height: 1;
-    letter-spacing: 0.2mm;
+    letter-spacing: 0.16mm;
   }
 
   .pedido-numero {
     color: var(--preto);
-    font-size: 5.7mm;
+    font-size: 4.9mm;
     font-weight: 900;
     line-height: 1;
     white-space: nowrap;
@@ -168,11 +156,11 @@ export const COMANDA_PRINT_CSS = `
   .identificacao-card {
     flex: 0 0 auto;
     display: grid;
-    gap: 0.8mm;
+    gap: 0.55mm;
     margin: 0;
-    padding: 1mm 1.2mm;
-    border: 0.42mm solid var(--verde-principal);
-    border-radius: 1.6mm;
+    padding: 0.75mm 1mm;
+    border: 0.35mm solid var(--verde-principal);
+    border-radius: 1.3mm;
     background: var(--branco);
     page-break-inside: avoid;
     break-inside: avoid;
@@ -180,7 +168,7 @@ export const COMANDA_PRINT_CSS = `
 
   .ident-linha {
     display: grid;
-    grid-template-columns: 18mm minmax(0, 1fr);
+    grid-template-columns: 17mm minmax(0, 1fr);
     align-items: start;
     gap: 1mm;
     min-width: 0;
@@ -189,10 +177,10 @@ export const COMANDA_PRINT_CSS = `
   .ident-label {
     display: block;
     color: var(--verde-escuro);
-    font-size: 2.4mm;
+    font-size: 2.1mm;
     font-weight: 900;
     line-height: 1.05;
-    letter-spacing: 0.1mm;
+    letter-spacing: 0.08mm;
     text-transform: uppercase;
     white-space: nowrap;
   }
@@ -201,82 +189,82 @@ export const COMANDA_PRINT_CSS = `
     min-width: 0;
     color: var(--preto);
     font-weight: 900;
-    line-height: 1.08;
+    line-height: 1.04;
     word-break: break-word;
   }
 
   .ident-empresa {
-    font-size: 3.35mm;
+    font-size: 3mm;
     text-transform: uppercase;
   }
 
   .ident-nome {
-    font-size: 3.55mm;
+    font-size: 3.25mm;
     text-transform: uppercase;
   }
 
   .ident-endereco {
-    font-size: 3.75mm;
+    font-size: 3.35mm;
   }
 
   .itens-bloco {
     flex: 1 1 auto;
     min-height: 0;
     margin: 0;
-    border: 0.28mm solid var(--cinza-borda);
-    border-radius: 1.6mm;
-    overflow: visible;
+    border: 0.25mm solid var(--cinza-borda);
+    border-radius: 1.3mm;
+    overflow: hidden;
     page-break-inside: avoid;
     break-inside: avoid;
   }
 
   .itens-faixa {
-    padding: 0.75mm 1.2mm;
-    border-radius: 1.2mm 1.2mm 0 0;
+    padding: 0.6mm 1mm;
+    border-radius: 1mm 1mm 0 0;
     background: var(--verde-principal);
     color: var(--branco);
-    font-size: 2.9mm;
+    font-size: 2.55mm;
     font-weight: 900;
     line-height: 1;
-    letter-spacing: 0.18mm;
+    letter-spacing: 0.14mm;
   }
 
   .itens-lista {
     margin: 0;
-    padding: 1mm 1mm 1mm 4mm;
+    padding: 0.8mm 1mm 0.8mm 3.8mm;
     column-count: 2;
-    column-gap: 3mm;
+    column-gap: 4mm;
     color: var(--preto);
-    font-size: 2.95mm;
+    font-size: 2.55mm;
     font-weight: 700;
-    line-height: 1.12;
-    overflow: visible;
+    line-height: 1.08;
+    overflow: hidden;
   }
 
   .itens-lista li {
-    margin: 0 0 0.7mm;
-    padding-left: 0.2mm;
+    margin: 0 0 0.45mm;
+    padding-left: 0.15mm;
     break-inside: avoid;
     page-break-inside: avoid;
   }
 
   .itens-lista li::marker {
     color: var(--verde-principal);
-    font-size: 2.8mm;
+    font-size: 2.45mm;
   }
 
   .info-extra {
     flex: 0 0 auto;
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.65mm 1.4mm;
-    padding: 0.9mm 1.1mm;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.45mm 1mm;
+    padding: 0.65mm 0.9mm;
     border: 0.25mm dashed #9CD9B9;
-    border-radius: 1.4mm;
+    border-radius: 1.2mm;
     color: var(--preto);
-    font-size: 2.45mm;
+    font-size: 2.15mm;
     font-weight: 700;
-    line-height: 1.1;
+    line-height: 1.05;
     page-break-inside: avoid;
     break-inside: avoid;
   }
@@ -299,14 +287,14 @@ export const COMANDA_PRINT_CSS = `
 
   .data-hora {
     color: #2E2E2E;
-    font-size: 2.45mm;
+    font-size: 2.2mm;
     font-weight: 800;
     line-height: 1;
   }
 
   @media print {
     @page {
-      size: 105mm 70mm; /* horizontal */
+      size: 105mm 70mm;
       margin: 0;
     }
 
@@ -324,34 +312,33 @@ export const COMANDA_PRINT_CSS = `
       display: none !important;
     }
 
-    .print-area,
-    .pagina-impressao,
-    .comanda-impressao {
+    .print-area {
+      width: 105mm !important;
+      margin: 0 !important;
+      padding: 0 !important;
       overflow: visible !important;
       box-shadow: none !important;
       text-shadow: none !important;
     }
 
-    .pagina-impressao {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      padding: 0;
-    }
-
-    /*
-      Mantem compatibilidade com qualquer template antigo que ainda use .comanda.
-      No template atual, .pagina-impressao e a folha inteira; .comanda-impressao e a area util.
-    */
     .comanda {
-      width: 100%;
-      height: 100%;
+      width: 105mm !important;
+      height: 70mm !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      overflow: hidden !important;
+      box-shadow: none !important;
+      text-shadow: none !important;
+      page-break-after: auto !important;
+      break-after: auto !important;
     }
 
-    .comanda-impressao {
-      width: 80mm;
-      height: 70mm;
-      margin: 0 auto;
+    .comanda-conteudo {
+      width: 101mm !important;
+      height: 66mm !important;
+      margin: 0 auto !important;
+      box-shadow: none !important;
+      text-shadow: none !important;
     }
   }
 `;
