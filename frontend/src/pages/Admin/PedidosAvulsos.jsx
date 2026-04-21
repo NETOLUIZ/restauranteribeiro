@@ -85,7 +85,7 @@ export default function PedidosAvulsos() {
     ));
   }, []);
 
-  const imprimirComanda = useCallback(async (pedido, automatico = false) => {
+  const imprimirComanda = useCallback(async (pedido, automatico = false, reimpressao = false) => {
     if (imprimindoRef.current.has(pedido.id)) return;
 
     imprimindoRef.current.add(pedido.id);
@@ -100,8 +100,10 @@ export default function PedidosAvulsos() {
       printWindow.focus();
       printWindow.print();
 
-      await pedidoAvulsoAPI.imprimir(pedido.id);
-      marcarImpressoLocal(pedido.id);
+      if (!reimpressao) {
+        await pedidoAvulsoAPI.imprimir(pedido.id);
+        marcarImpressoLocal(pedido.id);
+      }
     } catch (err) {
       console.error('Erro ao imprimir comanda:', err);
       if (!automatico) {
@@ -231,7 +233,12 @@ export default function PedidosAvulsos() {
             )}
 
             {pedido.impresso && (
-              <span className="badge badge-success">Impresso</span>
+              <>
+                <span className="badge badge-success">Impresso</span>
+                <button className="btn btn-sm btn-warning" onClick={() => imprimirComanda(pedido, false, true)}>
+                  <FiPrinter size={14} /> Reimprimir Comanda
+                </button>
+              </>
             )}
           </div>
         </div>

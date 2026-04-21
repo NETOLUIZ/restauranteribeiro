@@ -120,35 +120,54 @@ export default function PedidosEmpresas() {
     } catch (err) { console.error('Erro:', err); }
   };
 
+  const montarComandasPedido = (pedido) => {
+    const comandas = [];
+
+    pedido.lotes.forEach((lote) => {
+      for (let i = 0; i < lote.quantidade; i++) {
+        comandas.push({
+          empresa: pedido.empresa.nome,
+          itens: lote.itens,
+          endereco: lote.endereco,
+          nome: lote.nomes?.[i] || null,
+          numero: comandas.length + 1
+        });
+      }
+    });
+
+    return comandas;
+  };
+
+  const abrirImpressao = (pedido) => {
+    const comandas = montarComandasPedido(pedido);
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      throw new Error('Bloqueador de pop-up ativo');
+    }
+
+    printWindow.document.write(gerarHtmlComandas(comandas));
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
   const imprimir = async (pedido) => {
     try {
       await pedidoEmpresaAPI.imprimir(pedido.id);
       carregar();
-
-      const comandas = [];
-      pedido.lotes.forEach((lote) => {
-        for (let i = 0; i < lote.quantidade; i++) {
-          comandas.push({
-            empresa: pedido.empresa.nome,
-            itens: lote.itens,
-            endereco: lote.endereco,
-            nome: lote.nomes?.[i] || null,
-            numero: comandas.length + 1
-          });
-        }
-      });
-
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) {
-        throw new Error('Bloqueador de pop-up ativo');
-      }
-
-      printWindow.document.write(gerarHtmlComandas(comandas));
-      printWindow.document.close();
-      printWindow.focus();
-      printWindow.print();
+      abrirImpressao(pedido);
     } catch (err) {
       console.error('Erro:', err);
+    }
+  };
+
+  const reimprimir = (pedido) => {
+    try {
+      abrirImpressao(pedido);
+    } catch (err) {
+      console.error('Erro:', err);
+      alert('Nao foi possivel reimprimir. Verifique o bloqueador de pop-up do navegador.');
     }
   };
 
@@ -238,7 +257,12 @@ export default function PedidosEmpresas() {
                 </button>
               )}
               {pedido.status === 'IMPRESSO' && (
-                <span className="badge badge-success">Impresso</span>
+                <>
+                  <span className="badge badge-success">Impresso</span>
+                  <button className="btn btn-sm btn-warning" onClick={() => reimprimir(pedido)}>
+                    <FiPrinter size={14} /> Reimprimir Comandas ({totalMarmitas}x)
+                  </button>
+                </>
               )}
             </div>
           </div>
