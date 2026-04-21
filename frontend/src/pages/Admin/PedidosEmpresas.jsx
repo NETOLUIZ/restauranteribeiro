@@ -1,10 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FiPrinter, FiCheck, FiFilter, FiSearch } from 'react-icons/fi';
 import { pedidoEmpresaAPI } from '../../services/api';
-import logoComanda from '../../assets/logo-comanda.png';
 import { COMANDA_PRINT_CSS, TELEFONE_RESTAURANTE, escapeHtml } from '../../utils/comandaPrint';
-
-const LOGO_MARKUP = `<img class="logo-img" src="${logoComanda}" alt="Logo Restaurante Ribeiro" />`;
 
 const gerarHtmlComandas = (comandas) => {
   const cards = comandas.map((comanda) => {
@@ -16,7 +13,6 @@ const gerarHtmlComandas = (comandas) => {
       <article class="comanda">
         <div class="comanda-conteudo">
           <header class="comanda-topo">
-            ${LOGO_MARKUP}
             <div class="fone-destaque">${TELEFONE_RESTAURANTE}</div>
             <hr class="linha-divisoria" />
           </header>

@@ -1,10 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { FiPrinter, FiCheck, FiFilter } from 'react-icons/fi';
 import { pedidoAvulsoAPI } from '../../services/api';
-import logoComanda from '../../assets/logo-comanda.png';
 import { COMANDA_PRINT_CSS, TELEFONE_RESTAURANTE, escapeHtml } from '../../utils/comandaPrint';
-
-const LOGO_MARKUP = `<img class="logo-img" src="${logoComanda}" alt="Logo Restaurante Ribeiro" />`;
 
 function gerarHtmlComanda(pedido) {
   const itensHtml = Array.isArray(pedido.itens) && pedido.itens.length
@@ -24,7 +21,6 @@ function gerarHtmlComanda(pedido) {
           <article class="comanda">
             <div class="comanda-conteudo">
               <header class="comanda-topo">
-                ${LOGO_MARKUP}
                 <div class="fone-destaque">${TELEFONE_RESTAURANTE}</div>
                 <hr class="linha-divisoria" />
               </header>

@@ -92,18 +92,9 @@ export const COMANDA_PRINT_CSS = `
     text-align: center;
   }
 
-  .logo-img {
-    width: 48mm;
-    height: 8mm;
-    display: block;
-    object-fit: contain;
-    margin: 0 auto 0.45mm;
-    filter: grayscale(1) contrast(1.8) brightness(0.72);
-  }
-
   .fone-destaque {
     color: var(--preto-termico);
-    font-size: 3.6mm;
+    font-size: 3.9mm;
     font-weight: 900;
     letter-spacing: 0.65mm;
     line-height: 1;
