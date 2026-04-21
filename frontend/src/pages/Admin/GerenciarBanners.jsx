@@ -363,7 +363,7 @@ export default function GerenciarBanners() {
                 <div className="upload-area" onClick={() => fileRef.current?.click()}>
                   <div className="upload-icon">IMG</div>
                   <p>Clique para fazer upload</p>
-                  <p className="upload-hint">JPG, PNG ou WebP (max. 5MB)</p>
+                  <p className="upload-hint">JPG, PNG ou WebP (max. 20MB)</p>
                 </div>
                 <input
                   ref={fileRef}
