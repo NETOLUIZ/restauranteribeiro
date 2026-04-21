@@ -17,6 +17,9 @@ backend/.env
 backend/.env.*
 frontend/.env
 frontend/.env.*
+!.env.example
+!backend/.env.example
+!frontend/.env.example
 
 # Logs
 *.log
@@ -37,4 +40,3 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
-
