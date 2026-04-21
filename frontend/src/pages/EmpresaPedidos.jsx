@@ -16,6 +16,7 @@ export default function EmpresaPedidos() {
   const [itensSelecionados, setItensSelecionados] = useState([]);
   const [quantidadeLote, setQuantidadeLote] = useState('1');
   const [endereco, setEndereco] = useState('');
+  const [enderecosSalvos, setEnderecosSalvos] = useState([]);
   const [nomeAtual, setNomeAtual] = useState('');
   const [nomes, setNomes] = useState([]);
   const [lotes, setLotes] = useState([]);
@@ -63,14 +64,36 @@ export default function EmpresaPedidos() {
     setNomes(nomes.filter((_, i) => i !== idx));
   };
 
+  const normalizarEndereco = (valor = '') =>
+    valor.trim().replace(/\s+/g, ' ');
+
+  const salvarEnderecoTemporario = (valor) => {
+    const enderecoNormalizado = normalizarEndereco(valor);
+    if (!enderecoNormalizado) return;
+
+    setEnderecosSalvos((anteriores) => {
+      const jaExiste = anteriores.some(
+        (item) => normalizarEndereco(item).toLowerCase() === enderecoNormalizado.toLowerCase()
+      );
+
+      return jaExiste ? anteriores : [...anteriores, enderecoNormalizado];
+    });
+  };
+
+  const usarEnderecoSalvo = (valor) => {
+    setEndereco(valor);
+    setMensagem({ tipo: 'success', texto: 'Endereco preenchido.' });
+  };
+
   const adicionarLote = () => {
     const qtd = parseInt(quantidadeLote, 10);
+    const enderecoNormalizado = normalizarEndereco(endereco);
 
     if (!itensSelecionados.length) {
       setMensagem({ tipo: 'error', texto: 'Selecione pelo menos um item' });
       return;
     }
-    if (!endereco.trim()) {
+    if (!enderecoNormalizado) {
       setMensagem({ tipo: 'error', texto: 'Informe o endereco de entrega' });
       return;
     }
@@ -88,16 +111,17 @@ export default function EmpresaPedidos() {
     setLotes([...lotes, {
       itens: itensSelecionados.map(i => ({ id: i.id, nome: i.nome, tipo: i.tipo })),
       quantidade: qtd,
-      endereco: endereco.trim(),
+      endereco: enderecoNormalizado,
       nomes: nomes.length > 0 ? nomes : null
     }]);
 
+    salvarEnderecoTemporario(enderecoNormalizado);
     setItensSelecionados([]);
     setQuantidadeLote('1');
-    setEndereco('');
+    setEndereco(enderecoNormalizado);
     setNomes([]);
     setMostrarInputNome(false);
-    setMensagem({ tipo: 'success', texto: 'Lote adicionado!' });
+    setMensagem({ tipo: 'success', texto: 'Lote adicionado! Endereco mantido para o proximo lote.' });
   };
 
   const removerLote = (idx) => {
@@ -127,9 +151,13 @@ export default function EmpresaPedidos() {
       });
       setMensagem({ tipo: 'success', texto: 'Pedido enviado com sucesso! Aguarde a autorizacao.' });
       setLotes([]);
-      if (totalDiaDigitado === null) {
-        setTotalDiaInput('');
-      }
+      setEnderecosSalvos([]);
+      setEndereco('');
+      setItensSelecionados([]);
+      setQuantidadeLote('1');
+      setNomes([]);
+      setMostrarInputNome(false);
+      setTotalDiaInput('');
     } catch (err) {
       setMensagem({ tipo: 'error', texto: err.response?.data?.erro || 'Erro ao enviar pedido' });
     }
@@ -249,6 +277,24 @@ export default function EmpresaPedidos() {
                       onChange={e => setEndereco(e.target.value)}
                       id="input-endereco-lote"
                     />
+                    {enderecosSalvos.length > 0 && (
+                      <div className="enderecos-salvos" id="enderecos-salvos-empresa">
+                        <span className="enderecos-salvos-label">Enderecos usados neste pedido:</span>
+                        <div className="enderecos-salvos-lista">
+                          {enderecosSalvos.map((item) => (
+                            <button
+                              key={item}
+                              type="button"
+                              className={`endereco-salvo-chip${normalizarEndereco(endereco).toLowerCase() === normalizarEndereco(item).toLowerCase() ? ' ativo' : ''}`}
+                              onClick={() => usarEnderecoSalvo(item)}
+                              title={`Usar ${item}`}
+                            >
+                              <FiMapPin size={12} /> {item}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 

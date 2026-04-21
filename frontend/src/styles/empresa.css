@@ -207,6 +207,52 @@
   flex: 1;
 }
 
+.enderecos-salvos {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid rgba(27, 122, 61, 0.16);
+  border-radius: var(--radius-sm);
+  background: var(--verde-bg);
+}
+
+.enderecos-salvos-label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--verde-escuro);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.enderecos-salvos-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.endereco-salvo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 7px 10px;
+  border: 1px solid rgba(27, 122, 61, 0.22);
+  border-radius: var(--radius-full);
+  background: var(--branco);
+  color: var(--verde-escuro);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.endereco-salvo-chip:hover,
+.endereco-salvo-chip.ativo {
+  border-color: var(--verde-escuro);
+  background: var(--verde-escuro);
+  color: var(--branco);
+}
+
 .nomes-lista {
   display: flex;
   flex-wrap: wrap;
