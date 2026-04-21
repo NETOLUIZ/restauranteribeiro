@@ -1,0 +1,145 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  EMPRESA_FUNC
+}
+
+enum TipoItem {
+  PROTEINA
+  COMPLEMENTO
+}
+
+enum FormaPagamento {
+  PIX
+  CREDITO
+  DEBITO
+  DINHEIRO
+}
+
+enum StatusPagamento {
+  PENDENTE
+  CONFIRMADO
+  CANCELADO
+}
+
+enum StatusPedidoEmpresa {
+  ENVIADO
+  AUTORIZADO
+  IMPRESSO
+}
+
+enum TamanhoMarmita {
+  GRANDE
+  PEQUENA
+}
+
+model Usuario {
+  id        Int      @id @default(autoincrement())
+  nome      String
+  email     String   @unique
+  senha     String
+  role      Role     @default(EMPRESA_FUNC)
+  empresaId Int?
+  empresa   Empresa? @relation(fields: [empresaId], references: [id])
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Empresa {
+  id            Int             @id @default(autoincrement())
+  nome          String
+  sigla         String?         @unique
+  senha         String?
+  totalPedidos  Int
+  funcionarios  Usuario[]
+  pedidos       PedidoEmpresa[]
+  ativo         Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+model ItemCardapio {
+  id        Int      @id @default(autoincrement())
+  nome      String
+  tipo      TipoItem
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PedidoAvulso {
+  id              Int             @id @default(autoincrement())
+  nomeCliente     String
+  telefone        String
+  endereco        String
+  itens           Json
+  quantidade      Int             @default(1)
+  valorUnitario   Float           @default(0)
+  valorTotal      Float           @default(0)
+  valorPago       Float?
+  observacao       String?
+  formaPagamento  FormaPagamento
+  statusPagamento StatusPagamento @default(PENDENTE)
+  mercadoPagoId   String?
+  mercadoPagoPreferenceId String?
+  referenciaExterna String?       @unique
+  pagoEm          DateTime?
+  motoqueiro      String?
+  valorTroco      Float?
+  impresso        Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+model PedidoEmpresa {
+  id        Int                 @id @default(autoincrement())
+  empresaId Int
+  empresa   Empresa             @relation(fields: [empresaId], references: [id])
+  lotes     LotePedido[]
+  status    StatusPedidoEmpresa @default(ENVIADO)
+  impresso  Boolean             @default(false)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+}
+
+model LotePedido {
+  id              Int           @id @default(autoincrement())
+  pedidoEmpresaId Int
+  pedidoEmpresa   PedidoEmpresa @relation(fields: [pedidoEmpresaId], references: [id], onDelete: Cascade)
+  itens           Json
+  quantidade      Int
+  endereco        String
+  nomes           Json?
+  createdAt       DateTime      @default(now())
+}
+
+model Banner {
+  id        Int      @id @default(autoincrement())
+  titulo    String?
+  texto     String?
+  imagemUrl String
+  ativo     Boolean  @default(true)
+  ordem     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MarmitaCard {
+  id        Int            @id @default(autoincrement())
+  tamanho   TamanhoMarmita @unique
+  titulo    String
+  preco     Float
+  imagemUrl String?
+  ativo     Boolean        @default(true)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
