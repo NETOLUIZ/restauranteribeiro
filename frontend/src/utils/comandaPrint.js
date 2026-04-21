@@ -305,6 +305,11 @@ export const COMANDA_PRINT_CSS = `
   }
 
   @media print {
+    @page {
+      size: 105mm 70mm; /* horizontal */
+      margin: 0;
+    }
+
     html,
     body {
       width: 105mm;
@@ -328,10 +333,19 @@ export const COMANDA_PRINT_CSS = `
     }
 
     .pagina-impressao {
-      width: 105mm;
-      height: 70mm;
+      width: 100%;
+      height: 100%;
       margin: 0;
       padding: 0;
+    }
+
+    /*
+      Mantem compatibilidade com qualquer template antigo que ainda use .comanda.
+      No template atual, .pagina-impressao e a folha inteira; .comanda-impressao e a area util.
+    */
+    .comanda {
+      width: 100%;
+      height: 100%;
     }
 
     .comanda-impressao {
