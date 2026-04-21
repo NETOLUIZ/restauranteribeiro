@@ -32,7 +32,7 @@ export default function EmpresaPedidos() {
   const totalDoDia = totalDiaDigitado === null ? totalNosLotes : Math.max(totalDiaDigitado, totalNosLotes);
   const falta = Math.max(totalDoDia - totalNosLotes, 0);
 
-  const whatsappNumero = import.meta.env.VITE_WHATSAPP_NUMERO || '5500000000000';
+  const whatsappNumero = import.meta.env.VITE_WHATSAPP_NUMERO || '5585996586824';
   const whatsappLink = `https://wa.me/${whatsappNumero}`;
 
   useEffect(() => {

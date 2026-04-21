@@ -1,4 +1,4 @@
-export const TELEFONE_RESTAURANTE = '85996267480';
+export const TELEFONE_RESTAURANTE = '85996586824';
 
 export const escapeHtml = (value = '') =>
   String(value)

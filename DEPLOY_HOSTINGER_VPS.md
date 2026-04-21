@@ -83,7 +83,7 @@ nano /var/www/ribeirorestaurante/frontend/.env
 Preencher no `frontend/.env`:
 
 - `VITE_API_URL=https://seudominio.com/api`
-- `VITE_WHATSAPP_NUMERO=5585996267480`
+- `VITE_WHATSAPP_NUMERO=5585996586824`
 
 ## 7) Migrar banco e seed
 
@@ -185,4 +185,3 @@ npm run build
 
 systemctl reload nginx
 ```
-

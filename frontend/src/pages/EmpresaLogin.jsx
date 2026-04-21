@@ -14,7 +14,7 @@ export default function EmpresaLogin({ modo = 'empresa' }) {
   const navigate = useNavigate();
 
   const isAdminLogin = modo === 'admin';
-  const whatsappNumero = import.meta.env.VITE_WHATSAPP_NUMERO || '5500000000000';
+  const whatsappNumero = import.meta.env.VITE_WHATSAPP_NUMERO || '5585996586824';
   const whatsappLink = `https://wa.me/${whatsappNumero}`;
 
   useEffect(() => {
