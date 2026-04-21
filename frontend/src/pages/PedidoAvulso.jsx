@@ -10,7 +10,9 @@ import {
   FiSend,
   FiZap,
   FiDollarSign,
-  FiCheckCircle
+  FiCheckCircle,
+  FiArrowLeft,
+  FiArrowRight
 } from 'react-icons/fi';
 import Navbar from '../components/Navbar';
 import CheckboxVerde from '../components/CheckboxVerde';
@@ -75,6 +77,7 @@ export default function PedidoAvulso() {
   const [dados, setDados] = useState({ nomeCliente: '', telefone: '', endereco: '', observacao: '' });
   const [enviando, setEnviando] = useState(false);
   const [mensagem, setMensagem] = useState(() => extrairMensagemCheckout(location.search));
+  const [etapaAtual, setEtapaAtual] = useState(1);
 
   useEffect(() => {
     Promise.allSettled([
@@ -99,6 +102,10 @@ export default function PedidoAvulso() {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, [location.search]);
+
+  useEffect(() => {
+    document.getElementById('checkout-avulso')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [etapaAtual]);
 
   const toggleItem = (item) => {
     if (!marmitaSelecionada.tamanho) {
@@ -131,24 +138,17 @@ export default function PedidoAvulso() {
   };
 
   const handleSubmit = async () => {
-    const totalProteinasSelecionadas = itensSelecionados.filter(i => i.tipo === 'PROTEINA').length;
-
-    if (!marmitaSelecionada.tamanho) return setMensagem({ tipo: 'error', texto: 'Selecione Marmita Grande ou Pequena.' });
-    if (!itensSelecionados.length) return setMensagem({ tipo: 'error', texto: 'Selecione pelo menos um item' });
-    if (!dados.nomeCliente || !dados.telefone || !dados.endereco) return setMensagem({ tipo: 'error', texto: 'Preencha todos os campos obrigatorios' });
-    if (!formaPagamento) return setMensagem({ tipo: 'error', texto: 'Selecione a forma de pagamento' });
-    if (marmitaSelecionada.tamanho === 'PEQUENA' && totalProteinasSelecionadas !== 1) {
-      return setMensagem({
-        tipo: 'error',
-        texto: `${marmitaSelecionada.titulo || 'Esta marmita'} exige 1 proteina.`
-      });
+    if (!validarEtapa(1)) {
+      setEtapaAtual(1);
+      return;
     }
-
-    if (marmitaSelecionada.tamanho === 'GRANDE' && totalProteinasSelecionadas > 2) {
-      return setMensagem({
-        tipo: 'error',
-        texto: `${marmitaSelecionada.titulo || 'Esta marmita'} permite ate 2 proteinas.`
-      });
+    if (!validarEtapa(2)) {
+      setEtapaAtual(2);
+      return;
+    }
+    if (!validarEtapa(3)) {
+      setEtapaAtual(3);
+      return;
     }
 
     setEnviando(true);
@@ -178,6 +178,7 @@ export default function PedidoAvulso() {
       setQuantidade(1);
       setFormaPagamento('');
       setDados({ nomeCliente: '', telefone: '', endereco: '', observacao: '' });
+      setEtapaAtual(1);
     } catch (err) {
       setMensagem({ tipo: 'error', texto: err.response?.data?.erro || 'Erro ao enviar pedido' });
     }
@@ -244,6 +245,21 @@ export default function PedidoAvulso() {
       : null;
   const valorTotal = marmitaSelecionada.valorUnitario > 0 ? Number((marmitaSelecionada.valorUnitario * quantidade).toFixed(2)) : 0;
   const formatarMoeda = (valor) => Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const etapaItensValida =
+    !!marmitaSelecionada.tamanho &&
+    itensSelecionados.length > 0 &&
+    (marmitaSelecionada.tamanho !== 'PEQUENA' || totalProteinasSelecionadas === 1) &&
+    (marmitaSelecionada.tamanho !== 'GRANDE' || totalProteinasSelecionadas <= 2);
+  const dadosEntregaValidos = !!dados.nomeCliente.trim() && !!dados.telefone.trim() && !!dados.endereco.trim();
+  const pagamentoValido = !!formaPagamento;
+  const etapaAtualCompleta =
+    etapaAtual === 1 ? etapaItensValida : etapaAtual === 2 ? dadosEntregaValidos : pagamentoValido;
+  const etapasCheckout = [
+    { numero: 1, titulo: 'Marmita' },
+    { numero: 2, titulo: 'Entrega' },
+    { numero: 3, titulo: 'Pagamento' }
+  ];
+
   const selecionarMarmita = (opcao) => {
     setMarmitaSelecionada({
       tamanho: opcao.tamanho,
@@ -252,6 +268,67 @@ export default function PedidoAvulso() {
     });
     setItensSelecionados([]);
     setMensagem(null);
+  };
+
+  function validarEtapa(etapa, mostrarErro = true) {
+    if (etapa === 1) {
+      if (!marmitaSelecionada.tamanho) {
+        if (mostrarErro) setMensagem({ tipo: 'error', texto: 'Selecione Marmita Grande ou Pequena.' });
+        return false;
+      }
+      if (!itensSelecionados.length) {
+        if (mostrarErro) setMensagem({ tipo: 'error', texto: 'Selecione pelo menos um item.' });
+        return false;
+      }
+      if (marmitaSelecionada.tamanho === 'PEQUENA' && totalProteinasSelecionadas !== 1) {
+        if (mostrarErro) {
+          setMensagem({
+            tipo: 'error',
+            texto: `${marmitaSelecionada.titulo || 'Esta marmita'} exige 1 proteina.`
+          });
+        }
+        return false;
+      }
+      if (marmitaSelecionada.tamanho === 'GRANDE' && totalProteinasSelecionadas > 2) {
+        if (mostrarErro) {
+          setMensagem({
+            tipo: 'error',
+            texto: `${marmitaSelecionada.titulo || 'Esta marmita'} permite ate 2 proteinas.`
+          });
+        }
+        return false;
+      }
+      return true;
+    }
+
+    if (etapa === 2) {
+      if (!dadosEntregaValidos) {
+        if (mostrarErro) setMensagem({ tipo: 'error', texto: 'Preencha nome, telefone e endereco.' });
+        return false;
+      }
+      return true;
+    }
+
+    if (etapa === 3) {
+      if (!formaPagamento) {
+        if (mostrarErro) setMensagem({ tipo: 'error', texto: 'Selecione a forma de pagamento.' });
+        return false;
+      }
+      return true;
+    }
+
+    return true;
+  }
+
+  const avancarEtapa = () => {
+    if (!validarEtapa(etapaAtual)) return;
+    setMensagem(null);
+    setEtapaAtual((atual) => Math.min(3, atual + 1));
+  };
+
+  const voltarEtapa = () => {
+    setMensagem(null);
+    setEtapaAtual((atual) => Math.max(1, atual - 1));
   };
 
   return (
@@ -263,177 +340,210 @@ export default function PedidoAvulso() {
         </div>
       )}
 
-      <div className="pedido-page">
+      <div className="pedido-page" id="checkout-avulso">
         <div className="container">
           <h1>Fazer Pedido</h1>
           <p className="subtitulo">Selecione os itens desejados e finalize seu pedido</p>
 
-          <div className="pedido-layout">
+          <div className="checkout-steps" aria-label="Etapas do checkout">
+            {etapasCheckout.map((etapa) => {
+              const ativa = etapaAtual === etapa.numero;
+              const completa = etapaAtual > etapa.numero;
+
+              return (
+                <button
+                  type="button"
+                  key={etapa.numero}
+                  className={`checkout-step ${ativa ? 'ativa' : ''} ${completa ? 'completa' : ''}`}
+                  onClick={() => {
+                    if (etapa.numero < etapaAtual) setEtapaAtual(etapa.numero);
+                  }}
+                  disabled={etapa.numero > etapaAtual}
+                  aria-current={ativa ? 'step' : undefined}
+                >
+                  <span className="checkout-step-number">
+                    {completa ? <FiCheckCircle size={16} /> : etapa.numero}
+                  </span>
+                  <span className="checkout-step-text">{etapa.titulo}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="pedido-layout checkout-layout">
             <div className="pedido-form">
-              <div className="pedido-section" id="secao-marmita">
-                <h3><span className="icon">MC</span> Escolha o Tamanho da Marmita</h3>
-                <div className="marmita-opcoes">
-                  {opcoesMarmita.map((opcao) => {
-                    const selecionada = marmitaSelecionada.tamanho === opcao.tamanho;
-                    return (
-                      <button
-                        type="button"
-                        key={opcao.tamanho}
-                        className={`marmita-opcao-card ${selecionada ? 'selecionada' : ''}`}
-                        onClick={() => selecionarMarmita(opcao)}
-                        id={`marmita-${opcao.tamanho.toLowerCase()}`}
-                      >
-                        <div className="marmita-opcao-topo">
-                          <span className="marmita-opcao-tag">{opcao.tamanho}</span>
-                          {selecionada && <FiCheckCircle size={18} />}
+              {etapaAtual === 1 && (
+                <>
+                  <div className="pedido-section" id="secao-marmita">
+                    <h3><span className="icon">MC</span> Escolha o Tamanho da Marmita</h3>
+                    <div className="marmita-opcoes">
+                      {opcoesMarmita.map((opcao) => {
+                        const selecionada = marmitaSelecionada.tamanho === opcao.tamanho;
+                        return (
+                          <button
+                            type="button"
+                            key={opcao.tamanho}
+                            className={`marmita-opcao-card ${selecionada ? 'selecionada' : ''}`}
+                            onClick={() => selecionarMarmita(opcao)}
+                            id={`marmita-${opcao.tamanho.toLowerCase()}`}
+                          >
+                            <div className="marmita-opcao-topo">
+                              <span className="marmita-opcao-tag">{opcao.tamanho}</span>
+                              {selecionada && <FiCheckCircle size={18} />}
+                            </div>
+                            <strong>{opcao.titulo}</strong>
+                            <span>{opcao.proteinasTexto}</span>
+                            <span className="marmita-opcao-preco">{formatarMoeda(opcao.valorUnitario)}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className={`pedido-section ${!marmitaSelecionada.tamanho ? 'pedido-section-bloqueada' : ''}`} id="secao-itens">
+                    <h3><span className="icon">IT</span> Escolha seus itens</h3>
+                    {!marmitaSelecionada.tamanho && (
+                      <p className="hint-bloqueio">Selecione primeiro a marmita para liberar os itens.</p>
+                    )}
+                    {limiteProteinas !== null && (
+                      <p style={{ fontSize: '0.85rem', color: 'var(--verde-escuro)', marginBottom: '10px', fontWeight: '700' }}>
+                        Regra: {marmitaSelecionada.tamanho === 'GRANDE' ? 'Quentinha Grande = ate 2 proteinas' : 'Quentinha Pequena = 1 proteina'} ({totalProteinasSelecionadas}/{limiteProteinas})
+                      </p>
+                    )}
+
+                    {proteinas.length > 0 && (
+                      <>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--cinza-500)', marginBottom: '10px', fontWeight: '600' }}>PROTEINAS</p>
+                        <div className="itens-grid">
+                          {proteinas.map(item => (
+                            <CheckboxVerde
+                              key={item.id}
+                              id={`item-${item.id}`}
+                              label={item.nome}
+                              selecionado={!!itensSelecionados.find(i => i.id === item.id)}
+                              onChange={() => toggleItem(item)}
+                            />
+                          ))}
                         </div>
-                        <strong>{opcao.titulo}</strong>
-                        <span>{opcao.proteinasTexto}</span>
-                        <span className="marmita-opcao-preco">{formatarMoeda(opcao.valorUnitario)}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+                      </>
+                    )}
 
-              <div className={`pedido-section ${!marmitaSelecionada.tamanho ? 'pedido-section-bloqueada' : ''}`} id="secao-itens">
-                <h3><span className="icon">IT</span> Escolha seus itens</h3>
-                {!marmitaSelecionada.tamanho && (
-                  <p className="hint-bloqueio">Selecione primeiro a marmita para liberar os itens.</p>
-                )}
-                {limiteProteinas !== null && (
-                  <p style={{ fontSize: '0.85rem', color: 'var(--verde-escuro)', marginBottom: '10px', fontWeight: '700' }}>
-                    Regra: {marmitaSelecionada.tamanho === 'GRANDE' ? 'Quentinha Grande = ate 2 proteinas' : 'Quentinha Pequena = 1 proteina'} ({totalProteinasSelecionadas}/{limiteProteinas})
+                    {complementos.length > 0 && (
+                      <>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--cinza-500)', margin: '20px 0 10px', fontWeight: '600' }}>COMPLEMENTOS</p>
+                        <div className="itens-grid">
+                          {complementos.map(item => (
+                            <CheckboxVerde
+                              key={item.id}
+                              id={`item-${item.id}`}
+                              label={item.nome}
+                              selecionado={!!itensSelecionados.find(i => i.id === item.id)}
+                              onChange={() => toggleItem(item)}
+                            />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {etapaAtual === 2 && (
+                <div className="pedido-section" id="secao-dados">
+                  <h3><span className="icon"><FiMapPin /></span> Dados de Entrega</h3>
+                  <div className="dados-grid">
+                    <div className="form-group">
+                      <label className="form-label"><FiUser size={14} /> Nome</label>
+                      <input
+                        className="form-input"
+                        placeholder="Seu nome completo"
+                        value={dados.nomeCliente}
+                        onChange={e => setDados({ ...dados, nomeCliente: e.target.value })}
+                        id="input-nome"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label"><FiPhone size={14} /> Telefone</label>
+                      <input
+                        className="form-input"
+                        placeholder="(00) 00000-0000"
+                        value={dados.telefone}
+                        onChange={e => setDados({ ...dados, telefone: e.target.value })}
+                        id="input-telefone"
+                      />
+                    </div>
+                    <div className="form-group full">
+                      <label className="form-label"><FiMapPin size={14} /> Endereco</label>
+                      <input
+                        className="form-input"
+                        placeholder="Rua, numero, bairro"
+                        value={dados.endereco}
+                        onChange={e => setDados({ ...dados, endereco: e.target.value })}
+                        id="input-endereco"
+                      />
+                    </div>
+                    <div className="form-group full">
+                      <label className="form-label">Observacao (opcional)</label>
+                      <input
+                        className="form-input"
+                        placeholder="Ex: sem cebola, ponto da carne..."
+                        value={dados.observacao}
+                        onChange={e => setDados({ ...dados, observacao: e.target.value })}
+                        id="input-observacao"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {etapaAtual === 3 && (
+                <div className="pedido-section" id="secao-pagamento">
+                  <h3><span className="icon"><FiCreditCard /></span> Forma de Pagamento</h3>
+                  <div className="pagamento-opcoes">
+                    {opcoesPagamento.map(opcao => {
+                      const selecionada = formaPagamento === opcao.valor;
+
+                      return (
+                      <div
+                        key={opcao.valor}
+                        className={`pagamento-opcao ${opcao.classe} ${selecionada ? 'selecionada' : ''}`}
+                        onClick={() => setFormaPagamento(opcao.valor)}
+                        role="button"
+                        tabIndex={0}
+                        aria-pressed={selecionada}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setFormaPagamento(opcao.valor);
+                          }
+                        }}
+                        id={`pagamento-${opcao.valor.toLowerCase()}`}
+                      >
+                        <div className="pag-topo">
+                          <span className="pag-icon"><opcao.Icone size={18} /></span>
+                          <span className="pag-sigla">{opcao.sigla}</span>
+                          {selecionada && (
+                            <span className="pag-check">
+                              <FiCheckCircle size={16} />
+                            </span>
+                          )}
+                        </div>
+                        <div className="pag-textos">
+                          <span className="pag-label">{opcao.label}</span>
+                          <span className="pag-desc">{opcao.descricao}</span>
+                        </div>
+                      </div>
+                      );
+                    })}
+                  </div>
+                  <p className="pagamento-hint">
+                    Pix, credito e debito abrem o checkout do Mercado Pago.
                   </p>
-                )}
-
-                {proteinas.length > 0 && (
-                  <>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--cinza-500)', marginBottom: '10px', fontWeight: '600' }}>PROTEINAS</p>
-                    <div className="itens-grid">
-                      {proteinas.map(item => (
-                        <CheckboxVerde
-                          key={item.id}
-                          id={`item-${item.id}`}
-                          label={item.nome}
-                          selecionado={!!itensSelecionados.find(i => i.id === item.id)}
-                          onChange={() => toggleItem(item)}
-                        />
-                      ))}
-                    </div>
-                  </>
-                )}
-
-                {complementos.length > 0 && (
-                  <>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--cinza-500)', margin: '20px 0 10px', fontWeight: '600' }}>COMPLEMENTOS</p>
-                    <div className="itens-grid">
-                      {complementos.map(item => (
-                        <CheckboxVerde
-                          key={item.id}
-                          id={`item-${item.id}`}
-                          label={item.nome}
-                          selecionado={!!itensSelecionados.find(i => i.id === item.id)}
-                          onChange={() => toggleItem(item)}
-                        />
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <div className="pedido-section" id="secao-dados">
-                <h3><span className="icon"><FiMapPin /></span> Dados de Entrega</h3>
-                <div className="dados-grid">
-                  <div className="form-group">
-                    <label className="form-label"><FiUser size={14} /> Nome</label>
-                    <input
-                      className="form-input"
-                      placeholder="Seu nome completo"
-                      value={dados.nomeCliente}
-                      onChange={e => setDados({ ...dados, nomeCliente: e.target.value })}
-                      id="input-nome"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label"><FiPhone size={14} /> Telefone</label>
-                    <input
-                      className="form-input"
-                      placeholder="(00) 00000-0000"
-                      value={dados.telefone}
-                      onChange={e => setDados({ ...dados, telefone: e.target.value })}
-                      id="input-telefone"
-                    />
-                  </div>
-                  <div className="form-group full">
-                    <label className="form-label"><FiMapPin size={14} /> Endereco</label>
-                    <input
-                      className="form-input"
-                      placeholder="Rua, numero, bairro"
-                      value={dados.endereco}
-                      onChange={e => setDados({ ...dados, endereco: e.target.value })}
-                      id="input-endereco"
-                    />
-                  </div>
-                  <div className="form-group full">
-                    <label className="form-label">Observacao (opcional)</label>
-                    <input
-                      className="form-input"
-                      placeholder="Ex: sem cebola, ponto da carne..."
-                      value={dados.observacao}
-                      onChange={e => setDados({ ...dados, observacao: e.target.value })}
-                      id="input-observacao"
-                    />
-                  </div>
                 </div>
-              </div>
-
-              <div className="pedido-section" id="secao-pagamento">
-                <h3><span className="icon"><FiCreditCard /></span> Forma de Pagamento</h3>
-                <div className="pagamento-opcoes">
-                  {opcoesPagamento.map(opcao => {
-                    const selecionada = formaPagamento === opcao.valor;
-
-                    return (
-                    <div
-                      key={opcao.valor}
-                      className={`pagamento-opcao ${opcao.classe} ${selecionada ? 'selecionada' : ''}`}
-                      onClick={() => setFormaPagamento(opcao.valor)}
-                      role="button"
-                      tabIndex={0}
-                      aria-pressed={selecionada}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          setFormaPagamento(opcao.valor);
-                        }
-                      }}
-                      id={`pagamento-${opcao.valor.toLowerCase()}`}
-                    >
-                      <div className="pag-topo">
-                        <span className="pag-icon"><opcao.Icone size={18} /></span>
-                        <span className="pag-sigla">{opcao.sigla}</span>
-                        {selecionada && (
-                          <span className="pag-check">
-                            <FiCheckCircle size={16} />
-                          </span>
-                        )}
-                      </div>
-                      <div className="pag-textos">
-                        <span className="pag-label">{opcao.label}</span>
-                        <span className="pag-desc">{opcao.descricao}</span>
-                      </div>
-                    </div>
-                    );
-                  })}
-                </div>
-                <p className="pagamento-hint">
-                  Pix, credito e debito abrem o checkout do Mercado Pago.
-                </p>
-              </div>
+              )}
             </div>
 
-            <div className="pedido-resumo">
+            <div className={`pedido-resumo checkout-resumo ${etapaAtual === 3 ? 'checkout-resumo-final' : ''}`}>
               <div className="resumo-card" id="resumo-pedido">
                 <h3>Resumo do Pedido</h3>
 
@@ -488,24 +598,51 @@ export default function PedidoAvulso() {
                     <strong style={{ color: 'var(--verde-escuro)' }}>{formatarMoeda(valorTotal)}</strong>
                   </div>
                 )}
-
-                <button
-                  className="btn btn-primary btn-lg"
-                  onClick={handleSubmit}
-                  disabled={enviando || !itensSelecionados.length || !marmitaSelecionada.tamanho}
-                  id="btn-enviar-pedido"
-                  style={{ width: '100%' }}
-                >
-                  {enviando ? (
-                    <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }}></span>
-                  ) : (
-                    <>
-                      <FiSend size={18} /> Enviar Pedido
-                    </>
-                  )}
-                </button>
               </div>
             </div>
+          </div>
+
+          <div className="checkout-actions">
+            {etapaAtual > 1 ? (
+              <button
+                type="button"
+                className="btn btn-secondary btn-lg"
+                onClick={voltarEtapa}
+                id="btn-checkout-voltar"
+              >
+                <FiArrowLeft size={18} /> Voltar
+              </button>
+            ) : (
+              <span className="checkout-actions-spacer" aria-hidden="true"></span>
+            )}
+
+            {etapaAtual < 3 ? (
+              <button
+                type="button"
+                className="btn btn-primary btn-lg"
+                onClick={avancarEtapa}
+                disabled={!etapaAtualCompleta}
+                id="btn-checkout-continuar"
+              >
+                Continuar <FiArrowRight size={18} />
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="btn btn-primary btn-lg"
+                onClick={handleSubmit}
+                disabled={enviando || !etapaAtualCompleta}
+                id="btn-enviar-pedido"
+              >
+                {enviando ? (
+                  <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }}></span>
+                ) : (
+                  <>
+                    <FiSend size={18} /> Enviar Pedido
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
       </div>

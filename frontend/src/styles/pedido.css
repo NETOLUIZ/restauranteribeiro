@@ -18,10 +18,77 @@
   margin-bottom: 32px;
 }
 
+.checkout-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.checkout-step {
+  min-width: 0;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--cinza-300);
+  border-radius: var(--radius-md);
+  background: var(--branco);
+  color: var(--cinza-700);
+  font-weight: 700;
+  text-align: left;
+  box-shadow: var(--sombra-sm);
+  transition: var(--transition-fast);
+}
+
+.checkout-step:not(:disabled):hover {
+  border-color: var(--verde-light);
+  color: var(--verde-escuro);
+}
+
+.checkout-step:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+
+.checkout-step.ativa,
+.checkout-step.completa {
+  border-color: var(--verde-accent);
+  color: var(--verde-escuro);
+  background: var(--verde-bg);
+}
+
+.checkout-step-number {
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cinza-100);
+  color: var(--cinza-700);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.checkout-step.ativa .checkout-step-number,
+.checkout-step.completa .checkout-step-number {
+  background: var(--verde-escuro);
+  color: var(--branco);
+}
+
+.checkout-step-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .pedido-layout {
   display: grid;
   grid-template-columns: 1fr 380px;
   gap: 32px;
+  align-items: start;
 }
 
 .pedido-form {
@@ -443,23 +510,69 @@
   text-align: center;
 }
 
+.checkout-actions {
+  margin-top: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  background: var(--branco);
+  box-shadow: var(--sombra-sm);
+}
+
+.checkout-actions .btn {
+  min-width: 190px;
+}
+
+.checkout-actions-spacer {
+  flex: 1;
+}
+
+#checkout-avulso {
+  scroll-margin-top: 90px;
+}
+
 @media (max-width: 900px) {
+  .pedido-page {
+    padding: 28px 0 48px;
+  }
+
+  .checkout-steps {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .checkout-step {
+    min-height: 50px;
+    padding: 10px 12px;
+  }
+
   .pedido-layout {
     grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .checkout-resumo {
+    display: none;
+  }
+
+  .checkout-resumo.checkout-resumo-final {
+    display: block;
   }
   
   .pedido-resumo {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 100;
+    position: static;
+    width: 100%;
+    z-index: auto;
     padding: 0;
   }
   
   .resumo-card {
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+    border-radius: var(--radius-md);
+    box-shadow: var(--sombra-sm);
   }
   
   .dados-grid {
@@ -480,5 +593,47 @@
 
   .marmita-opcoes {
     grid-template-columns: 1fr;
+  }
+
+  .checkout-actions {
+    margin-top: 18px;
+    flex-direction: column-reverse;
+    align-items: stretch;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .checkout-actions .btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .checkout-actions-spacer {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .pedido-page h1 {
+    font-size: 1.55rem;
+  }
+
+  .pedido-page .subtitulo {
+    margin-bottom: 24px;
+  }
+
+  .pedido-section,
+  .resumo-card {
+    padding: 18px;
+  }
+
+  .pagamento-opcoes {
+    grid-template-columns: 1fr;
+  }
+
+  .resumo-total {
+    align-items: flex-start;
+    gap: 12px;
   }
 }
