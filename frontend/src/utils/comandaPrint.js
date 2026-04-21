@@ -10,15 +10,11 @@ export const escapeHtml = (value = '') =>
 
 export const COMANDA_PRINT_CSS = `
   :root {
-    --verde-principal: #1FA463;
-    --verde-escuro: #158A52;
-    --verde-claro: #7ED957;
+    --preto-termico: #000000;
     --branco: #FFFFFF;
-    --preto: #1A1A1A;
-    --cinza-borda: #D7EEDF;
   }
 
-  /* Papel real da Elgin L42PRO: 105mm x 70mm em horizontal. */
+  /* Papel real da Elgin L42PRO: etiqueta horizontal 105mm x 70mm. */
   @page {
     size: 105mm 70mm;
     margin: 0;
@@ -36,7 +32,7 @@ export const COMANDA_PRINT_CSS = `
     padding: 0;
     overflow: visible;
     background: var(--branco);
-    color: var(--preto);
+    color: var(--preto-termico);
     font-family: Arial, Helvetica, sans-serif;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
@@ -46,19 +42,16 @@ export const COMANDA_PRINT_CSS = `
     display: block;
   }
 
-  /* Raiz do documento de impressao. Nao recebe margem para evitar folha extra. */
   .print-area {
     width: 105mm;
+    height: auto;
     margin: 0;
     padding: 0;
     overflow: visible;
     background: var(--branco);
   }
 
-  /*
-    A classe .comanda e a etiqueta inteira.
-    Nao existe rotate, scale, margem externa nem page-break manual.
-  */
+  /* Etiqueta inteira. Sem rotacao, sem escala e sem margem externa. */
   .comanda {
     width: 105mm;
     height: 70mm;
@@ -69,28 +62,29 @@ export const COMANDA_PRINT_CSS = `
     justify-content: center;
     overflow: hidden;
     background: var(--branco);
-    color: var(--preto);
+    color: var(--preto-termico);
     page-break-inside: avoid;
     break-inside: avoid;
     box-shadow: none;
     text-shadow: none;
   }
 
-  /* Conteudo visual centralizado dentro da etiqueta horizontal. */
+  /* Conteudo centralizado e com borda forte para leitura em impressora termica. */
   .comanda-conteudo {
     width: 101mm;
     height: 66mm;
     margin: 0 auto;
-    padding: 1.1mm 1.4mm;
+    padding: 1mm 1.25mm;
     display: flex;
     flex-direction: column;
-    gap: 0.75mm;
+    gap: 0.8mm;
     overflow: hidden;
     background: var(--branco);
-    border: 0.35mm solid var(--verde-principal);
-    border-radius: 1.5mm;
+    border: 0.45mm solid var(--preto-termico);
+    border-radius: 1.3mm;
     page-break-inside: avoid;
     break-inside: avoid;
+    box-shadow: none;
   }
 
   .comanda-topo {
@@ -103,14 +97,15 @@ export const COMANDA_PRINT_CSS = `
     height: 8mm;
     display: block;
     object-fit: contain;
-    margin: 0 auto 0.4mm;
+    margin: 0 auto 0.45mm;
+    filter: grayscale(1) contrast(1.8) brightness(0.72);
   }
 
   .fone-destaque {
-    color: var(--verde-principal);
-    font-size: 3.15mm;
+    color: var(--preto-termico);
+    font-size: 3.6mm;
     font-weight: 900;
-    letter-spacing: 0.2mm;
+    letter-spacing: 0.65mm;
     line-height: 1;
     text-align: center;
   }
@@ -119,35 +114,37 @@ export const COMANDA_PRINT_CSS = `
     width: 100%;
     margin: 0.55mm 0;
     border: 0;
-    border-top: 0.25mm solid var(--verde-escuro);
+    border-top: 0.35mm solid var(--preto-termico);
   }
 
   .pedido-faixa {
     flex: 0 0 auto;
-    min-height: 5.4mm;
+    min-height: 6mm;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 2mm;
-    padding: 0.6mm 1.2mm;
-    border: 0.28mm solid var(--verde-escuro);
-    border-radius: 1.2mm;
-    background: #EEF9F3;
+    padding: 0.65mm 1.25mm;
+    border: 0.45mm solid var(--preto-termico);
+    border-radius: 1mm;
+    background: var(--branco);
+    color: var(--preto-termico);
     page-break-inside: avoid;
     break-inside: avoid;
   }
 
   .pedido-titulo {
-    color: var(--verde-escuro);
-    font-size: 2.75mm;
+    color: var(--preto-termico);
+    font-size: 3.3mm;
     font-weight: 900;
     line-height: 1;
-    letter-spacing: 0.16mm;
+    letter-spacing: 0.35mm;
+    text-transform: uppercase;
   }
 
   .pedido-numero {
-    color: var(--preto);
-    font-size: 4.9mm;
+    color: var(--preto-termico);
+    font-size: 5.7mm;
     font-weight: 900;
     line-height: 1;
     white-space: nowrap;
@@ -156,19 +153,20 @@ export const COMANDA_PRINT_CSS = `
   .identificacao-card {
     flex: 0 0 auto;
     display: grid;
-    gap: 0.55mm;
+    gap: 0.45mm;
     margin: 0;
-    padding: 0.75mm 1mm;
-    border: 0.35mm solid var(--verde-principal);
-    border-radius: 1.3mm;
+    padding: 0.85mm 1mm;
+    border: 0.42mm solid var(--preto-termico);
+    border-radius: 1.1mm;
     background: var(--branco);
+    color: var(--preto-termico);
     page-break-inside: avoid;
     break-inside: avoid;
   }
 
   .ident-linha {
     display: grid;
-    grid-template-columns: 17mm minmax(0, 1fr);
+    grid-template-columns: 19mm minmax(0, 1fr);
     align-items: start;
     gap: 1mm;
     min-width: 0;
@@ -176,101 +174,109 @@ export const COMANDA_PRINT_CSS = `
 
   .ident-label {
     display: block;
-    color: var(--verde-escuro);
-    font-size: 2.1mm;
+    color: var(--preto-termico);
+    font-size: 2.35mm;
     font-weight: 900;
     line-height: 1.05;
-    letter-spacing: 0.08mm;
+    letter-spacing: 0.35mm;
     text-transform: uppercase;
     white-space: nowrap;
   }
 
   .ident-valor {
     min-width: 0;
-    color: var(--preto);
+    color: var(--preto-termico);
     font-weight: 900;
-    line-height: 1.04;
+    line-height: 1.05;
     word-break: break-word;
   }
 
   .ident-empresa {
-    font-size: 3mm;
+    font-size: 3.55mm;
     text-transform: uppercase;
+    letter-spacing: 0.25mm;
   }
 
   .ident-nome {
-    font-size: 3.25mm;
+    font-size: 3.6mm;
     text-transform: uppercase;
+    letter-spacing: 0.25mm;
   }
 
   .ident-endereco {
-    font-size: 3.35mm;
+    font-size: 3.65mm;
+    letter-spacing: 0.18mm;
   }
 
   .itens-bloco {
     flex: 1 1 auto;
     min-height: 0;
     margin: 0;
-    border: 0.25mm solid var(--cinza-borda);
-    border-radius: 1.3mm;
+    border: 0.42mm solid var(--preto-termico);
+    border-radius: 1mm;
     overflow: hidden;
+    color: var(--preto-termico);
     page-break-inside: avoid;
     break-inside: avoid;
   }
 
   .itens-faixa {
-    padding: 0.6mm 1mm;
-    border-radius: 1mm 1mm 0 0;
-    background: var(--verde-principal);
+    padding: 0.55mm 1mm;
+    background: var(--preto-termico);
     color: var(--branco);
-    font-size: 2.55mm;
+    font-size: 3mm;
     font-weight: 900;
     line-height: 1;
-    letter-spacing: 0.14mm;
+    letter-spacing: 0.4mm;
+    text-transform: uppercase;
   }
 
   .itens-lista {
     margin: 0;
-    padding: 0.8mm 1mm 0.8mm 3.8mm;
+    padding: 0.85mm 1.1mm 0.8mm 4.4mm;
     column-count: 2;
-    column-gap: 4mm;
-    color: var(--preto);
-    font-size: 2.55mm;
-    font-weight: 700;
-    line-height: 1.08;
+    column-gap: 5mm;
+    color: var(--preto-termico);
+    font-size: 2.9mm;
+    font-weight: 900;
+    line-height: 1.16;
     overflow: hidden;
   }
 
   .itens-lista li {
-    margin: 0 0 0.45mm;
-    padding-left: 0.15mm;
+    margin: 0 0 0.55mm;
+    padding-left: 0.2mm;
     break-inside: avoid;
     page-break-inside: avoid;
   }
 
   .itens-lista li::marker {
-    color: var(--verde-principal);
-    font-size: 2.45mm;
+    color: var(--preto-termico);
+    font-size: 2.8mm;
   }
 
   .info-extra {
     flex: 0 0 auto;
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 0.45mm 1mm;
-    padding: 0.65mm 0.9mm;
-    border: 0.25mm dashed #9CD9B9;
-    border-radius: 1.2mm;
-    color: var(--preto);
-    font-size: 2.15mm;
-    font-weight: 700;
-    line-height: 1.05;
+    grid-template-columns: 1fr 0.65fr 1fr;
+    gap: 0.45mm 1.2mm;
+    padding: 0.7mm 0.9mm;
+    border-top: 0.35mm dotted var(--preto-termico);
+    border-bottom: 0.35mm solid var(--preto-termico);
+    color: var(--preto-termico);
+    font-size: 2.25mm;
+    font-weight: 900;
+    line-height: 1.12;
     page-break-inside: avoid;
     break-inside: avoid;
   }
 
   .info-extra p {
     margin: 0;
+  }
+
+  .info-extra strong {
+    font-weight: 900;
   }
 
   .info-extra .info-obs {
@@ -281,14 +287,15 @@ export const COMANDA_PRINT_CSS = `
     flex: 0 0 auto;
     margin-top: auto;
     text-align: center;
+    color: var(--preto-termico);
     page-break-inside: avoid;
     break-inside: avoid;
   }
 
   .data-hora {
-    color: #2E2E2E;
-    font-size: 2.2mm;
-    font-weight: 800;
+    color: var(--preto-termico);
+    font-size: 2.45mm;
+    font-weight: 900;
     line-height: 1;
   }
 
@@ -306,6 +313,9 @@ export const COMANDA_PRINT_CSS = `
       padding: 0 !important;
       overflow: visible !important;
       background: var(--branco) !important;
+      color: var(--preto-termico) !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
     }
 
     body > :not(.print-area) {
@@ -317,8 +327,7 @@ export const COMANDA_PRINT_CSS = `
       margin: 0 !important;
       padding: 0 !important;
       overflow: visible !important;
-      box-shadow: none !important;
-      text-shadow: none !important;
+      background: var(--branco) !important;
     }
 
     .comanda {
@@ -327,6 +336,8 @@ export const COMANDA_PRINT_CSS = `
       margin: 0 !important;
       padding: 0 !important;
       overflow: hidden !important;
+      background: var(--branco) !important;
+      color: var(--preto-termico) !important;
       box-shadow: none !important;
       text-shadow: none !important;
       page-break-after: auto !important;
@@ -337,6 +348,9 @@ export const COMANDA_PRINT_CSS = `
       width: 101mm !important;
       height: 66mm !important;
       margin: 0 auto !important;
+      overflow: hidden !important;
+      border-color: var(--preto-termico) !important;
+      background: var(--branco) !important;
       box-shadow: none !important;
       text-shadow: none !important;
     }
