@@ -13,7 +13,7 @@ function ProtectedRoute({ children, role, loginPath = '/empresa/login' }) {
   
   if (carregando) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+      <div className="loading-spinner loading-spinner-full">
         <div className="spinner"></div>
       </div>
     );
