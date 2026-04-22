@@ -374,6 +374,94 @@
   padding-left: 2px;
 }
 
+.pagamento-opcoes-pix {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 420px;
+}
+
+.pix-pagamento-card {
+  margin-top: 18px;
+  border: 1px solid var(--verde-light);
+  border-radius: var(--radius-md);
+  background: var(--verde-bg);
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.pix-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: start;
+  gap: 8px;
+  min-height: 34px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--verde-escuro);
+  background: var(--branco);
+  border: 1px solid rgba(31, 164, 99, 0.25);
+}
+
+.pix-status-confirmado {
+  color: var(--branco);
+  background: var(--verde-principal, #1FA463);
+  border-color: var(--verde-principal, #1FA463);
+}
+
+.pix-status-cancelado {
+  color: #991b1b;
+  background: #fee2e2;
+  border-color: #fecaca;
+}
+
+.pix-qrcode {
+  width: min(240px, 100%);
+  aspect-ratio: 1;
+  justify-self: center;
+  border-radius: 8px;
+  border: 1px solid var(--cinza-200);
+  background: var(--branco);
+  padding: 10px;
+}
+
+.pix-copia {
+  display: grid;
+  gap: 8px;
+}
+
+.pix-copia label {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--verde-escuro);
+}
+
+.pix-copia textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 92px;
+  border: 1px solid var(--cinza-300);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  font-size: 0.78rem;
+  color: var(--cinza-700);
+  background: var(--branco);
+  line-height: 1.35;
+}
+
+.pix-acoes {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pix-acoes .btn {
+  min-height: 42px;
+}
+
 @keyframes pagamentoGlow {
   0%, 100% {
     box-shadow: 0 10px 20px rgba(21, 138, 82, 0.14);
@@ -630,6 +718,10 @@
 
   .pagamento-opcoes {
     grid-template-columns: 1fr;
+  }
+
+  .pix-acoes .btn {
+    width: 100%;
   }
 
   .resumo-total {

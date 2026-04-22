@@ -11,6 +11,7 @@ const empresaRoutes = require('./routes/empresa');
 const bannerRoutes = require('./routes/banner');
 const marmitaCardRoutes = require('./routes/marmitaCard');
 const dashboardRoutes = require('./routes/dashboard');
+const { webhookMercadoPago } = require('./controllers/pedidoAvulsoController');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -32,6 +33,7 @@ app.use('/api/empresas', empresaRoutes);
 app.use('/api/banners', bannerRoutes);
 app.use('/api/marmitas', marmitaCardRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.post('/api/webhook/mercadopago', webhookMercadoPago);
 
 // Health check
 app.get('/api/health', (req, res) => {

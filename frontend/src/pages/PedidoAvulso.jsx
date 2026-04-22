@@ -4,13 +4,13 @@ import {
   FiMapPin,
   FiUser,
   FiPhone,
-  FiCreditCard,
   FiMinus,
   FiPlus,
   FiSend,
   FiZap,
-  FiDollarSign,
   FiCheckCircle,
+  FiCopy,
+  FiClock,
   FiArrowLeft,
   FiArrowRight
 } from 'react-icons/fi';
@@ -98,11 +98,12 @@ export default function PedidoAvulso() {
   const [itensSelecionados, setItensSelecionados] = useState([]);
   const [quantidade, setQuantidade] = useState(1);
   const [marmitaSelecionada, setMarmitaSelecionada] = useState(() => extrairSelecaoMarmita(location));
-  const [formaPagamento, setFormaPagamento] = useState('');
+  const [formaPagamento, setFormaPagamento] = useState('PIX');
   const [dados, setDados] = useState(() => criarDadosEntregaVazios());
   const [enviando, setEnviando] = useState(false);
   const [mensagem, setMensagem] = useState(() => extrairMensagemCheckout(location.search));
   const [etapaAtual, setEtapaAtual] = useState(1);
+  const [pixPagamento, setPixPagamento] = useState(null);
 
   useEffect(() => {
     Promise.allSettled([
@@ -131,6 +132,35 @@ export default function PedidoAvulso() {
   useEffect(() => {
     document.getElementById('checkout-avulso')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [etapaAtual]);
+
+  useEffect(() => {
+    if (!pixPagamento?.pedidoId || pixPagamento.statusPedido === 'CONFIRMADO' || pixPagamento.statusPedido === 'CANCELADO') {
+      return undefined;
+    }
+
+    const consultarStatus = async () => {
+      try {
+        const { data } = await pedidoAvulsoAPI.statusPagamento(pixPagamento.pedidoId);
+        setPixPagamento((atual) => {
+          if (!atual || atual.pedidoId !== pixPagamento.pedidoId) return atual;
+          return { ...atual, statusPedido: data.statusPagamento };
+        });
+
+        if (data.statusPagamento === 'CONFIRMADO') {
+          setMensagem({ tipo: 'success', texto: 'Pagamento confirmado. Pedido enviado com sucesso!' });
+        } else if (data.statusPagamento === 'CANCELADO') {
+          setMensagem({ tipo: 'error', texto: 'Pagamento cancelado. Gere um novo pedido se necessario.' });
+        }
+      } catch {
+        // Mantem a tela em aguardando pagamento se a consulta temporaria falhar.
+      }
+    };
+
+    const intervalo = window.setInterval(consultarStatus, 6000);
+    consultarStatus();
+
+    return () => window.clearInterval(intervalo);
+  }, [pixPagamento?.pedidoId, pixPagamento?.statusPedido]);
 
   const toggleItem = (item) => {
     if (!marmitaSelecionada.tamanho) {
@@ -163,6 +193,11 @@ export default function PedidoAvulso() {
   };
 
   const handleSubmit = async () => {
+    if (pixPagamento) {
+      setMensagem({ tipo: 'success', texto: 'Pix ja gerado. Aguarde a confirmacao do pagamento.' });
+      return;
+    }
+
     if (!validarEtapa(1)) {
       setEtapaAtual(1);
       return;
@@ -190,28 +225,62 @@ export default function PedidoAvulso() {
         valorUnitario: marmitaSelecionada.valorUnitario > 0 ? marmitaSelecionada.valorUnitario : undefined
       });
 
-      if (data.requiresPayment && data.checkoutUrl) {
-        window.open(data.checkoutUrl, '_blank', 'noopener,noreferrer');
-        setMensagem({
-          tipo: 'success',
-          texto: 'Pedido enviado com sucesso! Finalize o pagamento na nova aba do Mercado Pago.'
-        });
-      } else {
-        setMensagem({
-          tipo: 'success',
-          texto: 'Pedido enviado com sucesso! Aguarde a confirmacao do restaurante.'
-        });
-      }
+      const pagamentoPix = data.pagamentoPix || {
+        pagamentoId: data.pagamentoId,
+        status: data.status,
+        qrCode: data.qrCode,
+        qrCodeBase64: data.qrCodeBase64,
+        copiaecola: data.copiaecola,
+        valor: data.valor,
+        pedidoId: data.pedidoId || data.id
+      };
 
-      setItensSelecionados([]);
-      setQuantidade(1);
-      setFormaPagamento('');
-      setDados(criarDadosEntregaVazios());
-      setEtapaAtual(1);
+      setPixPagamento({
+        ...pagamentoPix,
+        statusPedido: data.statusPagamento || 'PENDENTE'
+      });
+      setMensagem({
+        tipo: 'success',
+        texto: 'Pedido enviado com sucesso! Aguardando pagamento via Pix.'
+      });
+      setEtapaAtual(3);
     } catch (err) {
       setMensagem({ tipo: 'error', texto: err.response?.data?.erro || 'Erro ao enviar pedido' });
     }
     setEnviando(false);
+  };
+
+  const resetarPedido = () => {
+    setItensSelecionados([]);
+    setQuantidade(1);
+    setFormaPagamento('PIX');
+    setDados(criarDadosEntregaVazios());
+    setPixPagamento(null);
+    setMensagem(null);
+    setEtapaAtual(1);
+  };
+
+  const copiarCodigoPix = async () => {
+    if (!pixPagamento?.copiaecola) return;
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(pixPagamento.copiaecola);
+      } else {
+        const campo = document.createElement('textarea');
+        campo.value = pixPagamento.copiaecola;
+        campo.setAttribute('readonly', '');
+        campo.style.position = 'fixed';
+        campo.style.opacity = '0';
+        document.body.appendChild(campo);
+        campo.select();
+        document.execCommand('copy');
+        document.body.removeChild(campo);
+      }
+      setMensagem({ tipo: 'success', texto: 'Codigo Pix copiado.' });
+    } catch {
+      setMensagem({ tipo: 'error', texto: 'Nao foi possivel copiar o codigo Pix.' });
+    }
   };
 
   const proteinas = cardapio.filter(i => i.tipo === 'PROTEINA');
@@ -237,33 +306,9 @@ export default function PedidoAvulso() {
       valor: 'PIX',
       sigla: 'PIX',
       label: 'Pix',
-      descricao: 'Aprovacao instantanea',
+      descricao: 'QR Code e copia e cola',
       Icone: FiZap,
       classe: 'pag-pix'
-    },
-    {
-      valor: 'CREDITO',
-      sigla: 'CR',
-      label: 'Cartao de Credito',
-      descricao: 'Pagamento online seguro',
-      Icone: FiCreditCard,
-      classe: 'pag-credito'
-    },
-    {
-      valor: 'DEBITO',
-      sigla: 'DB',
-      label: 'Cartao de Debito',
-      descricao: 'Pagamento online rapido',
-      Icone: FiCreditCard,
-      classe: 'pag-debito'
-    },
-    {
-      valor: 'DINHEIRO',
-      sigla: 'DIN',
-      label: 'Dinheiro',
-      descricao: 'Pagamento na entrega',
-      Icone: FiDollarSign,
-      classe: 'pag-dinheiro'
     }
   ];
   const totalProteinasSelecionadas = itensSelecionados.filter(i => i.tipo === 'PROTEINA').length;
@@ -285,7 +330,7 @@ export default function PedidoAvulso() {
     !!normalizarCampo(dados.rua) &&
     !!normalizarCampo(dados.numero) &&
     !!normalizarCampo(dados.bairro);
-  const pagamentoValido = !!formaPagamento;
+  const pagamentoValido = formaPagamento === 'PIX';
   const etapaAtualCompleta =
     etapaAtual === 1 ? etapaItensValida : etapaAtual === 2 ? dadosEntregaValidos : pagamentoValido;
   const etapasCheckout = [
@@ -293,6 +338,13 @@ export default function PedidoAvulso() {
     { numero: 2, titulo: 'Entrega' },
     { numero: 3, titulo: 'Pagamento' }
   ];
+  const statusPedidoPix = pixPagamento?.statusPedido || (pixPagamento?.status === 'approved' ? 'CONFIRMADO' : 'PENDENTE');
+  const statusPixTexto =
+    statusPedidoPix === 'CONFIRMADO'
+      ? 'Pagamento confirmado'
+      : statusPedidoPix === 'CANCELADO'
+        ? 'Pagamento cancelado'
+        : 'Aguardando pagamento';
 
   const selecionarMarmita = (opcao) => {
     setMarmitaSelecionada({
@@ -344,8 +396,8 @@ export default function PedidoAvulso() {
     }
 
     if (etapa === 3) {
-      if (!formaPagamento) {
-        if (mostrarErro) setMensagem({ tipo: 'error', texto: 'Selecione a forma de pagamento.' });
+      if (formaPagamento !== 'PIX') {
+        if (mostrarErro) setMensagem({ tipo: 'error', texto: 'Pagamento disponivel somente via Pix.' });
         return false;
       }
       return true;
@@ -390,9 +442,9 @@ export default function PedidoAvulso() {
                   key={etapa.numero}
                   className={`checkout-step ${ativa ? 'ativa' : ''} ${completa ? 'completa' : ''}`}
                   onClick={() => {
-                    if (etapa.numero < etapaAtual) setEtapaAtual(etapa.numero);
+                    if (!pixPagamento && etapa.numero < etapaAtual) setEtapaAtual(etapa.numero);
                   }}
-                  disabled={etapa.numero > etapaAtual}
+                  disabled={!!pixPagamento || etapa.numero > etapaAtual}
                   aria-current={ativa ? 'step' : undefined}
                 >
                   <span className="checkout-step-number">
@@ -567,8 +619,8 @@ export default function PedidoAvulso() {
 
               {etapaAtual === 3 && (
                 <div className="pedido-section" id="secao-pagamento">
-                  <h3><span className="icon"><FiCreditCard /></span> Forma de Pagamento</h3>
-                  <div className="pagamento-opcoes">
+                  <h3><span className="icon"><FiZap /></span> Pagamento via Pix</h3>
+                  <div className="pagamento-opcoes pagamento-opcoes-pix">
                     {opcoesPagamento.map(opcao => {
                       const selecionada = formaPagamento === opcao.valor;
 
@@ -576,14 +628,17 @@ export default function PedidoAvulso() {
                       <div
                         key={opcao.valor}
                         className={`pagamento-opcao ${opcao.classe} ${selecionada ? 'selecionada' : ''}`}
-                        onClick={() => setFormaPagamento(opcao.valor)}
+                        onClick={() => {
+                          if (!pixPagamento) setFormaPagamento(opcao.valor);
+                        }}
                         role="button"
                         tabIndex={0}
                         aria-pressed={selecionada}
+                        aria-disabled={!!pixPagamento}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
-                            setFormaPagamento(opcao.valor);
+                            if (!pixPagamento) setFormaPagamento(opcao.valor);
                           }
                         }}
                         id={`pagamento-${opcao.valor.toLowerCase()}`}
@@ -606,8 +661,53 @@ export default function PedidoAvulso() {
                     })}
                   </div>
                   <p className="pagamento-hint">
-                    Pix, credito e debito abrem o checkout do Mercado Pago.
+                    Ao enviar o pedido, o QR Code Pix aparece aqui para pagamento.
                   </p>
+
+                  {pixPagamento && (
+                    <div className="pix-pagamento-card" aria-live="polite">
+                      <div className={`pix-status pix-status-${statusPedidoPix.toLowerCase()}`}>
+                        {statusPedidoPix === 'CONFIRMADO' ? <FiCheckCircle size={18} /> : <FiClock size={18} />}
+                        <span>{statusPixTexto}</span>
+                      </div>
+
+                      {pixPagamento.qrCodeBase64 && (
+                        <img
+                          className="pix-qrcode"
+                          src={`data:image/png;base64,${pixPagamento.qrCodeBase64}`}
+                          alt="QR Code Pix para pagamento"
+                        />
+                      )}
+
+                      <div className="pix-copia">
+                        <label htmlFor="pix-copia-codigo">Pix copia e cola</label>
+                        <textarea
+                          id="pix-copia-codigo"
+                          value={pixPagamento.copiaecola || ''}
+                          readOnly
+                          rows={4}
+                        />
+                      </div>
+
+                      <div className="pix-acoes">
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          onClick={copiarCodigoPix}
+                          disabled={!pixPagamento.copiaecola}
+                        >
+                          <FiCopy size={16} /> Copiar codigo Pix
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={resetarPedido}
+                        >
+                          Novo pedido
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -672,7 +772,7 @@ export default function PedidoAvulso() {
           </div>
 
           <div className="checkout-actions">
-            {etapaAtual > 1 ? (
+            {etapaAtual > 1 && !pixPagamento ? (
               <button
                 type="button"
                 className="btn btn-secondary btn-lg"
@@ -700,14 +800,18 @@ export default function PedidoAvulso() {
                 type="button"
                 className="btn btn-primary btn-lg"
                 onClick={handleSubmit}
-                disabled={enviando || !etapaAtualCompleta}
+                disabled={enviando || !!pixPagamento || !etapaAtualCompleta}
                 id="btn-enviar-pedido"
               >
                 {enviando ? (
                   <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }}></span>
+                ) : pixPagamento ? (
+                  <>
+                    <FiClock size={18} /> Pix gerado
+                  </>
                 ) : (
                   <>
-                    <FiSend size={18} /> Enviar Pedido
+                    <FiSend size={18} /> Gerar Pix
                   </>
                 )}
               </button>

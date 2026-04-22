@@ -56,6 +56,7 @@ export const cardapioAPI = {
 // Pedidos Avulsos
 export const pedidoAvulsoAPI = {
   criar: (dados) => api.post('/pedidos-avulsos', dados),
+  statusPagamento: (id) => api.get(`/pedidos-avulsos/${id}/status-pagamento`),
   listar: (params) => api.get('/pedidos-avulsos', { params }),
   atualizarStatus: (id, dados) => api.put(`/pedidos-avulsos/${id}/status`, dados),
   imprimir: (id) => api.put(`/pedidos-avulsos/${id}/imprimir`)

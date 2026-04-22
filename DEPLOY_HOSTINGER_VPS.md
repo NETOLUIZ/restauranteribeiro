@@ -70,7 +70,8 @@ Preencher no `backend/.env`:
 - `PORT=3001`
 - `MERCADO_PAGO_ACCESS_TOKEN=<token real>`
 - `FRONTEND_URL=https://seudominio.com`
-- `MERCADO_PAGO_WEBHOOK_URL=https://seudominio.com/api/pedidos-avulsos/webhook`
+- `MERCADO_PAGO_WEBHOOK_URL=https://seudominio.com/api/webhook/mercadopago`
+- `MERCADO_PAGO_PAYER_EMAIL=comprador@seudominio.com`
 - `PEDIDO_AVULSO_VALOR_UNITARIO=24.9`
 
 Frontend:

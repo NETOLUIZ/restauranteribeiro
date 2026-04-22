@@ -2,7 +2,7 @@
 const {
   mercadoPagoConfigurado,
   obterStatusMercadoPago,
-  criarCheckoutPedidoAvulso,
+  criarPagamentoPixPedidoAvulso,
   consultarPagamento
 } = require('../services/mercadoPagoService');
 
@@ -12,7 +12,7 @@ function obterWebhookUrl(req) {
   if (process.env.MERCADO_PAGO_WEBHOOK_URL) {
     return process.env.MERCADO_PAGO_WEBHOOK_URL;
   }
-  return `${req.protocol}://${req.get('host')}/api/pedidos-avulsos/webhook`;
+  return `${req.protocol}://${req.get('host')}/api/webhook/mercadopago`;
 }
 
 function extrairPedidoIdDaReferencia(externalReference) {
@@ -43,14 +43,25 @@ async function criar(req, res) {
       return res.status(400).json({ erro: 'Dados obrigatorios nao informados' });
     }
 
+    if (formaPagamento !== 'PIX') {
+      return res.status(400).json({ erro: 'Pedidos avulsos aceitam somente pagamento via Pix' });
+    }
+
     const quantidadeFinal = Math.max(1, parseInt(quantidade, 10) || 1);
     const valorPadrao = Number(process.env.PEDIDO_AVULSO_VALOR_UNITARIO || 0);
-    const valorUnitarioFinal = Number(valorUnitario) > 0 ? Number(valorUnitario) : valorPadrao;
+    const valorRecebido = Number(valorUnitario);
+    const valorUnitarioFinal = Number.isFinite(valorRecebido) && valorRecebido > 0 ? valorRecebido : valorPadrao;
     const valorTotal = Number((valorUnitarioFinal * quantidadeFinal).toFixed(2));
 
-    if (formaPagamento !== 'DINHEIRO' && valorUnitarioFinal <= 0) {
+    if (!Number.isFinite(valorUnitarioFinal) || valorUnitarioFinal <= 0) {
       return res.status(400).json({
-        erro: 'Defina PEDIDO_AVULSO_VALOR_UNITARIO maior que zero para pagamentos online'
+        erro: 'Defina PEDIDO_AVULSO_VALOR_UNITARIO maior que zero para gerar o Pix'
+      });
+    }
+
+    if (!mercadoPagoConfigurado()) {
+      return res.status(503).json({
+        erro: 'Pagamento Pix indisponivel no momento. Configure o Mercado Pago.'
       });
     }
 
@@ -69,46 +80,44 @@ async function criar(req, res) {
       }
     });
 
-    // Pagamento online (PIX/Credito/Debito) via checkout Mercado Pago
-    if (formaPagamento !== 'DINHEIRO') {
-      if (!mercadoPagoConfigurado()) {
-        await prisma.pedidoAvulso.delete({ where: { id: pedido.id } });
-        return res.status(503).json({
-          erro: 'Pagamento online indisponivel no momento. Configure o Mercado Pago.'
-        });
-      }
+    try {
+      // Pedido avulso usa somente Pix direto; nao ha checkout com cartao/boleto.
+      const pagamentoPix = await criarPagamentoPixPedidoAvulso({
+        pedidoId: pedido.id,
+        nomeCliente,
+        telefone,
+        endereco,
+        itens,
+        quantidade: quantidadeFinal,
+        valorUnitario: valorUnitarioFinal,
+        webhookUrl: obterWebhookUrl(req)
+      });
 
-      try {
-        const checkout = await criarCheckoutPedidoAvulso({
-          pedidoId: pedido.id,
-          nomeCliente,
-          itens,
-          quantidade: quantidadeFinal,
-          valorUnitario: valorUnitarioFinal,
-          webhookUrl: obterWebhookUrl(req)
-        });
+      const pedidoAtualizado = await prisma.pedidoAvulso.update({
+        where: { id: pedido.id },
+        data: {
+          mercadoPagoId: pagamentoPix.pagamentoId,
+          referenciaExterna: `PEDIDO_AVULSO_${pedido.id}`
+        }
+      });
 
-        const pedidoAtualizado = await prisma.pedidoAvulso.update({
-          where: { id: pedido.id },
-          data: {
-            mercadoPagoPreferenceId: checkout.preferenceId,
-            referenciaExterna: `PEDIDO_AVULSO_${pedido.id}`
-          }
-        });
-
-        return res.status(201).json({
-          ...pedidoAtualizado,
-          checkoutUrl: checkout.checkoutUrl,
-          requiresPayment: true
-        });
-      } catch (errorMercadoPago) {
-        await prisma.pedidoAvulso.delete({ where: { id: pedido.id } });
-        console.error('Erro ao criar checkout no Mercado Pago:', errorMercadoPago);
-        return res.status(502).json({ erro: 'Nao foi possivel iniciar o pagamento no Mercado Pago' });
-      }
+      return res.status(201).json({
+        ...pedidoAtualizado,
+        requiresPayment: true,
+        pagamentoPix,
+        pagamentoId: pagamentoPix.pagamentoId,
+        status: pagamentoPix.status,
+        qrCode: pagamentoPix.qrCode,
+        qrCodeBase64: pagamentoPix.qrCodeBase64,
+        copiaecola: pagamentoPix.copiaecola,
+        valor: pagamentoPix.valor,
+        pedidoId: pagamentoPix.pedidoId
+      });
+    } catch (errorMercadoPago) {
+      await prisma.pedidoAvulso.delete({ where: { id: pedido.id } });
+      console.error('Erro ao criar Pix no Mercado Pago:', errorMercadoPago);
+      return res.status(502).json({ erro: 'Nao foi possivel gerar o Pix no Mercado Pago' });
     }
-
-    res.status(201).json({ ...pedido, requiresPayment: false });
   } catch (err) {
     console.error('Erro ao criar pedido avulso:', err);
     res.status(500).json({ erro: 'Erro interno do servidor' });
@@ -202,6 +211,35 @@ async function marcarImpresso(req, res) {
   }
 }
 
+async function statusPagamentoPublico(req, res) {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!id) {
+      return res.status(400).json({ erro: 'Pedido invalido' });
+    }
+
+    const pedido = await prisma.pedidoAvulso.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        statusPagamento: true,
+        mercadoPagoId: true,
+        pagoEm: true,
+        updatedAt: true
+      }
+    });
+
+    if (!pedido) {
+      return res.status(404).json({ erro: 'Pedido nao encontrado' });
+    }
+
+    res.json(pedido);
+  } catch (err) {
+    console.error('Erro ao consultar status do pedido:', err);
+    res.status(500).json({ erro: 'Erro interno do servidor' });
+  }
+}
+
 // Webhook do Mercado Pago
 async function webhookMercadoPago(req, res) {
   try {
@@ -264,9 +302,17 @@ async function webhookMercadoPago(req, res) {
     res.sendStatus(200);
   } catch (err) {
     console.error('Erro no webhook:', err);
-    res.sendStatus(500);
+    res.sendStatus(200);
   }
 }
 
-module.exports = { criar, listarTodos, atualizarStatus, marcarImpresso, webhookMercadoPago, statusMercadoPago };
+module.exports = {
+  criar,
+  listarTodos,
+  atualizarStatus,
+  marcarImpresso,
+  statusPagamentoPublico,
+  webhookMercadoPago,
+  statusMercadoPago
+};
 

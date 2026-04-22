@@ -1,4 +1,4 @@
-const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
+const { MercadoPagoConfig, Payment } = require('mercadopago');
 
 let cachedToken = null;
 let cachedClient = null;
@@ -48,62 +48,118 @@ function isHttpsPublico(url) {
   return /^https:\/\/[^/\s]+/i.test(String(url || ''));
 }
 
-async function criarCheckoutPedidoAvulso({ pedidoId, nomeCliente, itens, quantidade, valorUnitario, webhookUrl }) {
-  const client = getClient();
-  if (!client) {
-    throw new Error('Mercado Pago não configurado');
-  }
-
-  const itensTexto = Array.isArray(itens) && itens.length
+function montarItensTexto(itens) {
+  return Array.isArray(itens) && itens.length
     ? itens.map((item) => item.nome).join(', ')
     : 'Pedido avulso';
+}
 
-  const preference = new Preference(client);
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+function obterEmailPayer(pedidoId) {
+  const emailConfigurado = String(process.env.MERCADO_PAGO_PAYER_EMAIL || '').trim();
+  return emailConfigurado || `pedido-${pedidoId}@ribeirorestaurante.com`;
+}
+
+function montarTelefonePayer(telefone) {
+  const digitos = String(telefone || '').replace(/\D/g, '');
+  if (digitos.length < 10) return undefined;
+
+  return {
+    area_code: digitos.slice(0, 2),
+    number: digitos.slice(2)
+  };
+}
+
+async function criarPagamentoPixPedidoAvulso({
+  pedidoId,
+  nomeCliente,
+  telefone,
+  endereco,
+  itens,
+  quantidade,
+  valorUnitario,
+  webhookUrl
+}) {
+  const client = getClient();
+  if (!client) {
+    throw new Error('Mercado Pago nao configurado');
+  }
+
+  const itensTexto = montarItensTexto(itens);
+  const quantidadeFinal = Math.max(1, Number(quantidade) || 1);
+  const valorUnitarioFinal = Number(valorUnitario);
+  if (!Number.isFinite(valorUnitarioFinal) || valorUnitarioFinal <= 0) {
+    throw new Error('Valor unitario invalido para Pix');
+  }
+
+  const valorTotal = Number((valorUnitarioFinal * quantidadeFinal).toFixed(2));
+  const payment = new Payment(client);
+  const telefonePayer = montarTelefonePayer(telefone);
+
   const body = {
-    items: [
-      {
-        id: `pedido-${pedidoId}`,
-        title: `Pedido Avulso #${pedidoId}`,
-        description: itensTexto,
-        quantity: quantidade,
-        currency_id: 'BRL',
-        unit_price: valorUnitario
-      }
-    ],
+    transaction_amount: valorTotal,
+    description: `Pedido Avulso #${pedidoId} - ${itensTexto}`,
+    // Pix direto: sem Checkout Pro e sem boleto/cartoes no fluxo de pagamento.
+    payment_method_id: 'pix',
     external_reference: `PEDIDO_AVULSO_${pedidoId}`,
-    back_urls: {
-      success: `${frontendUrl}/pedido?status=success&pedidoId=${pedidoId}`,
-      failure: `${frontendUrl}/pedido?status=failure&pedidoId=${pedidoId}`,
-      pending: `${frontendUrl}/pedido?status=pending&pedidoId=${pedidoId}`
-    },
     payer: {
-      name: nomeCliente || 'Cliente'
+      email: obterEmailPayer(pedidoId),
+      first_name: nomeCliente || 'Cliente',
+      ...(telefonePayer ? { phone: telefonePayer } : {})
+    },
+    additional_info: {
+      items: [
+        {
+          id: `pedido-${pedidoId}`,
+          title: `Pedido Avulso #${pedidoId}`,
+          description: itensTexto,
+          quantity: quantidadeFinal,
+          unit_price: valorUnitarioFinal
+        }
+      ],
+      payer: {
+        first_name: nomeCliente || 'Cliente',
+        ...(telefonePayer ? { phone: telefonePayer } : {})
+      },
+      ...(endereco
+        ? {
+            shipments: {
+              receiver_address: {
+                street_name: endereco
+              }
+            }
+          }
+        : {})
     }
   };
-
-  if (isHttpsPublico(frontendUrl)) {
-    body.auto_return = 'approved';
-  }
 
   if (isHttpsPublico(webhookUrl)) {
     body.notification_url = webhookUrl;
   }
 
-  const resposta = await preference.create({ body });
+  const resposta = await payment.create({
+    body,
+    requestOptions: {
+      idempotencyKey: `pedido-avulso-pix-${pedidoId}`
+    }
+  });
+
+  const dadosPix = resposta.point_of_interaction?.transaction_data || {};
 
   return {
-    preferenceId: resposta.id,
-    checkoutUrl: cachedToken?.startsWith('TEST-')
-      ? resposta.sandbox_init_point || resposta.init_point
-      : resposta.init_point || resposta.sandbox_init_point
+    pagamentoId: String(resposta.id),
+    status: resposta.status,
+    qrCode: dadosPix.qr_code || null,
+    qrCodeBase64: dadosPix.qr_code_base64 || null,
+    copiaecola: dadosPix.qr_code || null,
+    valor: resposta.transaction_amount,
+    pedidoId
   };
 }
 
 async function consultarPagamento(paymentId) {
   const client = getClient();
   if (!client) {
-    throw new Error('Mercado Pago não configurado');
+    throw new Error('Mercado Pago nao configurado');
   }
 
   const payment = new Payment(client);
@@ -120,6 +176,6 @@ async function consultarPagamento(paymentId) {
 module.exports = {
   mercadoPagoConfigurado,
   obterStatusMercadoPago,
-  criarCheckoutPedidoAvulso,
+  criarPagamentoPixPedidoAvulso,
   consultarPagamento
 };

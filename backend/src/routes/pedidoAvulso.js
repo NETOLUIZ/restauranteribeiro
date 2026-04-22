@@ -5,6 +5,7 @@ const {
   listarTodos,
   atualizarStatus,
   marcarImpresso,
+  statusPagamentoPublico,
   webhookMercadoPago,
   statusMercadoPago
 } = require('../controllers/pedidoAvulsoController');
@@ -12,6 +13,7 @@ const { autenticar, apenasAdmin } = require('../middleware/auth');
 
 // Publico
 router.get('/mercado-pago/status', statusMercadoPago);
+router.get('/:id/status-pagamento', statusPagamentoPublico);
 router.post('/', criar);
 router.post('/webhook', webhookMercadoPago);
 
