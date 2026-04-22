@@ -55,16 +55,29 @@ model Usuario {
 }
 
 model Empresa {
-  id            Int             @id @default(autoincrement())
-  nome          String
-  sigla         String?         @unique
-  senha         String?
-  totalPedidos  Int
-  funcionarios  Usuario[]
-  pedidos       PedidoEmpresa[]
-  ativo         Boolean         @default(true)
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  id                 Int                  @id @default(autoincrement())
+  nome               String
+  sigla              String?              @unique
+  senha              String?
+  totalPedidos       Int
+  funcionarios       Usuario[]
+  funcionariosSalvos EmpresaFuncionario[]
+  pedidos            PedidoEmpresa[]
+  ativo              Boolean              @default(true)
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+}
+
+model EmpresaFuncionario {
+  id        Int      @id @default(autoincrement())
+  empresaId Int
+  empresa   Empresa  @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  nome      String
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([empresaId, nome])
 }
 
 model ItemCardapio {

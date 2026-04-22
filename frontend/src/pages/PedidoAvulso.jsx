@@ -65,6 +65,31 @@ function extrairSelecaoMarmita(locationObj, listaMarmitas = []) {
   return { tamanho, titulo, valorUnitario };
 }
 
+function criarDadosEntregaVazios() {
+  return {
+    nomeCliente: '',
+    telefone: '',
+    rua: '',
+    numero: '',
+    bairro: '',
+    complemento: '',
+    observacao: ''
+  };
+}
+
+function normalizarCampo(valor = '') {
+  return String(valor).trim().replace(/\s+/g, ' ');
+}
+
+function montarEnderecoEntrega(dados) {
+  const rua = normalizarCampo(dados.rua);
+  const numero = normalizarCampo(dados.numero);
+  const bairro = normalizarCampo(dados.bairro);
+  const complemento = normalizarCampo(dados.complemento);
+
+  return `${rua}, ${numero} - ${bairro}${complemento ? ` - Compl.: ${complemento}` : ''}`;
+}
+
 export default function PedidoAvulso() {
   const location = useLocation();
 
@@ -74,7 +99,7 @@ export default function PedidoAvulso() {
   const [quantidade, setQuantidade] = useState(1);
   const [marmitaSelecionada, setMarmitaSelecionada] = useState(() => extrairSelecaoMarmita(location));
   const [formaPagamento, setFormaPagamento] = useState('');
-  const [dados, setDados] = useState({ nomeCliente: '', telefone: '', endereco: '', observacao: '' });
+  const [dados, setDados] = useState(() => criarDadosEntregaVazios());
   const [enviando, setEnviando] = useState(false);
   const [mensagem, setMensagem] = useState(() => extrairMensagemCheckout(location.search));
   const [etapaAtual, setEtapaAtual] = useState(1);
@@ -153,8 +178,12 @@ export default function PedidoAvulso() {
 
     setEnviando(true);
     try {
+      const enderecoEntrega = montarEnderecoEntrega(dados);
       const { data } = await pedidoAvulsoAPI.criar({
-        ...dados,
+        nomeCliente: normalizarCampo(dados.nomeCliente),
+        telefone: normalizarCampo(dados.telefone),
+        endereco: enderecoEntrega,
+        observacao: normalizarCampo(dados.observacao),
         itens: itensSelecionados.map(i => ({ id: i.id, nome: i.nome, tipo: i.tipo })),
         quantidade,
         formaPagamento,
@@ -165,19 +194,19 @@ export default function PedidoAvulso() {
         window.open(data.checkoutUrl, '_blank', 'noopener,noreferrer');
         setMensagem({
           tipo: 'success',
-          texto: 'Pedido criado. Finalize o pagamento na nova aba do Mercado Pago.'
+          texto: 'Pedido enviado com sucesso! Finalize o pagamento na nova aba do Mercado Pago.'
         });
       } else {
         setMensagem({
           tipo: 'success',
-          texto: 'Pedido enviado! Tenha o valor em maos para o entregador.'
+          texto: 'Pedido enviado com sucesso! Aguarde a confirmacao do restaurante.'
         });
       }
 
       setItensSelecionados([]);
       setQuantidade(1);
       setFormaPagamento('');
-      setDados({ nomeCliente: '', telefone: '', endereco: '', observacao: '' });
+      setDados(criarDadosEntregaVazios());
       setEtapaAtual(1);
     } catch (err) {
       setMensagem({ tipo: 'error', texto: err.response?.data?.erro || 'Erro ao enviar pedido' });
@@ -250,7 +279,12 @@ export default function PedidoAvulso() {
     itensSelecionados.length > 0 &&
     (marmitaSelecionada.tamanho !== 'PEQUENA' || totalProteinasSelecionadas === 1) &&
     (marmitaSelecionada.tamanho !== 'GRANDE' || totalProteinasSelecionadas <= 2);
-  const dadosEntregaValidos = !!dados.nomeCliente.trim() && !!dados.telefone.trim() && !!dados.endereco.trim();
+  const dadosEntregaValidos =
+    !!normalizarCampo(dados.nomeCliente) &&
+    !!normalizarCampo(dados.telefone) &&
+    !!normalizarCampo(dados.rua) &&
+    !!normalizarCampo(dados.numero) &&
+    !!normalizarCampo(dados.bairro);
   const pagamentoValido = !!formaPagamento;
   const etapaAtualCompleta =
     etapaAtual === 1 ? etapaItensValida : etapaAtual === 2 ? dadosEntregaValidos : pagamentoValido;
@@ -303,7 +337,7 @@ export default function PedidoAvulso() {
 
     if (etapa === 2) {
       if (!dadosEntregaValidos) {
-        if (mostrarErro) setMensagem({ tipo: 'error', texto: 'Preencha nome, telefone e endereco.' });
+        if (mostrarErro) setMensagem({ tipo: 'error', texto: 'Preencha nome, telefone, rua, numero e bairro.' });
         return false;
       }
       return true;
@@ -460,6 +494,7 @@ export default function PedidoAvulso() {
                         value={dados.nomeCliente}
                         onChange={e => setDados({ ...dados, nomeCliente: e.target.value })}
                         id="input-nome"
+                        required
                       />
                     </div>
                     <div className="form-group">
@@ -470,16 +505,50 @@ export default function PedidoAvulso() {
                         value={dados.telefone}
                         onChange={e => setDados({ ...dados, telefone: e.target.value })}
                         id="input-telefone"
+                        required
                       />
                     </div>
                     <div className="form-group full">
-                      <label className="form-label"><FiMapPin size={14} /> Endereco</label>
+                      <label className="form-label"><FiMapPin size={14} /> Rua</label>
                       <input
                         className="form-input"
-                        placeholder="Rua, numero, bairro"
-                        value={dados.endereco}
-                        onChange={e => setDados({ ...dados, endereco: e.target.value })}
-                        id="input-endereco"
+                        placeholder="Nome da rua"
+                        value={dados.rua}
+                        onChange={e => setDados({ ...dados, rua: e.target.value })}
+                        id="input-rua"
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Numero</label>
+                      <input
+                        className="form-input"
+                        placeholder="Ex: 123"
+                        value={dados.numero}
+                        onChange={e => setDados({ ...dados, numero: e.target.value })}
+                        id="input-numero"
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Bairro</label>
+                      <input
+                        className="form-input"
+                        placeholder="Seu bairro"
+                        value={dados.bairro}
+                        onChange={e => setDados({ ...dados, bairro: e.target.value })}
+                        id="input-bairro"
+                        required
+                      />
+                    </div>
+                    <div className="form-group full">
+                      <label className="form-label">Complemento (opcional)</label>
+                      <input
+                        className="form-input"
+                        placeholder="Apto, bloco, referencia..."
+                        value={dados.complemento}
+                        onChange={e => setDados({ ...dados, complemento: e.target.value })}
+                        id="input-complemento"
                       />
                     </div>
                     <div className="form-group full">

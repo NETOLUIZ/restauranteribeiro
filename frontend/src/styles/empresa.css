@@ -253,6 +253,52 @@
   color: var(--branco);
 }
 
+.funcionarios-salvos {
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid rgba(27, 122, 61, 0.16);
+  border-radius: var(--radius-sm);
+  background: var(--cinza-50);
+}
+
+.funcionarios-salvos-label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--cinza-700);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.funcionarios-salvos-lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.funcionario-salvo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 7px 10px;
+  border: 1px solid rgba(27, 122, 61, 0.22);
+  border-radius: var(--radius-full);
+  background: var(--branco);
+  color: var(--verde-escuro);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.funcionario-salvo-chip:hover,
+.funcionario-salvo-chip.ativo {
+  border-color: var(--verde-escuro);
+  background: var(--verde-escuro);
+  color: var(--branco);
+}
+
 .nomes-lista {
   display: flex;
   flex-wrap: wrap;

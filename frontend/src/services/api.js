@@ -76,6 +76,8 @@ export const empresaAPI = {
   listar: () => api.get('/empresas'),
   criar: (dados) => api.post('/empresas', dados),
   atualizar: (id, dados) => api.put(`/empresas/${id}`, dados),
+  listarFuncionariosMinhaEmpresa: () => api.get('/empresas/minha/funcionarios'),
+  salvarFuncionarioMinhaEmpresa: (dados) => api.post('/empresas/minha/funcionarios', dados),
   adicionarFuncionario: (id, dados) => api.post(`/empresas/${id}/funcionarios`, dados),
   removerFuncionario: (empresaId, funcId) => api.delete(`/empresas/${empresaId}/funcionarios/${funcId}`)
 };

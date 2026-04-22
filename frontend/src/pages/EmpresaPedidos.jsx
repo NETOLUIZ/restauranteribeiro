@@ -5,7 +5,7 @@ import { FaWhatsapp } from 'react-icons/fa';
 import Navbar from '../components/Navbar';
 import CheckboxVerde from '../components/CheckboxVerde';
 import { useAuth } from '../context/useAuth';
-import { cardapioAPI, pedidoEmpresaAPI } from '../services/api';
+import { cardapioAPI, empresaAPI, pedidoEmpresaAPI } from '../services/api';
 import '../styles/empresa.css';
 
 export default function EmpresaPedidos() {
@@ -19,9 +19,11 @@ export default function EmpresaPedidos() {
   const [enderecosSalvos, setEnderecosSalvos] = useState([]);
   const [nomeAtual, setNomeAtual] = useState('');
   const [nomes, setNomes] = useState([]);
+  const [funcionariosSalvos, setFuncionariosSalvos] = useState([]);
   const [lotes, setLotes] = useState([]);
   const [totalDiaInput, setTotalDiaInput] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const [salvandoNome, setSalvandoNome] = useState(false);
   const [mensagem, setMensagem] = useState(null);
   const [mostarInputNome, setMostrarInputNome] = useState(false);
 
@@ -41,7 +43,20 @@ export default function EmpresaPedidos() {
       return;
     }
 
-    cardapioAPI.listarAtivos().then(res => setCardapio(res.data)).catch(() => {});
+    let ativo = true;
+
+    Promise.allSettled([
+      cardapioAPI.listarAtivos(),
+      empresaAPI.listarFuncionariosMinhaEmpresa()
+    ]).then(([cardapioRes, funcionariosRes]) => {
+      if (!ativo) return;
+      if (cardapioRes.status === 'fulfilled') setCardapio(cardapioRes.value.data);
+      if (funcionariosRes.status === 'fulfilled') setFuncionariosSalvos(funcionariosRes.value.data || []);
+    }).catch(() => {});
+
+    return () => {
+      ativo = false;
+    };
   }, [usuario, navigate]);
 
   const toggleItem = (item) => {
@@ -52,11 +67,63 @@ export default function EmpresaPedidos() {
     );
   };
 
-  const adicionarNome = () => {
+  const normalizarNomeFuncionario = (valor = '') =>
+    valor.trim().replace(/\s+/g, ' ');
+
+  const nomeJaEstaNoLote = (nome) =>
+    nomes.some((item) => normalizarNomeFuncionario(item).toLowerCase() === nome.toLowerCase());
+
+  const adicionarNomeAoLote = (valor, mostrarErro = true) => {
+    const nome = normalizarNomeFuncionario(valor);
     const quantidadeAtual = Math.max(1, parseInt(quantidadeLote, 10) || 1);
-    if (nomeAtual.trim() && nomes.length < quantidadeAtual) {
-      setNomes([...nomes, nomeAtual.trim()]);
+
+    if (!nome) return false;
+
+    if (nomeJaEstaNoLote(nome)) {
+      if (mostrarErro) setMensagem({ tipo: 'error', texto: 'Nome ja esta neste lote.' });
+      return false;
+    }
+
+    if (nomes.length >= quantidadeAtual) {
+      if (mostrarErro) setMensagem({ tipo: 'error', texto: 'Quantidade de nomes ja atingiu o limite do lote.' });
+      return false;
+    }
+
+    setNomes((anteriores) => [...anteriores, nome]);
+    return true;
+  };
+
+  const ordenarFuncionarios = (lista) =>
+    [...lista].sort((a, b) => normalizarNomeFuncionario(a.nome).localeCompare(normalizarNomeFuncionario(b.nome), 'pt-BR'));
+
+  const salvarNomeFuncionario = async () => {
+    const nome = normalizarNomeFuncionario(nomeAtual);
+    if (!nome) {
+      setMensagem({ tipo: 'error', texto: 'Informe o nome do funcionario.' });
+      return;
+    }
+
+    setSalvandoNome(true);
+    try {
+      const { data } = await empresaAPI.salvarFuncionarioMinhaEmpresa({ nome });
+      setFuncionariosSalvos((anteriores) => {
+        const semDuplicado = anteriores.filter(
+          (item) => normalizarNomeFuncionario(item.nome).toLowerCase() !== normalizarNomeFuncionario(data.nome).toLowerCase()
+        );
+        return ordenarFuncionarios([...semDuplicado, data]);
+      });
+      adicionarNomeAoLote(data.nome, false);
       setNomeAtual('');
+      setMensagem({ tipo: 'success', texto: 'Nome salvo para esta empresa.' });
+    } catch (err) {
+      setMensagem({ tipo: 'error', texto: err.response?.data?.erro || 'Erro ao salvar nome' });
+    }
+    setSalvandoNome(false);
+  };
+
+  const usarFuncionarioSalvo = (nome) => {
+    if (adicionarNomeAoLote(nome)) {
+      setMensagem({ tipo: 'success', texto: 'Nome adicionado ao lote.' });
     }
   };
 
@@ -314,15 +381,39 @@ export default function EmpresaPedidos() {
                         placeholder="Nome do funcionario"
                         value={nomeAtual}
                         onChange={e => setNomeAtual(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && adicionarNome()}
+                        onKeyDown={e => e.key === 'Enter' && salvarNomeFuncionario()}
                         id="input-nome-func"
                       />
-                      <button className="btn btn-primary btn-sm" onClick={adicionarNome} id="btn-salvar-nome">
-                        Salvar
+                      <button
+                        className="btn btn-primary btn-sm"
+                        onClick={salvarNomeFuncionario}
+                        disabled={salvandoNome}
+                        id="btn-salvar-nome"
+                      >
+                        {salvandoNome ? 'Salvando...' : 'Salvar Nome'}
                       </button>
                       <button className="btn btn-sm" onClick={() => setMostrarInputNome(false)} style={{ color: 'var(--cinza-500)' }}>
                         <FiX />
                       </button>
+                    </div>
+                  )}
+
+                  {funcionariosSalvos.length > 0 && (
+                    <div className="funcionarios-salvos" id="funcionarios-salvos-empresa">
+                      <span className="funcionarios-salvos-label">Funcionarios salvos da empresa:</span>
+                      <div className="funcionarios-salvos-lista">
+                        {funcionariosSalvos.map((funcionario) => (
+                          <button
+                            key={funcionario.id}
+                            type="button"
+                            className={`funcionario-salvo-chip${nomeJaEstaNoLote(normalizarNomeFuncionario(funcionario.nome)) ? ' ativo' : ''}`}
+                            onClick={() => usarFuncionarioSalvo(funcionario.nome)}
+                            title={`Adicionar ${funcionario.nome} ao lote`}
+                          >
+                            <FiUser size={12} /> {funcionario.nome}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
 

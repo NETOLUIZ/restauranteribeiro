@@ -1,6 +1,7 @@
 ﻿const { PrismaClient } = require('@prisma/client');
 const {
   mercadoPagoConfigurado,
+  obterStatusMercadoPago,
   criarCheckoutPedidoAvulso,
   consultarPagamento
 } = require('../services/mercadoPagoService');
@@ -18,6 +19,10 @@ function extrairPedidoIdDaReferencia(externalReference) {
   if (!externalReference) return null;
   const match = String(externalReference).match(/PEDIDO_AVULSO_(\d+)/);
   return match ? parseInt(match[1], 10) : null;
+}
+
+function statusMercadoPago(req, res) {
+  res.json(obterStatusMercadoPago());
 }
 
 // Criar pedido avulso
@@ -263,5 +268,5 @@ async function webhookMercadoPago(req, res) {
   }
 }
 
-module.exports = { criar, listarTodos, atualizarStatus, marcarImpresso, webhookMercadoPago };
+module.exports = { criar, listarTodos, atualizarStatus, marcarImpresso, webhookMercadoPago, statusMercadoPago };
 

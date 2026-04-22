@@ -1,9 +1,17 @@
 const express = require('express');
 const router = express.Router();
-const { criar, listarTodos, atualizarStatus, marcarImpresso, webhookMercadoPago } = require('../controllers/pedidoAvulsoController');
+const {
+  criar,
+  listarTodos,
+  atualizarStatus,
+  marcarImpresso,
+  webhookMercadoPago,
+  statusMercadoPago
+} = require('../controllers/pedidoAvulsoController');
 const { autenticar, apenasAdmin } = require('../middleware/auth');
 
-// Público
+// Publico
+router.get('/mercado-pago/status', statusMercadoPago);
 router.post('/', criar);
 router.post('/webhook', webhookMercadoPago);
 

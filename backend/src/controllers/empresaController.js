@@ -14,6 +14,21 @@ function mapEmpresaPublic(empresa) {
   };
 }
 
+function getEmpresaIdDoUsuario(req) {
+  const empresaId = Number(req.usuario?.empresaId);
+  return Number.isInteger(empresaId) && empresaId > 0 ? empresaId : null;
+}
+
+function mapFuncionarioEmpresa(funcionario) {
+  return {
+    id: funcionario.id,
+    nome: funcionario.nome,
+    ativo: funcionario.ativo,
+    createdAt: funcionario.createdAt,
+    updatedAt: funcionario.updatedAt
+  };
+}
+
 // Listar empresas
 async function listar(req, res) {
   try {
@@ -152,4 +167,75 @@ async function removerFuncionario(req, res) {
   }
 }
 
-module.exports = { listar, criar, atualizar, adicionarFuncionario, removerFuncionario };
+async function listarFuncionariosMinhaEmpresa(req, res) {
+  try {
+    const empresaId = getEmpresaIdDoUsuario(req);
+
+    if (req.usuario.role !== 'EMPRESA_FUNC' || !empresaId) {
+      return res.status(403).json({ erro: 'Acesso restrito a empresa' });
+    }
+
+    const funcionarios = await prisma.empresaFuncionario.findMany({
+      where: { empresaId, ativo: true },
+      orderBy: { nome: 'asc' }
+    });
+
+    res.json(funcionarios.map(mapFuncionarioEmpresa));
+  } catch (err) {
+    console.error('Erro ao listar nomes da empresa:', err);
+    res.status(500).json({ erro: 'Erro interno do servidor' });
+  }
+}
+
+async function salvarFuncionarioMinhaEmpresa(req, res) {
+  try {
+    const empresaId = getEmpresaIdDoUsuario(req);
+
+    if (req.usuario.role !== 'EMPRESA_FUNC' || !empresaId) {
+      return res.status(403).json({ erro: 'Acesso restrito a empresa' });
+    }
+
+    const nome = String(req.body.nome || '').trim().replace(/\s+/g, ' ');
+
+    if (!nome) {
+      return res.status(400).json({ erro: 'Informe o nome do funcionario' });
+    }
+
+    const existente = await prisma.empresaFuncionario.findFirst({
+      where: {
+        empresaId,
+        nome: { equals: nome, mode: 'insensitive' }
+      }
+    });
+
+    if (existente) {
+      const funcionario = existente.ativo
+        ? existente
+        : await prisma.empresaFuncionario.update({
+            where: { id: existente.id },
+            data: { nome, ativo: true }
+          });
+
+      return res.json(mapFuncionarioEmpresa(funcionario));
+    }
+
+    const funcionario = await prisma.empresaFuncionario.create({
+      data: { empresaId, nome }
+    });
+
+    res.status(201).json(mapFuncionarioEmpresa(funcionario));
+  } catch (err) {
+    console.error('Erro ao salvar nome da empresa:', err);
+    res.status(500).json({ erro: 'Erro interno do servidor' });
+  }
+}
+
+module.exports = {
+  listar,
+  criar,
+  atualizar,
+  adicionarFuncionario,
+  removerFuncionario,
+  listarFuncionariosMinhaEmpresa,
+  salvarFuncionarioMinhaEmpresa
+};

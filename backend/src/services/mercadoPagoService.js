@@ -3,9 +3,24 @@ const { MercadoPagoConfig, Preference, Payment } = require('mercadopago');
 let cachedToken = null;
 let cachedClient = null;
 
+function getAccessToken() {
+  const accessToken = String(process.env.MERCADO_PAGO_ACCESS_TOKEN || '').trim();
+  const placeholders = new Set([
+    'SEU_TOKEN_MERCADO_PAGO',
+    'SEU_ACCESS_TOKEN_MERCADO_PAGO',
+    '<token real>'
+  ]);
+
+  if (!accessToken || placeholders.has(accessToken)) {
+    return null;
+  }
+
+  return accessToken;
+}
+
 function getClient() {
-  const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
-  if (!accessToken || accessToken === 'SEU_TOKEN_MERCADO_PAGO') {
+  const accessToken = getAccessToken();
+  if (!accessToken) {
     return null;
   }
 
@@ -21,6 +36,18 @@ function mercadoPagoConfigurado() {
   return !!getClient();
 }
 
+function obterStatusMercadoPago() {
+  const accessToken = getAccessToken();
+  return {
+    configurado: !!accessToken,
+    ambiente: accessToken?.startsWith('TEST-') ? 'teste' : accessToken?.startsWith('APP_USR-') ? 'producao' : 'desconhecido'
+  };
+}
+
+function isHttpsPublico(url) {
+  return /^https:\/\/[^/\s]+/i.test(String(url || ''));
+}
+
 async function criarCheckoutPedidoAvulso({ pedidoId, nomeCliente, itens, quantidade, valorUnitario, webhookUrl }) {
   const client = getClient();
   if (!client) {
@@ -32,6 +59,7 @@ async function criarCheckoutPedidoAvulso({ pedidoId, nomeCliente, itens, quantid
     : 'Pedido avulso';
 
   const preference = new Preference(client);
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
   const body = {
     items: [
       {
@@ -44,23 +72,31 @@ async function criarCheckoutPedidoAvulso({ pedidoId, nomeCliente, itens, quantid
       }
     ],
     external_reference: `PEDIDO_AVULSO_${pedidoId}`,
-    notification_url: webhookUrl,
     back_urls: {
-      success: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/pedido?status=success&pedidoId=${pedidoId}`,
-      failure: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/pedido?status=failure&pedidoId=${pedidoId}`,
-      pending: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/pedido?status=pending&pedidoId=${pedidoId}`
+      success: `${frontendUrl}/pedido?status=success&pedidoId=${pedidoId}`,
+      failure: `${frontendUrl}/pedido?status=failure&pedidoId=${pedidoId}`,
+      pending: `${frontendUrl}/pedido?status=pending&pedidoId=${pedidoId}`
     },
-    auto_return: 'approved',
     payer: {
       name: nomeCliente || 'Cliente'
     }
   };
 
+  if (isHttpsPublico(frontendUrl)) {
+    body.auto_return = 'approved';
+  }
+
+  if (isHttpsPublico(webhookUrl)) {
+    body.notification_url = webhookUrl;
+  }
+
   const resposta = await preference.create({ body });
 
   return {
     preferenceId: resposta.id,
-    checkoutUrl: resposta.init_point || resposta.sandbox_init_point
+    checkoutUrl: cachedToken?.startsWith('TEST-')
+      ? resposta.sandbox_init_point || resposta.init_point
+      : resposta.init_point || resposta.sandbox_init_point
   };
 }
 
@@ -83,6 +119,7 @@ async function consultarPagamento(paymentId) {
 
 module.exports = {
   mercadoPagoConfigurado,
+  obterStatusMercadoPago,
   criarCheckoutPedidoAvulso,
   consultarPagamento
 };
