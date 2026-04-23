@@ -44,6 +44,12 @@ const gerarHtmlComandas = (comandas) => {
             </ul>
           </section>
 
+          ${comanda.observacao ? `
+            <section class="info-extra">
+              <p class="info-obs"><strong>Obs:</strong> ${escapeHtml(comanda.observacao)}</p>
+            </section>
+          ` : ''}
+
           <footer class="comanda-rodape">
             <hr class="linha-divisoria" />
             <div class="data-hora">${escapeHtml(new Date().toLocaleString('pt-BR'))}</div>
@@ -126,6 +132,7 @@ export default function PedidosEmpresas() {
           itens: lote.itens,
           endereco: lote.endereco,
           nome: lote.nomes?.[i] || null,
+          observacao: pedido.observacao || null,
           numero: comandas.length + 1
         });
       }
@@ -230,6 +237,9 @@ export default function PedidosEmpresas() {
             </div>
 
             <div className="pedido-admin-card-body">
+              {pedido.observacao && (
+                <p style={{ marginBottom: '10px' }}><strong>Observacao:</strong> {pedido.observacao}</p>
+              )}
               {pedido.lotes.map((lote, i) => (
                 <div key={lote.id} style={{ padding: '10px', margin: '8px 0', background: 'var(--cinza-50)', borderRadius: '8px' }}>
                   <p><strong>Lote {i + 1}:</strong> {lote.quantidade}x para {lote.endereco}</p>

@@ -118,6 +118,7 @@ model PedidoEmpresa {
   empresaId Int
   empresa   Empresa             @relation(fields: [empresaId], references: [id])
   lotes     LotePedido[]
+  observacao String?
   status    StatusPedidoEmpresa @default(ENVIADO)
   impresso  Boolean             @default(false)
   createdAt DateTime            @default(now())

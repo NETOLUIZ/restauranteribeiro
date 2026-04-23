@@ -207,6 +207,30 @@
   flex: 1;
 }
 
+.observacao-pedido-box {
+  margin-top: 16px;
+}
+
+.observacao-pedido-input {
+  min-height: 92px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.pedido-observacao-resumo {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--verde-bg);
+  color: var(--verde-escuro);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.pedido-observacao-resumo strong {
+  font-weight: 800;
+}
+
 .enderecos-salvos {
   margin-top: 10px;
   padding: 10px;
@@ -338,64 +362,21 @@
   gap: 20px;
 }
 
-.sidebar-cardapio {
-  background: var(--branco);
-  border-radius: var(--radius-md);
-  padding: 20px;
-  box-shadow: var(--sombra-sm);
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.sidebar-cardapio h4 {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--verde-escuro);
-  margin-bottom: 12px;
-  position: sticky;
-  top: 0;
-  background: var(--branco);
-  padding-bottom: 8px;
-}
-
-.sidebar-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 0;
-  font-size: 0.85rem;
-  color: var(--cinza-700);
-  border-bottom: 1px solid var(--cinza-100);
-}
-
-.sidebar-item:last-child {
-  border-bottom: none;
-}
-
-.sidebar-item .tipo-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  min-width: 8px;
-}
-
-.sidebar-item .tipo-dot.proteina {
-  background: #FF9800;
-}
-
-.sidebar-item .tipo-dot.complemento {
-  background: var(--verde-accent);
-}
-
 /* ===== LOTES ADICIONADOS ===== */
 .lotes-lista {
   background: var(--branco);
   border-radius: var(--radius-md);
   padding: 20px;
   box-shadow: var(--sombra-sm);
+}
+
+.lotes-lista-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
 }
 
 .lotes-lista h4 {
@@ -405,7 +386,7 @@
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--preto);
-  margin-bottom: 12px;
+  margin-bottom: 0;
 }
 
 .lote-card {
@@ -486,6 +467,15 @@
   }
   
   .empresa-counter {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .lotes-lista-header {
+    align-items: stretch;
+  }
+
+  .lotes-lista-header .btn {
     width: 100%;
     justify-content: center;
   }

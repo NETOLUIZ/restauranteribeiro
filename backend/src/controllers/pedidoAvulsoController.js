@@ -43,8 +43,8 @@ async function criar(req, res) {
       return res.status(400).json({ erro: 'Dados obrigatorios nao informados' });
     }
 
-    if (formaPagamento !== 'PIX') {
-      return res.status(400).json({ erro: 'Pedidos avulsos aceitam somente pagamento via Pix' });
+    if (!['PIX', 'DINHEIRO'].includes(formaPagamento)) {
+      return res.status(400).json({ erro: 'Forma de pagamento invalida para pedido avulso' });
     }
 
     const quantidadeFinal = Math.max(1, parseInt(quantidade, 10) || 1);
@@ -55,11 +55,11 @@ async function criar(req, res) {
 
     if (!Number.isFinite(valorUnitarioFinal) || valorUnitarioFinal <= 0) {
       return res.status(400).json({
-        erro: 'Defina PEDIDO_AVULSO_VALOR_UNITARIO maior que zero para gerar o Pix'
+        erro: 'Defina PEDIDO_AVULSO_VALOR_UNITARIO maior que zero para criar o pedido'
       });
     }
 
-    if (!mercadoPagoConfigurado()) {
+    if (formaPagamento === 'PIX' && !mercadoPagoConfigurado()) {
       return res.status(503).json({
         erro: 'Pagamento Pix indisponivel no momento. Configure o Mercado Pago.'
       });
@@ -79,6 +79,14 @@ async function criar(req, res) {
         statusPagamento: 'PENDENTE'
       }
     });
+
+    if (formaPagamento === 'DINHEIRO') {
+      return res.status(201).json({
+        ...pedido,
+        requiresPayment: false,
+        pedidoId: pedido.id
+      });
+    }
 
     try {
       // Pedido avulso usa somente Pix direto; nao ha checkout com cartao/boleto.

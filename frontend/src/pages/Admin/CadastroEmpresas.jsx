@@ -24,6 +24,7 @@ export default function CadastroEmpresas() {
   const [mensagemPedido, setMensagemPedido] = useState(null);
   const [itensSelecionados, setItensSelecionados] = useState([]);
   const [salvandoPedido, setSalvandoPedido] = useState(false);
+  const [observacaoPedido, setObservacaoPedido] = useState('');
 
   async function carregar() {
     try {
@@ -109,6 +110,7 @@ export default function CadastroEmpresas() {
     setMostrarInputNome(false);
     setMensagemPedido(null);
     setItensSelecionados([]);
+    setObservacaoPedido('');
   };
 
   const totalNosLotes = lotesPedido.reduce((soma, lote) => soma + lote.quantidade, 0);
@@ -207,7 +209,8 @@ export default function CadastroEmpresas() {
     const payload = {
       empresaId: modalPedidoEmpresa.id,
       lotes: lotesPedido,
-      totalPedidosDia: totalDoDia
+      totalPedidosDia: totalDoDia,
+      observacao: observacaoPedido.trim().replace(/\s+/g, ' ')
     };
 
     setSalvandoPedido(true);
@@ -538,6 +541,19 @@ export default function CadastroEmpresas() {
                         <FiPlus size={16} /> Adicionar Lote
                       </button>
                     </div>
+
+                    <div className="form-group" style={{ marginTop: '14px' }}>
+                      <label className="form-label">Observacao do Pedido</label>
+                      <textarea
+                        className="form-input"
+                        rows={3}
+                        placeholder="Ex: entregar na portaria, ligar ao chegar, sem cebola..."
+                        value={observacaoPedido}
+                        onChange={(e) => setObservacaoPedido(e.target.value)}
+                        id="input-observacao-pedido-admin"
+                        style={{ resize: 'vertical', minHeight: '92px' }}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -589,6 +605,11 @@ export default function CadastroEmpresas() {
                     ) : (
                       <div style={{ textAlign: 'center', color: 'var(--cinza-400)', fontSize: '0.85rem', padding: '14px' }}>
                         Nenhum lote adicionado
+                      </div>
+                    )}
+                    {observacaoPedido.trim() && (
+                      <div style={{ marginTop: '10px', padding: '10px', borderRadius: '8px', background: 'var(--verde-bg)', color: 'var(--verde-escuro)', fontSize: '0.8rem', lineHeight: 1.4 }}>
+                        <strong>Observacao:</strong> {observacaoPedido.trim().replace(/\s+/g, ' ')}
                       </div>
                     )}
                   </div>

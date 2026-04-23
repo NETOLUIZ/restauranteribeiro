@@ -8,6 +8,7 @@ import {
   FiPlus,
   FiSend,
   FiZap,
+  FiDollarSign,
   FiCheckCircle,
   FiCopy,
   FiClock,
@@ -104,6 +105,7 @@ export default function PedidoAvulso() {
   const [mensagem, setMensagem] = useState(() => extrairMensagemCheckout(location.search));
   const [etapaAtual, setEtapaAtual] = useState(1);
   const [pixPagamento, setPixPagamento] = useState(null);
+  const [pedidoDinheiro, setPedidoDinheiro] = useState(null);
 
   useEffect(() => {
     Promise.allSettled([
@@ -198,6 +200,11 @@ export default function PedidoAvulso() {
       return;
     }
 
+    if (pedidoDinheiro) {
+      setMensagem({ tipo: 'success', texto: 'Pedido em dinheiro ja enviado. Aguarde a confirmacao da entrega.' });
+      return;
+    }
+
     if (!validarEtapa(1)) {
       setEtapaAtual(1);
       return;
@@ -225,24 +232,37 @@ export default function PedidoAvulso() {
         valorUnitario: marmitaSelecionada.valorUnitario > 0 ? marmitaSelecionada.valorUnitario : undefined
       });
 
-      const pagamentoPix = data.pagamentoPix || {
-        pagamentoId: data.pagamentoId,
-        status: data.status,
-        qrCode: data.qrCode,
-        qrCodeBase64: data.qrCodeBase64,
-        copiaecola: data.copiaecola,
-        valor: data.valor,
-        pedidoId: data.pedidoId || data.id
-      };
+      if (formaPagamento === 'PIX') {
+        const pagamentoPix = data.pagamentoPix || {
+          pagamentoId: data.pagamentoId,
+          status: data.status,
+          qrCode: data.qrCode,
+          qrCodeBase64: data.qrCodeBase64,
+          copiaecola: data.copiaecola,
+          valor: data.valor,
+          pedidoId: data.pedidoId || data.id
+        };
 
-      setPixPagamento({
-        ...pagamentoPix,
-        statusPedido: data.statusPagamento || 'PENDENTE'
-      });
-      setMensagem({
-        tipo: 'success',
-        texto: 'Pedido enviado com sucesso! Aguardando pagamento via Pix.'
-      });
+        setPixPagamento({
+          ...pagamentoPix,
+          statusPedido: data.statusPagamento || 'PENDENTE'
+        });
+        setPedidoDinheiro(null);
+        setMensagem({
+          tipo: 'success',
+          texto: 'Pedido enviado com sucesso! Aguardando pagamento via Pix.'
+        });
+      } else {
+        setPedidoDinheiro({
+          id: data.id || data.pedidoId,
+          statusPagamento: data.statusPagamento || 'PENDENTE'
+        });
+        setPixPagamento(null);
+        setMensagem({
+          tipo: 'success',
+          texto: 'Pedido enviado com sucesso! O pagamento em dinheiro ficara pendente para confirmacao.'
+        });
+      }
       setEtapaAtual(3);
     } catch (err) {
       setMensagem({ tipo: 'error', texto: err.response?.data?.erro || 'Erro ao enviar pedido' });
@@ -256,6 +276,7 @@ export default function PedidoAvulso() {
     setFormaPagamento('PIX');
     setDados(criarDadosEntregaVazios());
     setPixPagamento(null);
+    setPedidoDinheiro(null);
     setMensagem(null);
     setEtapaAtual(1);
   };
@@ -309,6 +330,14 @@ export default function PedidoAvulso() {
       descricao: 'QR Code e copia e cola',
       Icone: FiZap,
       classe: 'pag-pix'
+    },
+    {
+      valor: 'DINHEIRO',
+      sigla: 'CASH',
+      label: 'Dinheiro',
+      descricao: 'Pagamento na entrega',
+      Icone: FiDollarSign,
+      classe: 'pag-dinheiro'
     }
   ];
   const totalProteinasSelecionadas = itensSelecionados.filter(i => i.tipo === 'PROTEINA').length;
@@ -330,7 +359,7 @@ export default function PedidoAvulso() {
     !!normalizarCampo(dados.rua) &&
     !!normalizarCampo(dados.numero) &&
     !!normalizarCampo(dados.bairro);
-  const pagamentoValido = formaPagamento === 'PIX';
+  const pagamentoValido = ['PIX', 'DINHEIRO'].includes(formaPagamento);
   const etapaAtualCompleta =
     etapaAtual === 1 ? etapaItensValida : etapaAtual === 2 ? dadosEntregaValidos : pagamentoValido;
   const etapasCheckout = [
@@ -396,8 +425,8 @@ export default function PedidoAvulso() {
     }
 
     if (etapa === 3) {
-      if (formaPagamento !== 'PIX') {
-        if (mostrarErro) setMensagem({ tipo: 'error', texto: 'Pagamento disponivel somente via Pix.' });
+      if (!pagamentoValido) {
+        if (mostrarErro) setMensagem({ tipo: 'error', texto: 'Selecione uma forma de pagamento.' });
         return false;
       }
       return true;
@@ -619,8 +648,8 @@ export default function PedidoAvulso() {
 
               {etapaAtual === 3 && (
                 <div className="pedido-section" id="secao-pagamento">
-                  <h3><span className="icon"><FiZap /></span> Pagamento via Pix</h3>
-                  <div className="pagamento-opcoes pagamento-opcoes-pix">
+                  <h3><span className="icon">{formaPagamento === 'DINHEIRO' ? <FiDollarSign /> : <FiZap />}</span> Forma de pagamento</h3>
+                  <div className="pagamento-opcoes">
                     {opcoesPagamento.map(opcao => {
                       const selecionada = formaPagamento === opcao.valor;
 
@@ -629,16 +658,16 @@ export default function PedidoAvulso() {
                         key={opcao.valor}
                         className={`pagamento-opcao ${opcao.classe} ${selecionada ? 'selecionada' : ''}`}
                         onClick={() => {
-                          if (!pixPagamento) setFormaPagamento(opcao.valor);
+                          if (!pixPagamento && !pedidoDinheiro) setFormaPagamento(opcao.valor);
                         }}
                         role="button"
                         tabIndex={0}
                         aria-pressed={selecionada}
-                        aria-disabled={!!pixPagamento}
+                        aria-disabled={!!pixPagamento || !!pedidoDinheiro}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
-                            if (!pixPagamento) setFormaPagamento(opcao.valor);
+                            if (!pixPagamento && !pedidoDinheiro) setFormaPagamento(opcao.valor);
                           }
                         }}
                         id={`pagamento-${opcao.valor.toLowerCase()}`}
@@ -661,7 +690,9 @@ export default function PedidoAvulso() {
                     })}
                   </div>
                   <p className="pagamento-hint">
-                    Ao enviar o pedido, o QR Code Pix aparece aqui para pagamento.
+                    {formaPagamento === 'PIX'
+                      ? 'Ao enviar o pedido, o QR Code Pix aparece aqui para pagamento.'
+                      : 'Ao enviar o pedido, ele ficara pendente para pagamento em dinheiro na entrega.'}
                   </p>
 
                   {pixPagamento && (
@@ -698,6 +729,30 @@ export default function PedidoAvulso() {
                         >
                           <FiCopy size={16} /> Copiar codigo Pix
                         </button>
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={resetarPedido}
+                        >
+                          Novo pedido
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {pedidoDinheiro && (
+                    <div className="pix-pagamento-card" aria-live="polite">
+                      <div className="pix-status">
+                        <FiDollarSign size={18} />
+                        <span>Pagamento em dinheiro pendente</span>
+                      </div>
+
+                      <div className="pag-textos">
+                        <span className="pag-label">Pedido #{pedidoDinheiro.id} enviado</span>
+                        <span className="pag-desc">A equipe vai confirmar o recebimento do dinheiro na entrega.</span>
+                      </div>
+
+                      <div className="pix-acoes">
                         <button
                           type="button"
                           className="btn btn-secondary"
@@ -772,7 +827,7 @@ export default function PedidoAvulso() {
           </div>
 
           <div className="checkout-actions">
-            {etapaAtual > 1 && !pixPagamento ? (
+            {etapaAtual > 1 && !pixPagamento && !pedidoDinheiro ? (
               <button
                 type="button"
                 className="btn btn-secondary btn-lg"
@@ -800,7 +855,7 @@ export default function PedidoAvulso() {
                 type="button"
                 className="btn btn-primary btn-lg"
                 onClick={handleSubmit}
-                disabled={enviando || !!pixPagamento || !etapaAtualCompleta}
+                disabled={enviando || !!pixPagamento || !!pedidoDinheiro || !etapaAtualCompleta}
                 id="btn-enviar-pedido"
               >
                 {enviando ? (
@@ -809,9 +864,13 @@ export default function PedidoAvulso() {
                   <>
                     <FiClock size={18} /> Pix gerado
                   </>
+                ) : pedidoDinheiro ? (
+                  <>
+                    <FiCheckCircle size={18} /> Pedido enviado
+                  </>
                 ) : (
                   <>
-                    <FiSend size={18} /> Gerar Pix
+                    <FiSend size={18} /> {formaPagamento === 'PIX' ? 'Gerar Pix' : 'Enviar pedido'}
                   </>
                 )}
               </button>

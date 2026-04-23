@@ -14,7 +14,7 @@ async function criar(req, res) {
       ? parseInt(req.body.empresaId, 10)
       : req.usuario.empresaId;
 
-    const { lotes } = req.body;
+    const { lotes, observacao } = req.body;
 
     if (!Number.isInteger(empresaId) || empresaId < 1) {
       return res.status(400).json({ erro: 'Empresa invalida para o pedido' });
@@ -23,6 +23,8 @@ async function criar(req, res) {
     if (!Array.isArray(lotes) || !lotes.length) {
       return res.status(400).json({ erro: 'Informe pelo menos um lote para o pedido' });
     }
+
+    const observacaoNormalizada = typeof observacao === 'string' ? observacao.trim().replace(/\s+/g, ' ') : '';
 
     const lotesNormalizados = lotes.map((lote) => ({
       itens: lote.itens,
@@ -80,6 +82,7 @@ async function criar(req, res) {
     const pedido = await prisma.pedidoEmpresa.create({
       data: {
         empresaId,
+        observacao: observacaoNormalizada || null,
         lotes: {
           create: lotesNormalizados.map((lote) => ({
             itens: lote.itens,

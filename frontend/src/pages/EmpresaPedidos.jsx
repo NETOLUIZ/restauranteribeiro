@@ -1,12 +1,200 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiClipboard, FiList, FiMapPin, FiPackage, FiPlus, FiSend, FiUser, FiX } from 'react-icons/fi';
+import { FiClipboard, FiDownload, FiList, FiMapPin, FiPackage, FiPlus, FiSend, FiUser, FiX } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
 import Navbar from '../components/Navbar';
 import CheckboxVerde from '../components/CheckboxVerde';
 import { useAuth } from '../context/useAuth';
 import { cardapioAPI, empresaAPI, pedidoEmpresaAPI } from '../services/api';
+import { escapeHtml } from '../utils/comandaPrint';
 import '../styles/empresa.css';
+
+const gerarHtmlLotesPdf = ({ empresaNome, lotes, totalNosLotes, totalDoDia, observacao }) => {
+  const lotesHtml = lotes.map((lote, index) => {
+    const itensHtml = Array.isArray(lote.itens) && lote.itens.length
+      ? lote.itens.map((item) => `<li>${escapeHtml(item?.nome || '-')}</li>`).join('')
+      : '<li>-</li>';
+
+    return `
+      <section class="pdf-lote">
+        <div class="pdf-lote-topo">
+          <h2>Lote ${index + 1}</h2>
+          <span>${escapeHtml(String(lote.quantidade || 0))} refeicao(oes)</span>
+        </div>
+        <p><strong>Endereco:</strong> ${escapeHtml(lote.endereco || '-')}</p>
+        ${Array.isArray(lote.nomes) && lote.nomes.length ? `<p><strong>Nomes:</strong> ${escapeHtml(lote.nomes.join(', '))}</p>` : ''}
+        <div class="pdf-itens">
+          <strong>Itens</strong>
+          <ul>${itensHtml}</ul>
+        </div>
+      </section>
+    `;
+  }).join('');
+
+  return `
+    <html>
+      <head>
+        <title>Pedido Empresa - ${escapeHtml(empresaNome || 'Restaurante Ribeiro')}</title>
+        <style>
+          @page {
+            size: A4;
+            margin: 12mm;
+          }
+
+          * {
+            box-sizing: border-box;
+          }
+
+          body {
+            margin: 0;
+            color: #163023;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #ffffff;
+          }
+
+          .pdf-pedido {
+            display: grid;
+            gap: 12px;
+          }
+
+          .pdf-topo {
+            padding-bottom: 10px;
+            border-bottom: 2px solid #1b7a3d;
+          }
+
+          .pdf-topo h1 {
+            margin: 0 0 4px;
+            font-size: 22px;
+            color: #1b7a3d;
+          }
+
+          .pdf-topo p {
+            margin: 0;
+            font-size: 13px;
+            color: #466255;
+          }
+
+          .pdf-resumo {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+          }
+
+          .pdf-resumo-card {
+            padding: 10px 12px;
+            border: 1px solid #cfe7d6;
+            border-radius: 10px;
+            background: #f6fbf7;
+          }
+
+          .pdf-resumo-card span {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #466255;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+          }
+
+          .pdf-resumo-card strong {
+            font-size: 18px;
+            color: #163023;
+          }
+
+          .pdf-observacao {
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid #cfe7d6;
+            background: #f6fbf7;
+            line-height: 1.5;
+          }
+
+          .pdf-observacao strong {
+            color: #1b7a3d;
+          }
+
+          .pdf-lotes {
+            display: grid;
+            gap: 12px;
+          }
+
+          .pdf-lote {
+            padding: 12px;
+            border: 1px solid #d8e2db;
+            border-radius: 12px;
+            page-break-inside: avoid;
+          }
+
+          .pdf-lote-topo {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+          }
+
+          .pdf-lote-topo h2 {
+            margin: 0;
+            font-size: 16px;
+            color: #1b7a3d;
+          }
+
+          .pdf-lote-topo span {
+            font-size: 12px;
+            font-weight: 700;
+            color: #466255;
+          }
+
+          .pdf-lote p {
+            margin: 6px 0;
+            line-height: 1.45;
+          }
+
+          .pdf-itens strong {
+            display: block;
+            margin: 10px 0 6px;
+          }
+
+          .pdf-itens ul {
+            margin: 0;
+            padding-left: 18px;
+            line-height: 1.5;
+          }
+        </style>
+      </head>
+      <body>
+        <main class="pdf-pedido">
+          <header class="pdf-topo">
+            <h1>${escapeHtml(empresaNome || 'Restaurante Ribeiro')}</h1>
+            <p>Pedido exportado em ${escapeHtml(new Date().toLocaleString('pt-BR'))}</p>
+          </header>
+
+          <section class="pdf-resumo">
+            <div class="pdf-resumo-card">
+              <span>Lotes</span>
+              <strong>${escapeHtml(String(lotes.length))}</strong>
+            </div>
+            <div class="pdf-resumo-card">
+              <span>Adicionados</span>
+              <strong>${escapeHtml(String(totalNosLotes))}</strong>
+            </div>
+            <div class="pdf-resumo-card">
+              <span>Total do Dia</span>
+              <strong>${escapeHtml(String(totalDoDia))}</strong>
+            </div>
+          </section>
+
+          ${observacao ? `<section class="pdf-observacao"><strong>Observacao:</strong> ${escapeHtml(observacao)}</section>` : ''}
+
+          <section class="pdf-lotes">
+            ${lotesHtml}
+          </section>
+        </main>
+      </body>
+    </html>
+  `;
+};
 
 export default function EmpresaPedidos() {
   const { usuario } = useAuth();
@@ -26,6 +214,7 @@ export default function EmpresaPedidos() {
   const [salvandoNome, setSalvandoNome] = useState(false);
   const [mensagem, setMensagem] = useState(null);
   const [mostarInputNome, setMostrarInputNome] = useState(false);
+  const [observacaoPedido, setObservacaoPedido] = useState('');
 
   const totalContratado = usuario?.empresa?.totalPedidos || 0;
   const totalNosLotes = lotes.reduce((s, l) => s + l.quantidade, 0);
@@ -134,6 +323,9 @@ export default function EmpresaPedidos() {
   const normalizarEndereco = (valor = '') =>
     valor.trim().replace(/\s+/g, ' ');
 
+  const normalizarObservacao = (valor = '') =>
+    valor.trim().replace(/\s+/g, ' ');
+
   const salvarEnderecoTemporario = (valor) => {
     const enderecoNormalizado = normalizarEndereco(valor);
     if (!enderecoNormalizado) return;
@@ -195,6 +387,35 @@ export default function EmpresaPedidos() {
     setLotes(lotes.filter((_, i) => i !== idx));
   };
 
+  const salvarLotesEmPdf = () => {
+    if (!lotes.length) {
+      setMensagem({ tipo: 'error', texto: 'Adicione pelo menos um lote antes de salvar em PDF.' });
+      return;
+    }
+
+    const observacao = normalizarObservacao(observacaoPedido);
+    const janelaPdf = window.open('', '_blank');
+
+    if (!janelaPdf) {
+      setMensagem({ tipo: 'error', texto: 'Nao foi possivel abrir a janela para salvar em PDF.' });
+      return;
+    }
+
+    janelaPdf.document.write(gerarHtmlLotesPdf({
+      empresaNome: usuario?.empresa?.nome || 'Restaurante Ribeiro',
+      lotes,
+      totalNosLotes,
+      totalDoDia,
+      observacao
+    }));
+    janelaPdf.document.close();
+    janelaPdf.focus();
+
+    window.setTimeout(() => {
+      janelaPdf.print();
+    }, 250);
+  };
+
   const enviarPedido = async () => {
     if (!lotes.length) {
       setMensagem({ tipo: 'error', texto: 'Adicione pelo menos um lote' });
@@ -214,7 +435,8 @@ export default function EmpresaPedidos() {
     try {
       await pedidoEmpresaAPI.criar({
         lotes,
-        totalPedidosDia: totalDoDia
+        totalPedidosDia: totalDoDia,
+        observacao: normalizarObservacao(observacaoPedido)
       });
       setMensagem({ tipo: 'success', texto: 'Pedido enviado com sucesso! Aguarde a autorizacao.' });
       setLotes([]);
@@ -225,6 +447,7 @@ export default function EmpresaPedidos() {
       setNomes([]);
       setMostrarInputNome(false);
       setTotalDiaInput('');
+      setObservacaoPedido('');
     } catch (err) {
       setMensagem({ tipo: 'error', texto: err.response?.data?.erro || 'Erro ao enviar pedido' });
     }
@@ -428,6 +651,20 @@ export default function EmpresaPedidos() {
                     </div>
                   )}
                 </div>
+
+                <div className="observacao-pedido-box">
+                  <label className="form-label" htmlFor="input-observacao-pedido-empresa">
+                    <FiClipboard size={14} /> Observacao do Pedido
+                  </label>
+                  <textarea
+                    className="form-input observacao-pedido-input"
+                    id="input-observacao-pedido-empresa"
+                    placeholder="Ex: entregar na portaria, ligar ao chegar, sem cebola..."
+                    value={observacaoPedido}
+                    onChange={e => setObservacaoPedido(e.target.value)}
+                    rows={3}
+                  />
+                </div>
               </div>
 
               <div className="lote-actions" id="lote-acoes">
@@ -470,19 +707,19 @@ export default function EmpresaPedidos() {
             </div>
 
             <div className="empresa-sidebar">
-              <div className="sidebar-cardapio" id="sidebar-cardapio">
-                <h4><FiClipboard /> Cardapio do Dia</h4>
-                {cardapio.map(item => (
-                  <div key={item.id} className="sidebar-item">
-                    <span className={`tipo-dot ${item.tipo.toLowerCase()}`}></span>
-                    {item.nome}
-                  </div>
-                ))}
-                {!cardapio.length && <p style={{ color: 'var(--cinza-400)', fontSize: '0.85rem' }}>Cardapio sera atualizado em breve</p>}
-              </div>
-
               <div className="lotes-lista" id="lotes-adicionados">
-                <h4><FiPackage /> Lotes Adicionados ({lotes.length})</h4>
+                <div className="lotes-lista-header">
+                  <h4><FiPackage /> Lotes Adicionados ({lotes.length})</h4>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={salvarLotesEmPdf}
+                    disabled={!lotes.length}
+                    id="btn-salvar-pdf-lotes"
+                  >
+                    <FiDownload size={14} /> Salvar PDF
+                  </button>
+                </div>
                 {lotes.length > 0 ? (
                   lotes.map((lote, i) => (
                     <div key={i} className="lote-card">
@@ -513,6 +750,11 @@ export default function EmpresaPedidos() {
                   ))
                 ) : (
                   <div className="lotes-vazio">Nenhum lote adicionado</div>
+                )}
+                {normalizarObservacao(observacaoPedido) && (
+                  <div className="pedido-observacao-resumo">
+                    <strong>Observacao:</strong> {normalizarObservacao(observacaoPedido)}
+                  </div>
                 )}
               </div>
             </div>
