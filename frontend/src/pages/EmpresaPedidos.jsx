@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiPlus, FiSend, FiX, FiUser, FiMapPin, FiPackage } from 'react-icons/fi';
+import { FiClipboard, FiList, FiMapPin, FiPackage, FiPlus, FiSend, FiUser, FiX } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
 import Navbar from '../components/Navbar';
 import CheckboxVerde from '../components/CheckboxVerde';
@@ -284,7 +284,7 @@ export default function EmpresaPedidos() {
           <div className="empresa-layout">
             <div className="lote-form">
               <div className="lote-section" id="secao-itens-empresa">
-                <h3><span className="icon">???</span> Selecione os itens</h3>
+                <h3><FiList /> Selecione os itens</h3>
 
                 {proteinas.length > 0 && (
                   <>
@@ -471,7 +471,7 @@ export default function EmpresaPedidos() {
 
             <div className="empresa-sidebar">
               <div className="sidebar-cardapio" id="sidebar-cardapio">
-                <h4>?? Cardapio do Dia</h4>
+                <h4><FiClipboard /> Cardapio do Dia</h4>
                 {cardapio.map(item => (
                   <div key={item.id} className="sidebar-item">
                     <span className={`tipo-dot ${item.tipo.toLowerCase()}`}></span>
@@ -482,7 +482,7 @@ export default function EmpresaPedidos() {
               </div>
 
               <div className="lotes-lista" id="lotes-adicionados">
-                <h4>?? Lotes Adicionados ({lotes.length})</h4>
+                <h4><FiPackage /> Lotes Adicionados ({lotes.length})</h4>
                 {lotes.length > 0 ? (
                   lotes.map((lote, i) => (
                     <div key={i} className="lote-card">
@@ -502,10 +502,10 @@ export default function EmpresaPedidos() {
                             <span key={j} className="lote-item-tag">{item.nome}</span>
                           ))}
                         </div>
-                        <div className="lote-endereco">?? {lote.endereco}</div>
+                        <div className="lote-endereco"><FiMapPin size={13} /> {lote.endereco}</div>
                         {lote.nomes && (
                           <div className="lote-nomes">
-                            ?? {lote.nomes.join(', ')}
+                            <FiUser size={13} /> {lote.nomes.join(', ')}
                           </div>
                         )}
                       </div>

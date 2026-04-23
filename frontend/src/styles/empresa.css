@@ -348,6 +348,9 @@
 }
 
 .sidebar-cardapio h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--verde-escuro);
@@ -396,6 +399,9 @@
 }
 
 .lotes-lista h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--preto);
@@ -446,11 +452,17 @@
 }
 
 .lote-endereco {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
   margin-top: 6px;
   font-style: italic;
 }
 
 .lote-nomes {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
   margin-top: 4px;
   color: var(--verde-escuro);
   font-weight: 500;

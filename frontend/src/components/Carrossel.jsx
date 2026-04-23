@@ -1,47 +1,74 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 
 export default function Carrossel({ banners = [] }) {
   const [slideAtual, setSlideAtual] = useState(0);
 
-  const proximoSlide = useCallback(() => {
-    setSlideAtual((prev) => (prev + 1) % banners.length);
-  }, [banners.length]);
+  const bannersVisiveis = useMemo(() => {
+    const urls = new Set();
 
-  const slideAnterior = () => {
-    setSlideAtual((prev) => (prev - 1 + banners.length) % banners.length);
-  };
+    return banners.filter((banner) => {
+      const imagemUrl = String(banner?.imagemUrl || '').trim();
+      if (!imagemUrl || urls.has(imagemUrl)) return false;
+      urls.add(imagemUrl);
+      return true;
+    });
+  }, [banners]);
+
+  const totalSlides = bannersVisiveis.length;
+  const apiUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001';
+
+  const resolverImagem = (imagemUrl) =>
+    imagemUrl.startsWith('http') ? imagemUrl : `${apiUrl}${imagemUrl}`;
+
+  const proximoSlide = useCallback(() => {
+    setSlideAtual((prev) => (totalSlides <= 1 ? 0 : (prev + 1) % totalSlides));
+  }, [totalSlides]);
+
+  const slideAnterior = useCallback(() => {
+    setSlideAtual((prev) => (totalSlides <= 1 ? 0 : (prev - 1 + totalSlides) % totalSlides));
+  }, [totalSlides]);
 
   useEffect(() => {
-    if (banners.length <= 1) return;
+    setSlideAtual(0);
+  }, [totalSlides]);
+
+  useEffect(() => {
+    if (totalSlides <= 1) return undefined;
     const timer = setInterval(proximoSlide, 5000);
     return () => clearInterval(timer);
-  }, [banners.length, proximoSlide]);
+  }, [totalSlides, proximoSlide]);
 
-  if (!banners.length) {
+  if (!totalSlides) {
     return (
       <div className="carrossel" id="carrossel-banners">
-        <div className="carrossel-slide ativo" style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'linear-gradient(135deg, var(--verde-escuro), var(--verde-lima))',
-          color: 'white', fontSize: '1.2rem', fontWeight: '600'
-        }}>
+        <div
+          className="carrossel-slide ativo"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'linear-gradient(135deg, var(--verde-escuro), var(--verde-lima))',
+            color: 'white',
+            fontSize: '1.2rem',
+            fontWeight: '600'
+          }}
+        >
           Bem-vindo ao Restaurante Ribeiro!
         </div>
       </div>
     );
   }
 
-  const apiUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001';
-
   return (
     <div className="carrossel" id="carrossel-banners">
-      {banners.map((banner, i) => (
+      {bannersVisiveis.map((banner, i) => (
         <div key={banner.id} className={`carrossel-slide ${i === slideAtual ? 'ativo' : ''}`}>
-          <img 
-            src={banner.imagemUrl.startsWith('http') ? banner.imagemUrl : `${apiUrl}${banner.imagemUrl}`} 
+          <img
+            src={resolverImagem(banner.imagemUrl)}
             alt={banner.titulo || 'Banner'}
-            loading="lazy"
+            loading="eager"
+            decoding="async"
           />
           {(banner.titulo || banner.texto) && (
             <div className="slide-overlay">
@@ -51,23 +78,23 @@ export default function Carrossel({ banners = [] }) {
           )}
         </div>
       ))}
-      
-      {banners.length > 1 && (
+
+      {totalSlides > 1 && (
         <>
           <button className="carrossel-nav prev" onClick={slideAnterior} aria-label="Anterior">
             <FiChevronLeft size={20} />
           </button>
-          <button className="carrossel-nav next" onClick={proximoSlide} aria-label="Próximo">
+          <button className="carrossel-nav next" onClick={proximoSlide} aria-label="Proximo">
             <FiChevronRight size={20} />
           </button>
         </>
       )}
-      
-      {banners.length > 1 && (
+
+      {totalSlides > 1 && (
         <div className="carrossel-dots">
-          {banners.map((_, i) => (
-            <button 
-              key={i} 
+          {bannersVisiveis.map((banner, i) => (
+            <button
+              key={banner.id}
               className={`carrossel-dot ${i === slideAtual ? 'ativo' : ''}`}
               onClick={() => setSlideAtual(i)}
               aria-label={`Slide ${i + 1}`}

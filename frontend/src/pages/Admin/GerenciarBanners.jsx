@@ -17,6 +17,7 @@ export default function GerenciarBanners() {
   const [form, setForm] = useState({ titulo: '', texto: '', imagemUrl: '' });
   const [arquivo, setArquivo] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
+  const [salvandoBanner, setSalvandoBanner] = useState(false);
 
   const [formMarmitas, setFormMarmitas] = useState(PADRAO_MARMITAS);
   const [arquivosMarmita, setArquivosMarmita] = useState({ GRANDE: null, PEQUENA: null });
@@ -25,6 +26,7 @@ export default function GerenciarBanners() {
   const fileRef = useRef(null);
   const fileMarmitaGrandeRef = useRef(null);
   const fileMarmitaPequenaRef = useRef(null);
+  const salvandoBannerRef = useRef(false);
 
   const apiUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001';
 
@@ -146,6 +148,11 @@ export default function GerenciarBanners() {
   };
 
   const salvar = async () => {
+    if (salvandoBannerRef.current || (!previewUrl && !form.imagemUrl)) return;
+
+    salvandoBannerRef.current = true;
+    setSalvandoBanner(true);
+
     const formData = new FormData();
     formData.append('titulo', form.titulo);
     formData.append('texto', form.texto);
@@ -163,9 +170,13 @@ export default function GerenciarBanners() {
         await bannerAPI.criar(formData);
       }
       setModalAberto(false);
-      carregar();
+      await carregar();
     } catch (err) {
       console.error('Erro:', err);
+      alert(err.response?.data?.erro || 'Erro ao salvar banner');
+    } finally {
+      salvandoBannerRef.current = false;
+      setSalvandoBanner(false);
     }
   };
 
@@ -351,11 +362,17 @@ export default function GerenciarBanners() {
       </div>
 
       {modalAberto && (
-        <div className="modal-overlay" onClick={() => setModalAberto(false)}>
+        <div className="modal-overlay" onClick={() => !salvandoBanner && setModalAberto(false)}>
           <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '550px' }}>
             <div className="modal-header">
               <h3>{editando ? 'Editar Banner' : 'Novo Banner'}</h3>
-              <button onClick={() => setModalAberto(false)} style={{ fontSize: '1.2rem', color: 'var(--cinza-500)' }}>x</button>
+              <button
+                onClick={() => setModalAberto(false)}
+                disabled={salvandoBanner}
+                style={{ fontSize: '1.2rem', color: 'var(--cinza-500)' }}
+              >
+                x
+              </button>
             </div>
             <div className="modal-body">
               <div className="form-group">
@@ -419,9 +436,9 @@ export default function GerenciarBanners() {
               </div>
             </div>
             <div className="modal-footer">
-              <button className="btn btn-secondary" onClick={() => setModalAberto(false)}>Cancelar</button>
-              <button className="btn btn-primary" onClick={salvar} disabled={!previewUrl && !form.imagemUrl}>
-                {editando ? 'Salvar' : 'Criar Banner'}
+              <button className="btn btn-secondary" onClick={() => setModalAberto(false)} disabled={salvandoBanner}>Cancelar</button>
+              <button className="btn btn-primary" onClick={salvar} disabled={salvandoBanner || (!previewUrl && !form.imagemUrl)}>
+                {salvandoBanner ? 'Salvando...' : editando ? 'Salvar' : 'Criar Banner'}
               </button>
             </div>
           </div>
