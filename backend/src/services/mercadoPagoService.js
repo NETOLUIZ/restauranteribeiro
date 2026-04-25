@@ -173,9 +173,42 @@ async function consultarPagamento(paymentId) {
   };
 }
 
+async function buscarPagamentoPorReferenciaExterna(externalReference) {
+  const client = getClient();
+  if (!client) {
+    throw new Error('Mercado Pago nao configurado');
+  }
+
+  if (!externalReference) {
+    return null;
+  }
+
+  const payment = new Payment(client);
+  const dados = await payment.search({
+    options: {
+      external_reference: String(externalReference),
+      sort: 'date_created',
+      criteria: 'desc'
+    }
+  });
+
+  const encontrado = Array.isArray(dados.results) ? dados.results[0] : null;
+  if (!encontrado?.id) {
+    return null;
+  }
+
+  return {
+    id: String(encontrado.id),
+    status: encontrado.status,
+    valorPago: encontrado.transaction_amount,
+    externalReference: encontrado.external_reference
+  };
+}
+
 module.exports = {
   mercadoPagoConfigurado,
   obterStatusMercadoPago,
   criarPagamentoPixPedidoAvulso,
-  consultarPagamento
+  consultarPagamento,
+  buscarPagamentoPorReferenciaExterna
 };

@@ -3,7 +3,8 @@ const {
   mercadoPagoConfigurado,
   obterStatusMercadoPago,
   criarPagamentoPixPedidoAvulso,
-  consultarPagamento
+  consultarPagamento,
+  buscarPagamentoPorReferenciaExterna
 } = require('../services/mercadoPagoService');
 
 const prisma = new PrismaClient();
@@ -23,6 +24,83 @@ function extrairPedidoIdDaReferencia(externalReference) {
 
 function statusMercadoPago(req, res) {
   res.json(obterStatusMercadoPago());
+}
+
+function montarDadosAtualizacaoPagamento(pagamento) {
+  const dadosAtualizacao = {
+    mercadoPagoId: String(pagamento.id),
+    valorPago: typeof pagamento.valorPago === 'number' ? pagamento.valorPago : undefined
+  };
+
+  if (pagamento.externalReference) {
+    dadosAtualizacao.referenciaExterna = pagamento.externalReference;
+  }
+
+  if (pagamento.status === 'approved') {
+    dadosAtualizacao.statusPagamento = 'CONFIRMADO';
+    dadosAtualizacao.pagoEm = new Date();
+  } else if (['cancelled', 'rejected', 'refunded', 'charged_back'].includes(pagamento.status)) {
+    dadosAtualizacao.statusPagamento = 'CANCELADO';
+  } else {
+    dadosAtualizacao.statusPagamento = 'PENDENTE';
+  }
+
+  return dadosAtualizacao;
+}
+
+async function localizarPagamentoPedido(pedido) {
+  if (pedido.mercadoPagoId) {
+    try {
+      return await consultarPagamento(pedido.mercadoPagoId);
+    } catch (err) {
+      console.error(`Erro ao consultar pagamento ${pedido.mercadoPagoId}:`, err);
+    }
+  }
+
+  if (pedido.referenciaExterna) {
+    try {
+      return await buscarPagamentoPorReferenciaExterna(pedido.referenciaExterna);
+    } catch (err) {
+      console.error(`Erro ao buscar pagamento por referencia ${pedido.referenciaExterna}:`, err);
+    }
+  }
+
+  return null;
+}
+
+async function sincronizarStatusPagamentoPix(pedido) {
+  if (
+    !pedido ||
+    pedido.formaPagamento !== 'PIX' ||
+    pedido.statusPagamento !== 'PENDENTE' ||
+    !mercadoPagoConfigurado()
+  ) {
+    return pedido;
+  }
+
+  const pagamento = await localizarPagamentoPedido(pedido);
+  if (!pagamento) {
+    return pedido;
+  }
+
+  const dadosAtualizacao = montarDadosAtualizacaoPagamento(pagamento);
+  const statusMudou = pedido.statusPagamento !== dadosAtualizacao.statusPagamento;
+  const mercadoPagoIdMudou = pedido.mercadoPagoId !== dadosAtualizacao.mercadoPagoId;
+  const referenciaMudou = dadosAtualizacao.referenciaExterna && pedido.referenciaExterna !== dadosAtualizacao.referenciaExterna;
+  const pagoEmMudou = dadosAtualizacao.statusPagamento === 'CONFIRMADO' && !pedido.pagoEm;
+  const valorPagoMudou = typeof dadosAtualizacao.valorPago === 'number' && pedido.valorPago !== dadosAtualizacao.valorPago;
+
+  if (!statusMudou && !mercadoPagoIdMudou && !referenciaMudou && !pagoEmMudou && !valorPagoMudou) {
+    return {
+      ...pedido,
+      ...dadosAtualizacao
+    };
+  }
+
+  return prisma.pedidoAvulso.update({
+    where: { id: pedido.id },
+    data: dadosAtualizacao
+  });
 }
 
 // Criar pedido avulso
@@ -150,7 +228,12 @@ async function listarTodos(req, res) {
       where,
       orderBy: { createdAt: 'desc' }
     });
-    res.json(pedidos);
+
+    const pedidosSincronizados = await Promise.all(
+      pedidos.map((pedido) => sincronizarStatusPagamentoPix(pedido))
+    );
+
+    res.json(pedidosSincronizados);
   } catch (err) {
     console.error('Erro ao listar pedidos:', err);
     res.status(500).json({ erro: 'Erro interno do servidor' });
@@ -230,8 +313,11 @@ async function statusPagamentoPublico(req, res) {
       where: { id },
       select: {
         id: true,
+        formaPagamento: true,
         statusPagamento: true,
         mercadoPagoId: true,
+        referenciaExterna: true,
+        valorPago: true,
         pagoEm: true,
         updatedAt: true
       }
@@ -241,7 +327,15 @@ async function statusPagamentoPublico(req, res) {
       return res.status(404).json({ erro: 'Pedido nao encontrado' });
     }
 
-    res.json(pedido);
+    const pedidoSincronizado = await sincronizarStatusPagamentoPix(pedido);
+
+    res.json({
+      id: pedidoSincronizado.id,
+      statusPagamento: pedidoSincronizado.statusPagamento,
+      mercadoPagoId: pedidoSincronizado.mercadoPagoId,
+      pagoEm: pedidoSincronizado.pagoEm,
+      updatedAt: pedidoSincronizado.updatedAt
+    });
   } catch (err) {
     console.error('Erro ao consultar status do pedido:', err);
     res.status(500).json({ erro: 'Erro interno do servidor' });
@@ -284,23 +378,7 @@ async function webhookMercadoPago(req, res) {
       return res.sendStatus(200);
     }
 
-    const dadosAtualizacao = {
-      mercadoPagoId: String(pagamento.id),
-      valorPago: typeof pagamento.valorPago === 'number' ? pagamento.valorPago : undefined
-    };
-
-    if (pagamento.externalReference) {
-      dadosAtualizacao.referenciaExterna = pagamento.externalReference;
-    }
-
-    if (pagamento.status === 'approved') {
-      dadosAtualizacao.statusPagamento = 'CONFIRMADO';
-      dadosAtualizacao.pagoEm = new Date();
-    } else if (['cancelled', 'rejected', 'refunded', 'charged_back'].includes(pagamento.status)) {
-      dadosAtualizacao.statusPagamento = 'CANCELADO';
-    } else {
-      dadosAtualizacao.statusPagamento = 'PENDENTE';
-    }
+    const dadosAtualizacao = montarDadosAtualizacaoPagamento(pagamento);
 
     await prisma.pedidoAvulso.update({
       where: { id: pedido.id },

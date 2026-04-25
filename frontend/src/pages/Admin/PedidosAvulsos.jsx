@@ -74,6 +74,16 @@ export default function PedidosAvulsos() {
   const [filtroStatus, setFiltroStatus] = useState('');
   const [carregando, setCarregando] = useState(true);
   const imprimindoRef = useRef(new Set());
+  const carregandoPedidosRef = useRef(false);
+  const componenteMontadoRef = useRef(false);
+
+  useEffect(() => {
+    componenteMontadoRef.current = true;
+
+    return () => {
+      componenteMontadoRef.current = false;
+    };
+  }, []);
 
   const marcarImpressoLocal = useCallback((id) => {
     setPedidos((anterior) => anterior.map((pedido) =>
@@ -123,43 +133,43 @@ export default function PedidosAvulsos() {
     }
   }, [imprimirComanda]);
 
-  async function carregar() {
-    setCarregando(true);
+  const carregar = useCallback(async (silencioso = false) => {
+    if (carregandoPedidosRef.current) return;
+
+    carregandoPedidosRef.current = true;
+    if (!silencioso && componenteMontadoRef.current) {
+      setCarregando(true);
+    }
+
     try {
       const params = {};
       if (filtroStatus) params.status = filtroStatus;
       const { data } = await pedidoAvulsoAPI.listar(params);
+
+      if (!componenteMontadoRef.current) return;
+
       setPedidos(data);
       await autoImprimirPendentesOnline(data);
     } catch (err) {
       console.error('Erro:', err);
+    } finally {
+      if (!silencioso && componenteMontadoRef.current) {
+        setCarregando(false);
+      }
+      carregandoPedidosRef.current = false;
     }
-    setCarregando(false);
-  }
+  }, [autoImprimirPendentesOnline, filtroStatus]);
 
   useEffect(() => {
-    let ativo = true;
-    const params = {};
-
-    if (filtroStatus) params.status = filtroStatus;
-
-    pedidoAvulsoAPI.listar(params)
-      .then(async ({ data }) => {
-        if (!ativo) return;
-        setPedidos(data);
-        await autoImprimirPendentesOnline(data);
-      })
-      .catch((err) => {
-        console.error('Erro:', err);
-      })
-      .finally(() => {
-        if (ativo) setCarregando(false);
-      });
+    carregar();
+    const intervalo = window.setInterval(() => {
+      carregar(true);
+    }, 5000);
 
     return () => {
-      ativo = false;
+      window.clearInterval(intervalo);
     };
-  }, [filtroStatus, autoImprimirPendentesOnline]);
+  }, [carregar]);
 
   const confirmarPagamentoDinheiro = async (id) => {
     try {

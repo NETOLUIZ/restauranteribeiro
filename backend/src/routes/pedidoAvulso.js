@@ -16,6 +16,7 @@ router.get('/mercado-pago/status', statusMercadoPago);
 router.get('/:id/status-pagamento', statusPagamentoPublico);
 router.post('/', criar);
 router.post('/webhook', webhookMercadoPago);
+router.post('/webhook/mercadopago', webhookMercadoPago);
 
 // Admin
 router.get('/', autenticar, apenasAdmin, listarTodos);
