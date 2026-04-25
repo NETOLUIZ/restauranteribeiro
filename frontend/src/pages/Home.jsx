@@ -6,9 +6,8 @@ import Navbar from '../components/Navbar';
 import Carrossel from '../components/Carrossel';
 import WhatsAppButton from '../components/WhatsAppButton';
 import Footer from '../components/Footer';
-import fotoMarmitaGrande from '../assets/food-banner.png';
-import fotoMarmitaPequena from '../assets/hero-banner.png';
 import homePatternBg from '../assets/home-pattern-bg.jpg';
+import imagemCardMarmita from '../assets/marmita-card-home.png';
 import { cardapioAPI, bannerAPI, marmitaAPI } from '../services/api';
 import '../styles/home.css';
 
@@ -16,8 +15,6 @@ export default function Home() {
   const [cardapio, setCardapio] = useState([]);
   const [banners, setBanners] = useState([]);
   const [marmitas, setMarmitas] = useState([]);
-
-  const apiUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001';
 
   useEffect(() => {
     let ativo = true;
@@ -87,20 +84,18 @@ export default function Home() {
     currency: 'BRL'
   });
 
-  const resolverImagem = (imagemUrl, fallback) => {
-    if (!imagemUrl) return fallback;
-    if (imagemUrl.startsWith('http')) return imagemUrl;
-    return `${apiUrl}${imagemUrl}`;
-  };
-
   return (
     <>
       <Navbar />
       <div className="home-page-bg" style={{ backgroundImage: `url(${homePatternBg})` }}>
         <section className="hero" id="hero-section">
           <div className="container hero-content">
+            <div className="hero-badge">
+              <span className="badge-dot"></span>
+              Marmitas frescas e entregas do dia
+            </div>
             <h1>Restaurante Ribeiro</h1>
-            <p>Qualidade e sabor em cada refeicao</p>
+            <p className="hero-desc">Qualidade e sabor em cada refeicao, com pedido avulso rapido e atendimento para empresas.</p>
             <div className="hero-buttons">
               <Link to="/pedido" className="btn btn-hero-primary" id="btn-fazer-pedido">
                 <FiShoppingBag size={20} /> Fazer Pedido
@@ -186,7 +181,7 @@ export default function Home() {
             <div className="marmitas-grid">
               <article className="marmita-card" id="card-marmita-grande">
                 <img
-                  src={resolverImagem(marmitaGrande.imagemUrl, fotoMarmitaGrande)}
+                  src={imagemCardMarmita}
                   alt={marmitaGrande.titulo}
                   className="marmita-foto"
                 />
@@ -209,7 +204,7 @@ export default function Home() {
 
               <article className="marmita-card" id="card-marmita-pequena">
                 <img
-                  src={resolverImagem(marmitaPequena.imagemUrl, fotoMarmitaPequena)}
+                  src={imagemCardMarmita}
                   alt={marmitaPequena.titulo}
                   className="marmita-foto"
                 />

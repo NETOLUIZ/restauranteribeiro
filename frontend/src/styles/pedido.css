@@ -217,6 +217,27 @@
   grid-column: span 2;
 }
 
+.cep-status {
+  margin-top: 8px;
+  min-height: 20px;
+  padding-left: 2px;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--cinza-600);
+}
+
+.cep-status.info {
+  color: var(--azul);
+}
+
+.cep-status.success {
+  color: var(--verde-escuro);
+}
+
+.cep-status.error {
+  color: var(--vermelho);
+}
+
 .pagamento-opcoes {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   FiMapPin,
@@ -70,6 +70,7 @@ function criarDadosEntregaVazios() {
   return {
     nomeCliente: '',
     telefone: '',
+    cep: '',
     rua: '',
     numero: '',
     bairro: '',
@@ -82,13 +83,25 @@ function normalizarCampo(valor = '') {
   return String(valor).trim().replace(/\s+/g, ' ');
 }
 
+function limparCep(valor = '') {
+  return String(valor).replace(/\D/g, '').slice(0, 8);
+}
+
+function formatarCep(valor = '') {
+  const cepLimpo = limparCep(valor);
+
+  if (cepLimpo.length <= 5) return cepLimpo;
+  return `${cepLimpo.slice(0, 5)}-${cepLimpo.slice(5)}`;
+}
+
 function montarEnderecoEntrega(dados) {
+  const cep = normalizarCampo(dados.cep);
   const rua = normalizarCampo(dados.rua);
   const numero = normalizarCampo(dados.numero);
   const bairro = normalizarCampo(dados.bairro);
   const complemento = normalizarCampo(dados.complemento);
 
-  return `${rua}, ${numero} - ${bairro}${complemento ? ` - Compl.: ${complemento}` : ''}`;
+  return `${rua}, ${numero} - ${bairro}${complemento ? ` - Compl.: ${complemento}` : ''}${cep ? ` - CEP: ${cep}` : ''}`;
 }
 
 export default function PedidoAvulso() {
@@ -106,6 +119,10 @@ export default function PedidoAvulso() {
   const [etapaAtual, setEtapaAtual] = useState(1);
   const [pixPagamento, setPixPagamento] = useState(null);
   const [pedidoDinheiro, setPedidoDinheiro] = useState(null);
+  const [cepStatus, setCepStatus] = useState(null);
+  const [cepBuscando, setCepBuscando] = useState(false);
+  const [ultimoCepConsultado, setUltimoCepConsultado] = useState('');
+  const cepEmConsultaRef = useRef('');
 
   useEffect(() => {
     Promise.allSettled([
@@ -279,6 +296,10 @@ export default function PedidoAvulso() {
     setPedidoDinheiro(null);
     setMensagem(null);
     setEtapaAtual(1);
+    setCepStatus(null);
+    setCepBuscando(false);
+    setUltimoCepConsultado('');
+    cepEmConsultaRef.current = '';
   };
 
   const copiarCodigoPix = async () => {
@@ -301,6 +322,67 @@ export default function PedidoAvulso() {
       setMensagem({ tipo: 'success', texto: 'Codigo Pix copiado.' });
     } catch {
       setMensagem({ tipo: 'error', texto: 'Nao foi possivel copiar o codigo Pix.' });
+    }
+  };
+
+  const buscarEnderecoPorCep = async (cepInformado) => {
+    const cepLimpo = limparCep(cepInformado);
+
+    if (cepLimpo.length !== 8 || cepLimpo === ultimoCepConsultado || cepLimpo === cepEmConsultaRef.current) {
+      return;
+    }
+
+    cepEmConsultaRef.current = cepLimpo;
+    setCepBuscando(true);
+    setCepStatus({ tipo: 'info', texto: 'Buscando endereco pelo CEP...' });
+
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`);
+
+      if (!response.ok) {
+        throw new Error('Falha ao consultar CEP');
+      }
+
+      const enderecoCep = await response.json();
+
+      if (enderecoCep.erro) {
+        throw new Error('CEP nao encontrado');
+      }
+
+      if (cepEmConsultaRef.current !== cepLimpo) {
+        return;
+      }
+
+      setDados((atual) => {
+        if (limparCep(atual.cep) !== cepLimpo) {
+          return atual;
+        }
+
+        return {
+          ...atual,
+          rua: normalizarCampo(enderecoCep.logradouro) || atual.rua,
+          bairro: normalizarCampo(enderecoCep.bairro) || atual.bairro
+        };
+      });
+      setUltimoCepConsultado(cepLimpo);
+      setCepStatus({
+        tipo: 'success',
+        texto: `CEP localizado em ${enderecoCep.localidade}/${enderecoCep.uf}. Confira numero e complemento.`
+      });
+    } catch {
+      if (cepEmConsultaRef.current !== cepLimpo) {
+        return;
+      }
+
+      setCepStatus({
+        tipo: 'error',
+        texto: 'Nao foi possivel localizar o CEP. Preencha o endereco manualmente.'
+      });
+    } finally {
+      if (cepEmConsultaRef.current === cepLimpo) {
+        cepEmConsultaRef.current = '';
+        setCepBuscando(false);
+      }
     }
   };
 
@@ -450,7 +532,14 @@ export default function PedidoAvulso() {
     <>
       <Navbar />
       {mensagem && (
-        <div className={`toast toast-${mensagem.tipo}`} onAnimationEnd={() => setTimeout(() => setMensagem(null), 100)}>
+        <div
+          className={`toast toast-${mensagem.tipo}`}
+          onAnimationEnd={(event) => {
+            if (event.animationName === 'slideOut') {
+              setMensagem(null);
+            }
+          }}
+        >
           {mensagem.texto}
         </div>
       )}
@@ -588,6 +677,49 @@ export default function PedidoAvulso() {
                         id="input-telefone"
                         required
                       />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label"><FiMapPin size={14} /> CEP</label>
+                      <input
+                        className="form-input"
+                        placeholder="00000-000"
+                        value={dados.cep}
+                        onChange={e => {
+                          const proximoCep = formatarCep(e.target.value);
+                          const cepLimpo = limparCep(proximoCep);
+
+                          setDados((atual) => ({ ...atual, cep: proximoCep }));
+
+                          if (!cepLimpo) {
+                            cepEmConsultaRef.current = '';
+                            setCepBuscando(false);
+                            setCepStatus(null);
+                            setUltimoCepConsultado('');
+                            return;
+                          }
+
+                          if (cepLimpo.length < 8) {
+                            cepEmConsultaRef.current = '';
+                            setCepBuscando(false);
+                            setCepStatus(null);
+                            return;
+                          }
+
+                          if (cepLimpo !== ultimoCepConsultado) {
+                            setCepStatus(null);
+                          }
+
+                          buscarEnderecoPorCep(proximoCep);
+                        }}
+                        id="input-cep"
+                        inputMode="numeric"
+                        maxLength={9}
+                      />
+                      <p className={`cep-status${cepStatus?.tipo ? ` ${cepStatus.tipo}` : ''}`}>
+                        {cepBuscando
+                          ? 'Buscando endereco pelo CEP...'
+                          : cepStatus?.texto || 'Digite o CEP para preencher rua e bairro automaticamente.'}
+                      </p>
                     </div>
                     <div className="form-group full">
                       <label className="form-label"><FiMapPin size={14} /> Rua</label>

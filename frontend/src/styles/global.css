@@ -43,7 +43,7 @@
   --radius-xl: 24px;
   --radius-full: 9999px;
   
-  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition: all 1.3s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-fast: all 0.15s ease;
   
   --font-primary: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -505,17 +505,7 @@ img {
   border: 0;
   border-radius: 0;
   background: url('../assets/loading-delivery.png') center / contain no-repeat;
-  animation: deliveryRide 2.8s linear infinite alternate;
-  will-change: transform;
-}
-
-@keyframes deliveryRide {
-  from {
-    transform: translateX(-38vw);
-  }
-  to {
-    transform: translateX(38vw);
-  }
+  animation: none;
 }
 
 /* ===== RESPONSIVE ===== */

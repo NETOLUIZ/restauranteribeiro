@@ -461,7 +461,14 @@ export default function EmpresaPedidos() {
     <>
       <Navbar />
       {mensagem && (
-        <div className={`toast toast-${mensagem.tipo}`} onAnimationEnd={() => setTimeout(() => setMensagem(null), 100)}>
+        <div
+          className={`toast toast-${mensagem.tipo}`}
+          onAnimationEnd={(event) => {
+            if (event.animationName === 'slideOut') {
+              setMensagem(null);
+            }
+          }}
+        >
           {mensagem.texto}
         </div>
       )}
