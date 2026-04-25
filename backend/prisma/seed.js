@@ -101,35 +101,35 @@ async function main() {
   console.log('Funcionario exemplo criado');
 
   // Cards de marmita (home)
-  await prisma.marmitaCard.upsert({
-    where: { tamanho: 'GRANDE' },
-    update: {
-      titulo: 'Marmita Grande',
-      preco: 24.9,
-      ativo: true
-    },
-    create: {
-      tamanho: 'GRANDE',
-      titulo: 'Marmita Grande',
-      preco: 24.9,
-      ativo: true
-    }
+  const marmitaGrande = await prisma.marmitaCard.findUnique({
+    where: { tamanho: 'GRANDE' }
   });
 
-  await prisma.marmitaCard.upsert({
-    where: { tamanho: 'PEQUENA' },
-    update: {
-      titulo: 'Marmita Pequena',
-      preco: 19.9,
-      ativo: true
-    },
-    create: {
-      tamanho: 'PEQUENA',
-      titulo: 'Marmita Pequena',
-      preco: 19.9,
-      ativo: true
-    }
+  if (!marmitaGrande) {
+    await prisma.marmitaCard.create({
+      data: {
+        tamanho: 'GRANDE',
+        titulo: 'Marmita Grande',
+        preco: 20,
+        ativo: true
+      }
+    });
+  }
+
+  const marmitaPequena = await prisma.marmitaCard.findUnique({
+    where: { tamanho: 'PEQUENA' }
   });
+
+  if (!marmitaPequena) {
+    await prisma.marmitaCard.create({
+      data: {
+        tamanho: 'PEQUENA',
+        titulo: 'Marmita Pequena',
+        preco: 16,
+        ativo: true
+      }
+    });
+  }
   console.log('Cards de marmita criados');
 
   console.log('Seed concluido com sucesso!');

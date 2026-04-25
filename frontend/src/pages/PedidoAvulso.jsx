@@ -54,7 +54,7 @@ function extrairSelecaoMarmita(locationObj, listaMarmitas = []) {
 
   const marmitaDoTamanho = listaMarmitas.find((m) => String(m.tamanho || '').toUpperCase() === tamanho);
   const tituloPadrao = tamanho === 'GRANDE' ? 'Marmita Grande' : tamanho === 'PEQUENA' ? 'Marmita Pequena' : '';
-  const valorPadrao = tamanho === 'GRANDE' ? 24.9 : tamanho === 'PEQUENA' ? 19.9 : 0;
+  const valorPadrao = tamanho === 'GRANDE' ? 20 : tamanho === 'PEQUENA' ? 16 : 0;
   const titulo = tituloState || tituloQuery || marmitaDoTamanho?.titulo || tituloPadrao;
   const valorUnitario =
     valorState > 0
@@ -392,14 +392,14 @@ export default function PedidoAvulso() {
     {
       tamanho: 'GRANDE',
       titulo: marmitas.find((m) => String(m.tamanho || '').toUpperCase() === 'GRANDE')?.titulo || 'Marmita Grande',
-      valorUnitario: Number(marmitas.find((m) => String(m.tamanho || '').toUpperCase() === 'GRANDE')?.preco || 24.9),
+      valorUnitario: Number(marmitas.find((m) => String(m.tamanho || '').toUpperCase() === 'GRANDE')?.preco || 20),
       proteinas: 2,
       proteinasTexto: 'Ate 2 proteina(s)'
     },
     {
       tamanho: 'PEQUENA',
       titulo: marmitas.find((m) => String(m.tamanho || '').toUpperCase() === 'PEQUENA')?.titulo || 'Marmita Pequena',
-      valorUnitario: Number(marmitas.find((m) => String(m.tamanho || '').toUpperCase() === 'PEQUENA')?.preco || 19.9),
+      valorUnitario: Number(marmitas.find((m) => String(m.tamanho || '').toUpperCase() === 'PEQUENA')?.preco || 16),
       proteinas: 1,
       proteinasTexto: '1 proteina'
     }

@@ -5,8 +5,8 @@ import { bannerAPI, marmitaAPI } from '../../services/api';
 const TAMANHOS = ['GRANDE', 'PEQUENA'];
 
 const PADRAO_MARMITAS = {
-  GRANDE: { titulo: 'Marmita Grande', preco: '24.90', imagemUrl: '' },
-  PEQUENA: { titulo: 'Marmita Pequena', preco: '19.90', imagemUrl: '' }
+  GRANDE: { titulo: 'Marmita Grande', preco: '20.00', imagemUrl: '' },
+  PEQUENA: { titulo: 'Marmita Pequena', preco: '16.00', imagemUrl: '' }
 };
 
 export default function GerenciarBanners() {

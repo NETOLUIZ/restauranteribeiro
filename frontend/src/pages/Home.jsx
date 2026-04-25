@@ -69,13 +69,13 @@ export default function Home() {
 
   const marmitaGrande = {
     titulo: grande?.titulo || 'Marmita Grande',
-    preco: grande?.preco ?? 24.9,
+    preco: grande?.preco ?? 20,
     imagemUrl: grande?.imagemUrl || ''
   };
 
   const marmitaPequena = {
     titulo: pequena?.titulo || 'Marmita Pequena',
-    preco: pequena?.preco ?? 19.9,
+    preco: pequena?.preco ?? 16,
     imagemUrl: pequena?.imagemUrl || ''
   };
 
