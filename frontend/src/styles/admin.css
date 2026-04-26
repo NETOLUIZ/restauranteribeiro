@@ -596,6 +596,8 @@
   z-index: 99;
 }
 
-.sidebar-overlay.show {
-  display: block;
+@media (max-width: 900px) {
+  .sidebar-overlay.show {
+    display: block;
+  }
 }

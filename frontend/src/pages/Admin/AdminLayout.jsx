@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   FiGrid, FiList, FiImage, FiShoppingBag, FiTruck, FiUsers, 
@@ -33,6 +33,23 @@ export default function AdminLayout() {
   const [sidebarAberta, setSidebarAberta] = useState(false);
   const { usuario, logout } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(min-width: 901px)');
+
+    const sincronizarSidebar = (event) => {
+      if (event.matches) {
+        setSidebarAberta(false);
+      }
+    };
+
+    sincronizarSidebar(mediaQuery);
+    mediaQuery.addEventListener('change', sincronizarSidebar);
+
+    return () => {
+      mediaQuery.removeEventListener('change', sincronizarSidebar);
+    };
+  }, []);
 
   const handleLogout = () => {
     logout();

@@ -91,7 +91,6 @@ export default function Home() {
         <section className="hero" id="hero-section">
           <div className="container hero-content">
             <h1>Restaurante Ribeiro</h1>
-            <p className="hero-desc">Qualidade e sabor em cada refeicao, com pedido avulso rapido e atendimento para empresas.</p>
             <div className="hero-buttons">
               <Link to="/pedido" className="btn btn-hero-primary" id="btn-fazer-pedido">
                 <FiShoppingBag size={20} /> Fazer Pedido
