@@ -90,10 +90,6 @@ export default function Home() {
       <div className="home-page-bg" style={{ backgroundImage: `url(${homePatternBg})` }}>
         <section className="hero" id="hero-section">
           <div className="container hero-content">
-            <div className="hero-badge">
-              <span className="badge-dot"></span>
-              Marmitas frescas e entregas do dia
-            </div>
             <h1>Restaurante Ribeiro</h1>
             <p className="hero-desc">Qualidade e sabor em cada refeicao, com pedido avulso rapido e atendimento para empresas.</p>
             <div className="hero-buttons">
