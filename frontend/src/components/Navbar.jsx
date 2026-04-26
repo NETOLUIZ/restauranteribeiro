@@ -1,12 +1,33 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/useAuth';
 import { FiMenu, FiX, FiLogOut } from 'react-icons/fi';
 
 export default function Navbar() {
   const [menuAberto, setMenuAberto] = useState(false);
+  const [menuMobileAtivo, setMenuMobileAtivo] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(max-width: 768px)').matches : false
+  );
   const { usuario, logout } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 768px)');
+
+    const sincronizarMenu = (event) => {
+      setMenuMobileAtivo(event.matches);
+      if (!event.matches) {
+        setMenuAberto(false);
+      }
+    };
+
+    sincronizarMenu(mediaQuery);
+    mediaQuery.addEventListener('change', sincronizarMenu);
+
+    return () => {
+      mediaQuery.removeEventListener('change', sincronizarMenu);
+    };
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -42,7 +63,7 @@ export default function Navbar() {
         </button>
       </div>
       
-      {menuAberto && (
+      {menuAberto && menuMobileAtivo && (
         <div className="navbar-mobile">
           <Link to="/" onClick={() => setMenuAberto(false)}>Início</Link>
           <Link to="/pedido" onClick={() => setMenuAberto(false)}>Fazer Pedido</Link>
