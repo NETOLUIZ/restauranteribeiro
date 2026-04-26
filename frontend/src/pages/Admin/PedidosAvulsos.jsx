@@ -218,7 +218,7 @@ export default function PedidosAvulsos() {
             <p><strong>Itens:</strong> {Array.isArray(pedido.itens) ? pedido.itens.map(i => i.nome).join(', ') : '-'}</p>
             {pedido.observacao && <p><strong>Observacao:</strong> {pedido.observacao}</p>}
             {pedido.motoqueiro && <p><strong>Motoqueiro:</strong> {pedido.motoqueiro}</p>}
-            {pedido.valorTroco != null && <p><strong>Troco:</strong> R$ {pedido.valorTroco?.toFixed(2)}</p>}
+            {pedido.valorTroco != null && <p><strong>Troco para:</strong> R$ {pedido.valorTroco?.toFixed(2)}</p>}
           </div>
 
           <div className="pedido-admin-card-actions">

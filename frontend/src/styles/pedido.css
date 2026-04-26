@@ -400,6 +400,22 @@
   max-width: 420px;
 }
 
+.troco-card {
+  margin-top: 16px;
+  max-width: 420px;
+  display: grid;
+  gap: 8px;
+}
+
+.troco-hint {
+  font-size: 0.78rem;
+  color: var(--cinza-600);
+}
+
+.troco-hint.error {
+  color: #b91c1c;
+}
+
 .pix-pagamento-card {
   margin-top: 18px;
   border: 1px solid var(--verde-light);

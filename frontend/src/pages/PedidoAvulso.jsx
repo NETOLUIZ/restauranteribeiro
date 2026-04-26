@@ -94,6 +94,21 @@ function formatarCep(valor = '') {
   return `${cepLimpo.slice(0, 5)}-${cepLimpo.slice(5)}`;
 }
 
+function normalizarEntradaMonetaria(valor = '') {
+  return String(valor)
+    .replace(/[^\d,.\s]/g, '')
+    .replace(/\s+/g, '')
+    .replace(',', '.');
+}
+
+function parseValorMonetario(valor = '') {
+  const normalizado = normalizarEntradaMonetaria(valor);
+  if (!normalizado) return null;
+
+  const numero = Number(normalizado);
+  return Number.isFinite(numero) ? numero : NaN;
+}
+
 function montarEnderecoEntrega(dados) {
   const cep = normalizarCampo(dados.cep);
   const rua = normalizarCampo(dados.rua);
@@ -113,6 +128,7 @@ export default function PedidoAvulso() {
   const [quantidade, setQuantidade] = useState(1);
   const [marmitaSelecionada, setMarmitaSelecionada] = useState(() => extrairSelecaoMarmita(location));
   const [formaPagamento, setFormaPagamento] = useState('PIX');
+  const [trocoPara, setTrocoPara] = useState('');
   const [dados, setDados] = useState(() => criarDadosEntregaVazios());
   const [enviando, setEnviando] = useState(false);
   const [mensagem, setMensagem] = useState(() => extrairMensagemCheckout(location.search));
@@ -238,6 +254,8 @@ export default function PedidoAvulso() {
     setEnviando(true);
     try {
       const enderecoEntrega = montarEnderecoEntrega(dados);
+      const trocoInformado = normalizarCampo(trocoPara);
+      const trocoParaValor = parseValorMonetario(trocoPara);
       const { data } = await pedidoAvulsoAPI.criar({
         nomeCliente: normalizarCampo(dados.nomeCliente),
         telefone: normalizarCampo(dados.telefone),
@@ -246,7 +264,11 @@ export default function PedidoAvulso() {
         itens: itensSelecionados.map(i => ({ id: i.id, nome: i.nome, tipo: i.tipo })),
         quantidade,
         formaPagamento,
-        valorUnitario: marmitaSelecionada.valorUnitario > 0 ? marmitaSelecionada.valorUnitario : undefined
+        valorUnitario: marmitaSelecionada.valorUnitario > 0 ? marmitaSelecionada.valorUnitario : undefined,
+        valorTroco:
+          formaPagamento === 'DINHEIRO' && trocoInformado && Number.isFinite(trocoParaValor)
+            ? Number(trocoParaValor.toFixed(2))
+            : undefined
       });
 
       if (formaPagamento === 'PIX') {
@@ -272,7 +294,8 @@ export default function PedidoAvulso() {
       } else {
         setPedidoDinheiro({
           id: data.id || data.pedidoId,
-          statusPagamento: data.statusPagamento || 'PENDENTE'
+          statusPagamento: data.statusPagamento || 'PENDENTE',
+          valorTroco: data.valorTroco
         });
         setPixPagamento(null);
         setMensagem({
@@ -291,6 +314,7 @@ export default function PedidoAvulso() {
     setItensSelecionados([]);
     setQuantidade(1);
     setFormaPagamento('PIX');
+    setTrocoPara('');
     setDados(criarDadosEntregaVazios());
     setPixPagamento(null);
     setPedidoDinheiro(null);
@@ -430,6 +454,12 @@ export default function PedidoAvulso() {
       : null;
   const valorTotal = marmitaSelecionada.valorUnitario > 0 ? Number((marmitaSelecionada.valorUnitario * quantidade).toFixed(2)) : 0;
   const formatarMoeda = (valor) => Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const trocoInformado = normalizarCampo(trocoPara);
+  const trocoParaValor = parseValorMonetario(trocoPara);
+  const trocoValido =
+    formaPagamento !== 'DINHEIRO' ||
+    !trocoInformado ||
+    (Number.isFinite(trocoParaValor) && trocoParaValor >= valorTotal);
   const etapaItensValida =
     !!marmitaSelecionada.tamanho &&
     itensSelecionados.length > 0 &&
@@ -441,7 +471,7 @@ export default function PedidoAvulso() {
     !!normalizarCampo(dados.rua) &&
     !!normalizarCampo(dados.numero) &&
     !!normalizarCampo(dados.bairro);
-  const pagamentoValido = ['PIX', 'DINHEIRO'].includes(formaPagamento);
+  const pagamentoValido = ['PIX', 'DINHEIRO'].includes(formaPagamento) && trocoValido;
   const etapaAtualCompleta =
     etapaAtual === 1 ? etapaItensValida : etapaAtual === 2 ? dadosEntregaValidos : pagamentoValido;
   const etapasCheckout = [
@@ -508,6 +538,21 @@ export default function PedidoAvulso() {
 
     if (etapa === 3) {
       if (!pagamentoValido) {
+        if (formaPagamento === 'DINHEIRO' && trocoInformado) {
+          if (!Number.isFinite(trocoParaValor) || trocoParaValor <= 0) {
+            if (mostrarErro) setMensagem({ tipo: 'error', texto: 'Informe um valor valido para o troco.' });
+            return false;
+          }
+          if (trocoParaValor < valorTotal) {
+            if (mostrarErro) {
+              setMensagem({
+                tipo: 'error',
+                texto: `O valor para troco deve ser maior ou igual ao total do pedido (${formatarMoeda(valorTotal)}).`
+              });
+            }
+            return false;
+          }
+        }
         if (mostrarErro) setMensagem({ tipo: 'error', texto: 'Selecione uma forma de pagamento.' });
         return false;
       }
@@ -827,6 +872,25 @@ export default function PedidoAvulso() {
                       : 'Ao enviar o pedido, ele ficara pendente para pagamento em dinheiro na entrega.'}
                   </p>
 
+                  {formaPagamento === 'DINHEIRO' && !pedidoDinheiro && !pixPagamento && (
+                    <div className="troco-card">
+                      <label className="form-label" htmlFor="input-troco-para">Troco para quanto? (opcional)</label>
+                      <input
+                        className="form-input"
+                        id="input-troco-para"
+                        inputMode="decimal"
+                        placeholder="Ex: 50,00"
+                        value={trocoPara}
+                        onChange={(e) => setTrocoPara(e.target.value.replace(/[^\d.,]/g, ''))}
+                      />
+                      <p className={`troco-hint ${trocoInformado && !trocoValido ? 'error' : ''}`}>
+                        {trocoInformado && !trocoValido
+                          ? `Informe um valor maior ou igual a ${formatarMoeda(valorTotal)}.`
+                          : 'Se nao precisar de troco, deixe em branco.'}
+                      </p>
+                    </div>
+                  )}
+
                   {pixPagamento && (
                     <div className="pix-pagamento-card" aria-live="polite">
                       <div className={`pix-status pix-status-${statusPedidoPix.toLowerCase()}`}>
@@ -882,6 +946,9 @@ export default function PedidoAvulso() {
                       <div className="pag-textos">
                         <span className="pag-label">Pedido #{pedidoDinheiro.id} enviado</span>
                         <span className="pag-desc">A equipe vai confirmar o recebimento do dinheiro na entrega.</span>
+                        {pedidoDinheiro.valorTroco != null && (
+                          <span className="pag-desc">Troco para {formatarMoeda(pedidoDinheiro.valorTroco)}.</span>
+                        )}
                       </div>
 
                       <div className="pix-acoes">

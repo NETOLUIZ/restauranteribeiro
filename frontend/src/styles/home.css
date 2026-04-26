@@ -1081,6 +1081,10 @@
     aspect-ratio: 16/9;
     border-radius: var(--radius-lg);
   }
+
+  .carrossel-nav {
+    display: none;
+  }
   
   .cardapio-grid {
     grid-template-columns: 1fr;

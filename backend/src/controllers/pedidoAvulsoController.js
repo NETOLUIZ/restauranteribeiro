@@ -114,7 +114,8 @@ async function criar(req, res) {
       quantidade,
       observacao,
       formaPagamento,
-      valorUnitario
+      valorUnitario,
+      valorTroco
     } = req.body;
 
     if (!nomeCliente || !telefone || !endereco || !Array.isArray(itens) || !itens.length || !formaPagamento) {
@@ -130,11 +131,24 @@ async function criar(req, res) {
     const valorRecebido = Number(valorUnitario);
     const valorUnitarioFinal = Number.isFinite(valorRecebido) && valorRecebido > 0 ? valorRecebido : valorPadrao;
     const valorTotal = Number((valorUnitarioFinal * quantidadeFinal).toFixed(2));
+    const valorTrocoRecebido = valorTroco === undefined || valorTroco === null || valorTroco === '' ? null : Number(valorTroco);
 
     if (!Number.isFinite(valorUnitarioFinal) || valorUnitarioFinal <= 0) {
       return res.status(400).json({
         erro: 'Defina PEDIDO_AVULSO_VALOR_UNITARIO maior que zero para criar o pedido'
       });
+    }
+
+    if (formaPagamento === 'DINHEIRO' && valorTrocoRecebido !== null) {
+      if (!Number.isFinite(valorTrocoRecebido) || valorTrocoRecebido <= 0) {
+        return res.status(400).json({ erro: 'Informe um valor valido para o troco.' });
+      }
+
+      if (valorTrocoRecebido < valorTotal) {
+        return res.status(400).json({
+          erro: 'O valor informado para troco deve ser maior ou igual ao total do pedido.'
+        });
+      }
     }
 
     if (formaPagamento === 'PIX' && !mercadoPagoConfigurado()) {
@@ -154,6 +168,7 @@ async function criar(req, res) {
         valorTotal,
         observacao,
         formaPagamento,
+        valorTroco: formaPagamento === 'DINHEIRO' && valorTrocoRecebido !== null ? Number(valorTrocoRecebido.toFixed(2)) : null,
         statusPagamento: 'PENDENTE'
       }
     });
@@ -265,9 +280,18 @@ async function atualizarStatus(req, res) {
 
     const dadosAtualizacao = {
       statusPagamento,
-      motoqueiro,
-      valorTroco
+      motoqueiro
     };
+
+    if (valorTroco !== undefined) {
+      const valorTrocoAtualizado = valorTroco === null || valorTroco === '' ? null : Number(valorTroco);
+
+      if (valorTrocoAtualizado !== null && !Number.isFinite(valorTrocoAtualizado)) {
+        return res.status(400).json({ erro: 'Valor de troco invalido' });
+      }
+
+      dadosAtualizacao.valorTroco = valorTrocoAtualizado;
+    }
 
     if (statusPagamento === 'CONFIRMADO') {
       dadosAtualizacao.pagoEm = new Date();
