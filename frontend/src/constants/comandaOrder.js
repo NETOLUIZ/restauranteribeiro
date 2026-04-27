@@ -8,9 +8,9 @@ export const PROTEINAS_COMANDA = [
 
 export const COMPLEMENTOS_COMANDA = [
   'Arroz Branco',
-  'Bai\u00e3o',
   'Feij\u00e3o',
   'Macarr\u00e3o',
+  'Bai\u00e3o',
   'Batatinha Cozida',
   'Farofa',
   'Ma\u00e7\u00e3 picada',
