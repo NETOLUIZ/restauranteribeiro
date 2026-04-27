@@ -77,6 +77,7 @@ export const empresaAPI = {
   listar: () => api.get('/empresas'),
   criar: (dados) => api.post('/empresas', dados),
   atualizar: (id, dados) => api.put(`/empresas/${id}`, dados),
+  deletar: (id) => api.delete(`/empresas/${id}`),
   listarFuncionariosMinhaEmpresa: () => api.get('/empresas/minha/funcionarios'),
   salvarFuncionarioMinhaEmpresa: (dados) => api.post('/empresas/minha/funcionarios', dados),
   adicionarFuncionario: (id, dados) => api.post(`/empresas/${id}/funcionarios`, dados),
@@ -108,4 +109,12 @@ export const marmitaAPI = {
 // Dashboard
 export const dashboardAPI = {
   resumo: () => api.get('/dashboard')
+};
+
+// Pedido por IA
+export const aiOrderAPI = {
+  organizarTexto: (dados) => api.post('/ai-order/text', dados),
+  organizarAudio: (formData) => api.post('/ai-order/audio', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  })
 };

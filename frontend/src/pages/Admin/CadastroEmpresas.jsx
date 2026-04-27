@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiPlus, FiShoppingBag, FiX, FiUser, FiMapPin, FiPackage, FiSend } from 'react-icons/fi';
+import { FiPlus, FiShoppingBag, FiX, FiUser, FiMapPin, FiPackage, FiSend, FiTrash2, FiKey } from 'react-icons/fi';
 import CheckboxVerde from '../../components/CheckboxVerde';
 import { empresaAPI, cardapioAPI, pedidoEmpresaAPI } from '../../services/api';
 
@@ -10,10 +10,12 @@ export default function CadastroEmpresas() {
 
   const [modalEmpresa, setModalEmpresa] = useState(false);
   const [modalEditar, setModalEditar] = useState(null);
+  const [modalSenha, setModalSenha] = useState(null);
   const [modalPedidoEmpresa, setModalPedidoEmpresa] = useState(null);
 
   const [formEmpresa, setFormEmpresa] = useState({ nome: '', sigla: '', senha: '', totalPedidos: 40 });
   const [formEditar, setFormEditar] = useState({ totalPedidos: 0 });
+  const [formSenha, setFormSenha] = useState({ senha: '', confirmarSenha: '' });
   const [quantidadeLote, setQuantidadeLote] = useState('1');
   const [enderecoLote, setEnderecoLote] = useState('');
   const [nomeAtual, setNomeAtual] = useState('');
@@ -96,6 +98,56 @@ export default function CadastroEmpresas() {
       carregar();
     } catch (err) {
       alert(err.response?.data?.erro || 'Erro ao atualizar total de pedidos');
+    }
+  };
+
+  const abrirTrocarSenha = (empresa) => {
+    setModalSenha(empresa);
+    setFormSenha({ senha: '', confirmarSenha: '' });
+  };
+
+  const salvarNovaSenha = async () => {
+    if (!modalSenha) return;
+
+    const senha = formSenha.senha.trim();
+    const confirmarSenha = formSenha.confirmarSenha.trim();
+
+    if (!senha) {
+      alert('Informe a nova senha da empresa.');
+      return;
+    }
+
+    if (senha !== confirmarSenha) {
+      alert('A confirmacao de senha nao confere.');
+      return;
+    }
+
+    try {
+      await empresaAPI.atualizar(modalSenha.id, { senha });
+      setModalSenha(null);
+      setFormSenha({ senha: '', confirmarSenha: '' });
+      alert(`Senha da empresa ${modalSenha.nome} atualizada com sucesso.`);
+    } catch (err) {
+      alert(err.response?.data?.erro || 'Erro ao atualizar senha da empresa');
+    }
+  };
+
+  const excluirEmpresa = async (empresa) => {
+    const confirmar = window.confirm(
+      `Excluir a empresa "${empresa.nome}"?\n\nEssa acao remove a empresa e os usuarios vinculados. Se houver pedidos no historico, a exclusao sera bloqueada.`
+    );
+
+    if (!confirmar) return;
+
+    try {
+      await empresaAPI.deletar(empresa.id);
+      if (modalEditar?.id === empresa.id) setModalEditar(null);
+      if (modalSenha?.id === empresa.id) setModalSenha(null);
+      if (modalPedidoEmpresa?.id === empresa.id) setModalPedidoEmpresa(null);
+      alert(`Empresa ${empresa.nome} excluida com sucesso.`);
+      carregar();
+    } catch (err) {
+      alert(err.response?.data?.erro || 'Erro ao excluir empresa');
     }
   };
 
@@ -324,6 +376,48 @@ export default function CadastroEmpresas() {
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setModalEditar(null)}>Cancelar</button>
               <button className="btn btn-primary" onClick={salvarEdicao}>Salvar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalSenha && (
+        <div className="modal-overlay" onClick={() => setModalSenha(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Trocar Senha da Empresa</h3>
+              <button onClick={() => setModalSenha(null)} style={{ fontSize: '1.2rem', color: 'var(--cinza-500)' }}>x</button>
+            </div>
+            <div className="modal-body">
+              <p style={{ marginBottom: '12px', color: 'var(--cinza-600)' }}>
+                Empresa: <strong>{modalSenha.nome}</strong>
+              </p>
+              <div className="form-group">
+                <label className="form-label">Nova Senha</label>
+                <input
+                  className="form-input"
+                  type="password"
+                  value={formSenha.senha}
+                  onChange={e => setFormSenha((prev) => ({ ...prev, senha: e.target.value }))}
+                  placeholder="Digite a nova senha"
+                  id="input-nova-senha-empresa"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Confirmar Nova Senha</label>
+                <input
+                  className="form-input"
+                  type="password"
+                  value={formSenha.confirmarSenha}
+                  onChange={e => setFormSenha((prev) => ({ ...prev, confirmarSenha: e.target.value }))}
+                  placeholder="Repita a nova senha"
+                  id="input-confirmar-senha-empresa"
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={() => setModalSenha(null)}>Cancelar</button>
+              <button className="btn btn-primary" onClick={salvarNovaSenha}>Salvar Nova Senha</button>
             </div>
           </div>
         </div>
@@ -652,6 +746,20 @@ export default function CadastroEmpresas() {
             <div style={{ marginTop: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <button className="btn btn-sm btn-secondary" onClick={() => abrirEditar(empresa)}>
                 Editar Total de Pedidos
+              </button>
+              <button
+                className="btn btn-sm btn-secondary"
+                onClick={() => abrirTrocarSenha(empresa)}
+                id={`btn-trocar-senha-empresa-${empresa.id}`}
+              >
+                <FiKey size={14} /> Trocar Senha
+              </button>
+              <button
+                className="btn btn-sm btn-danger"
+                onClick={() => excluirEmpresa(empresa)}
+                id={`btn-excluir-empresa-${empresa.id}`}
+              >
+                <FiTrash2 size={14} /> Excluir Empresa
               </button>
             </div>
 

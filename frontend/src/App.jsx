@@ -57,6 +57,14 @@ function App() {
               </ProtectedRoute>
             } 
           />
+          <Route
+            path="/admin/pedido-ia"
+            element={
+              <ProtectedRoute role="ADMIN" loginPath="/admin/login">
+                <AdminLayout paginaInicial="pedido-ia" />
+              </ProtectedRoute>
+            }
+          />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

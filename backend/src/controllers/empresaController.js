@@ -116,6 +116,60 @@ async function atualizar(req, res) {
   }
 }
 
+async function excluir(req, res) {
+  try {
+    const id = parseInt(req.params.id, 10);
+
+    if (!Number.isInteger(id) || id <= 0) {
+      return res.status(400).json({ erro: 'Empresa invalida' });
+    }
+
+    const empresa = await prisma.empresa.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        nome: true,
+        _count: {
+          select: {
+            pedidos: true,
+            funcionarios: true,
+            funcionariosSalvos: true
+          }
+        }
+      }
+    });
+
+    if (!empresa) {
+      return res.status(404).json({ erro: 'Empresa nao encontrada' });
+    }
+
+    if (empresa._count.pedidos > 0) {
+      return res.status(400).json({
+        erro: 'Nao e possivel excluir empresa com pedidos vinculados. Remova apenas empresas sem historico.'
+      });
+    }
+
+    await prisma.$transaction([
+      prisma.usuario.deleteMany({
+        where: { empresaId: id }
+      }),
+      prisma.empresaFuncionario.deleteMany({
+        where: { empresaId: id }
+      }),
+      prisma.empresa.delete({
+        where: { id }
+      })
+    ]);
+
+    res.json({
+      mensagem: `Empresa ${empresa.nome} excluida com sucesso`
+    });
+  } catch (err) {
+    console.error('Erro ao excluir empresa:', err);
+    res.status(500).json({ erro: 'Erro interno do servidor' });
+  }
+}
+
 // Adicionar funcionario a uma empresa
 async function adicionarFuncionario(req, res) {
   try {
@@ -234,6 +288,7 @@ module.exports = {
   listar,
   criar,
   atualizar,
+  excluir,
   adicionarFuncionario,
   removerFuncionario,
   listarFuncionariosMinhaEmpresa,
