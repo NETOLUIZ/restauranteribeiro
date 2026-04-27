@@ -1,13 +1,12 @@
 import { COMANDA_PRINT_CSS, TELEFONE_RESTAURANTE, escapeHtml } from './comandaPrint';
+import {
+  COMPLEMENTOS_COMANDA,
+  PROTEINAS_COMANDA,
+  normalizarChaveComanda,
+  ordenarItensComanda
+} from '../constants/comandaOrder';
 
 const LINK_DELIVERY_COMANDA = 'ribeirorestaurante.com';
-
-const normalizarChave = (valor = '') =>
-  String(valor)
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim();
 
 const formatarTelefoneComanda = (telefone = '') => {
   const digitos = String(telefone).replace(/\D/g, '');
@@ -28,7 +27,7 @@ const criarSetMarcados = (itens = []) =>
     (Array.isArray(itens) ? itens : [])
       .map((item) => (typeof item === 'string' ? item : item?.nome || ''))
       .filter(Boolean)
-      .map((item) => normalizarChave(item))
+      .map((item) => normalizarChaveComanda(item))
   );
 
 const obterNomeItem = (item) => (typeof item === 'string' ? item : item?.nome || '');
@@ -52,7 +51,7 @@ const gerarItensChecklist = (itens, selecionados) => {
   return itens
     .map((item) => {
       const nome = obterNomeItem(item);
-      const marcado = selecionados.has(normalizarChave(nome));
+      const marcado = selecionados.has(normalizarChaveComanda(nome));
 
       return `
         <div class="comanda-vazia-item">
@@ -88,6 +87,8 @@ export const gerarHtmlComandaChecklist = ({
   const whatsappComanda = formatarTelefoneComanda(TELEFONE_RESTAURANTE);
   const proteinasMarcadas = criarSetMarcados(proteinasSelecionadas);
   const complementosMarcados = criarSetMarcados(complementosSelecionados);
+  const itensProteinaOrdenados = ordenarItensComanda(itensProteina, PROTEINAS_COMANDA);
+  const itensComplementoOrdenados = ordenarItensComanda(itensComplemento, COMPLEMENTOS_COMANDA);
 
   return `
     <html>
@@ -499,14 +500,14 @@ export const gerarHtmlComandaChecklist = ({
                 <div class="comanda-vazia-coluna">
                   <div class="comanda-vazia-coluna-titulo">PROTEINAS</div>
                   <div class="comanda-vazia-lista">
-                    ${gerarItensChecklist(itensProteina, proteinasMarcadas)}
+                    ${gerarItensChecklist(itensProteinaOrdenados, proteinasMarcadas)}
                   </div>
                 </div>
                 <div class="comanda-vazia-divisor"></div>
                 <div class="comanda-vazia-coluna">
                   <div class="comanda-vazia-coluna-titulo">COMPLEMENTOS</div>
                   <div class="comanda-vazia-lista">
-                    ${gerarItensChecklist(itensComplemento, complementosMarcados)}
+                    ${gerarItensChecklist(itensComplementoOrdenados, complementosMarcados)}
                   </div>
                 </div>
               </section>

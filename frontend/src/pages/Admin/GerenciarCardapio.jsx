@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { FiPlus, FiEdit2, FiTrash2, FiToggleLeft, FiToggleRight, FiPrinter } from 'react-icons/fi';
 import { cardapioAPI } from '../../services/api';
 import { abrirImpressaoComandaChecklist } from '../../utils/comandaChecklistPrint';
+import { COMPLEMENTOS_COMANDA, PROTEINAS_COMANDA, ordenarItensComanda } from '../../constants/comandaOrder';
 
 export default function GerenciarCardapio() {
   const [itens, setItens] = useState([]);
@@ -80,11 +81,15 @@ export default function GerenciarCardapio() {
   };
 
   const imprimirComandaVazia = () => {
-    const ordenarPorNome = (lista) =>
-      [...lista].sort((a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR'));
     const itensAtivos = itens.filter((item) => item.ativo);
-    const proteinasAtivas = ordenarPorNome(itensAtivos.filter((item) => item.tipo === 'PROTEINA'));
-    const complementosAtivos = ordenarPorNome(itensAtivos.filter((item) => item.tipo === 'COMPLEMENTO'));
+    const proteinasAtivas = ordenarItensComanda(
+      itensAtivos.filter((item) => item.tipo === 'PROTEINA'),
+      PROTEINAS_COMANDA
+    );
+    const complementosAtivos = ordenarItensComanda(
+      itensAtivos.filter((item) => item.tipo === 'COMPLEMENTO'),
+      COMPLEMENTOS_COMANDA
+    );
 
     if (!proteinasAtivas.length && !complementosAtivos.length) {
       alert('Nenhum item ativo no cardapio para imprimir na comanda.');
@@ -104,8 +109,14 @@ export default function GerenciarCardapio() {
 
   if (carregando) return <div className="loading-spinner"><div className="spinner"></div></div>;
 
-  const proteinas = itens.filter(i => i.tipo === 'PROTEINA');
-  const complementos = itens.filter(i => i.tipo === 'COMPLEMENTO');
+  const proteinas = ordenarItensComanda(
+    itens.filter((item) => item.tipo === 'PROTEINA'),
+    PROTEINAS_COMANDA
+  );
+  const complementos = ordenarItensComanda(
+    itens.filter((item) => item.tipo === 'COMPLEMENTO'),
+    COMPLEMENTOS_COMANDA
+  );
 
   return (
     <div id="gerenciar-cardapio">
