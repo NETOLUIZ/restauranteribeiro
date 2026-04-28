@@ -4,6 +4,7 @@ import {
   FiFileText,
   FiMic,
   FiPauseCircle,
+  FiPlus,
   FiPrinter,
   FiRefreshCw,
   FiSend,
@@ -13,7 +14,7 @@ import {
 } from 'react-icons/fi';
 import CheckboxVerde from '../../components/CheckboxVerde';
 import { aiOrderAPI, empresaAPI, pedidoEmpresaAPI } from '../../services/api';
-import { abrirImpressaoComandaChecklist } from '../../utils/comandaChecklistPrint';
+import { abrirImpressaoComandasChecklist } from '../../utils/comandaChecklistPrint';
 import './PedidoIA.css';
 
 const PROTEINAS = [
@@ -32,8 +33,18 @@ const COMPLEMENTOS = [
   'Batatinha Cozida',
   'Farofa',
   'Ma\u00e7\u00e3 picada',
-  'Vinagrete'
+  'Vinagrete',
+  'Salada',
+  'Ovo Cozido'
 ];
+
+const criarComandaVazia = () => ({
+  nome: '',
+  observacoes: '',
+  proteinas: [],
+  complementos: [],
+  quantidade: 1
+});
 
 const criarPedidoVazio = () => ({
   nome: '',
@@ -41,8 +52,8 @@ const criarPedidoVazio = () => ({
   endereco: '',
   pagamento: '',
   observacoes: '',
-  proteinas: [],
-  complementos: []
+  total_comandas: 0,
+  itens: []
 });
 
 const normalizarChave = (valor = '') =>
@@ -57,6 +68,21 @@ const normalizarCampo = (valor = '') =>
     .trim()
     .replace(/\s+/g, ' ');
 
+const juntarObservacoes = (...partes) => {
+  const vistos = new Set();
+
+  return partes
+    .flatMap((parte) => String(parte || '').split(/\s*;\s*/))
+    .map((parte) => normalizarCampo(parte))
+    .filter((parte) => {
+      const chave = normalizarChave(parte);
+      if (!chave || vistos.has(chave)) return false;
+      vistos.add(chave);
+      return true;
+    })
+    .join('; ');
+};
+
 const ordenarListaPorReferencia = (lista = [], referencia = []) => {
   const posicoes = new Map(referencia.map((item, indice) => [normalizarChave(item), indice]));
 
@@ -67,14 +93,56 @@ const ordenarListaPorReferencia = (lista = [], referencia = []) => {
   });
 };
 
-const normalizarPedidoRecebido = (pedido = {}) => {
-  const proteinasSet = new Set(PROTEINAS.map((item) => normalizarChave(item)));
-  const complementosSet = new Set(COMPLEMENTOS.map((item) => normalizarChave(item)));
+const normalizarListaRecebida = (lista = [], referencia = []) => {
+  const itensPermitidos = new Map(referencia.map((item) => [normalizarChave(item), item]));
 
-  const filtrarLista = (lista, setPermitido) =>
-    Array.isArray(lista)
-      ? lista.filter((item) => setPermitido.has(normalizarChave(item)))
-      : [];
+  return ordenarListaPorReferencia(
+    (Array.isArray(lista) ? lista : [])
+      .map((item) => itensPermitidos.get(normalizarChave(item)))
+      .filter(Boolean)
+      .filter((item, indice, array) => array.findIndex((valor) => normalizarChave(valor) === normalizarChave(item)) === indice),
+    referencia
+  );
+};
+
+const normalizarComandaRecebida = (item = {}) => ({
+  nome: normalizarCampo(item?.nome || ''),
+  observacoes: normalizarCampo(item?.observacoes || ''),
+  proteinas: normalizarListaRecebida(item?.proteinas, PROTEINAS),
+  complementos: normalizarListaRecebida(item?.complementos, COMPLEMENTOS),
+  quantidade: 1
+});
+
+const temConteudoComanda = (comanda = {}) =>
+  !!normalizarCampo(comanda?.nome)
+  || !!normalizarCampo(comanda?.observacoes)
+  || Array.isArray(comanda?.proteinas) && comanda.proteinas.length > 0
+  || Array.isArray(comanda?.complementos) && comanda.complementos.length > 0;
+
+const normalizarPedidoRecebido = (pedido = {}) => {
+  const itensOriginais = Array.isArray(pedido?.itens) ? pedido.itens : [];
+  const itensLegados = !itensOriginais.length && (
+    Array.isArray(pedido?.proteinas) && pedido.proteinas.length
+    || Array.isArray(pedido?.complementos) && pedido.complementos.length
+    || normalizarCampo(pedido?.nome)
+    || normalizarCampo(pedido?.observacoes)
+  )
+    ? [{
+      nome: pedido?.nome || '',
+      observacoes: pedido?.observacoes || '',
+      proteinas: pedido?.proteinas || [],
+      complementos: pedido?.complementos || [],
+      quantidade: 1
+    }]
+    : [];
+
+  const itens = [...itensOriginais, ...itensLegados]
+    .flatMap((item) => {
+      const comandaNormalizada = normalizarComandaRecebida(item);
+      const quantidade = Math.max(1, Math.min(100, Number.parseInt(item?.quantidade, 10) || 1));
+      return Array.from({ length: quantidade }, () => ({ ...comandaNormalizada, quantidade: 1 }));
+    })
+    .filter(temConteudoComanda);
 
   return {
     nome: normalizarCampo(pedido?.nome || ''),
@@ -82,21 +150,35 @@ const normalizarPedidoRecebido = (pedido = {}) => {
     endereco: normalizarCampo(pedido?.endereco || ''),
     pagamento: normalizarCampo(pedido?.pagamento || ''),
     observacoes: normalizarCampo(pedido?.observacoes || ''),
-    proteinas: filtrarLista(pedido?.proteinas, proteinasSet),
-    complementos: ordenarListaPorReferencia(
-      filtrarLista(pedido?.complementos, complementosSet),
-      COMPLEMENTOS
-    )
+    total_comandas: itens.length,
+    itens
   };
 };
 
-const montarItensPedidoEmpresa = (pedido = {}) => [
-  ...(pedido.proteinas || []).map((nome) => ({ nome, tipo: 'PROTEINA' })),
-  ...(pedido.complementos || []).map((nome) => ({ nome, tipo: 'COMPLEMENTO' }))
+const montarItensPedidoEmpresa = (comanda = {}) => [
+  ...(comanda.proteinas || []).map((nome) => ({ nome, tipo: 'PROTEINA' })),
+  ...(comanda.complementos || []).map((nome) => ({ nome, tipo: 'COMPLEMENTO' }))
 ];
 
+const montarResumoComandasObservacao = (pedido = {}) =>
+  (pedido.itens || [])
+    .map((comanda, indice) => {
+      const nome = normalizarCampo(comanda.nome) || 'Sem nome';
+      const itens = [...(comanda.proteinas || []), ...(comanda.complementos || [])].join(', ') || 'Sem itens';
+      const observacoes = normalizarCampo(comanda.observacoes);
+      return `${indice + 1}) ${nome} - ${itens}${observacoes ? ` - Obs: ${observacoes}` : ''}`;
+    })
+    .join(' || ');
+
 const montarObservacaoFluxoEmpresa = (pedido = {}) => {
-  const partes = ['Origem: Pedido por IA'];
+  const partes = [
+    'Origem: Pedido por IA',
+    `Total comandas: ${pedido.itens?.length || 0}`
+  ];
+
+  if (normalizarCampo(pedido.nome)) {
+    partes.push(`Contato: ${normalizarCampo(pedido.nome)}`);
+  }
 
   if (normalizarCampo(pedido.telefone)) {
     partes.push(`Tel: ${normalizarCampo(pedido.telefone)}`);
@@ -107,11 +189,29 @@ const montarObservacaoFluxoEmpresa = (pedido = {}) => {
   }
 
   if (normalizarCampo(pedido.observacoes)) {
-    partes.push(`Obs: ${normalizarCampo(pedido.observacoes)}`);
+    partes.push(`Obs geral: ${normalizarCampo(pedido.observacoes)}`);
+  }
+
+  const resumoComandas = montarResumoComandasObservacao(pedido);
+  if (resumoComandas) {
+    partes.push(`Comandas: ${resumoComandas}`);
   }
 
   return partes.join(' | ');
 };
+
+const montarDadosImpressaoComanda = (pedido = {}, comanda = {}, indice = 0, total = 0) => ({
+  tituloJanela: `Pedido por IA - Comanda ${indice + 1}/${total}`,
+  nome: normalizarCampo(comanda.nome) || normalizarCampo(pedido.nome),
+  telefone: normalizarCampo(pedido.telefone),
+  endereco: normalizarCampo(pedido.endereco),
+  pagamento: normalizarCampo(pedido.pagamento),
+  observacoes: juntarObservacoes(pedido.observacoes, comanda.observacoes),
+  itensProteina: PROTEINAS,
+  itensComplemento: COMPLEMENTOS,
+  proteinasSelecionadas: comanda.proteinas,
+  complementosSelecionados: comanda.complementos
+});
 
 export default function PedidoIA() {
   const [mensagemTexto, setMensagemTexto] = useState('');
@@ -142,9 +242,14 @@ export default function PedidoIA() {
     !!navigator.mediaDevices?.getUserMedia &&
     typeof window.MediaRecorder !== 'undefined';
 
+  const totalComandas = useMemo(() => pedido.itens.length, [pedido.itens]);
+
   const totalMarcados = useMemo(
-    () => pedido.proteinas.length + pedido.complementos.length,
-    [pedido.complementos.length, pedido.proteinas.length]
+    () => pedido.itens.reduce(
+      (total, comanda) => total + (comanda.proteinas?.length || 0) + (comanda.complementos?.length || 0),
+      0
+    ),
+    [pedido.itens]
   );
 
   const empresaSelecionada = useMemo(
@@ -194,14 +299,16 @@ export default function PedidoIA() {
   }, [audioPreviewUrl]);
 
   const aplicarResultado = (data, tipoOrigem) => {
-    setPedido(normalizarPedidoRecebido(data));
+    const pedidoNormalizado = normalizarPedidoRecebido(data);
+
+    setPedido(pedidoNormalizado);
     setResultadoDisponivel(true);
     setPedidoCriadoInfo(null);
     setFeedback({
       tipo: 'success',
       texto: tipoOrigem === 'audio'
-        ? 'Audio transcrito e pedido organizado com sucesso.'
-        : 'Pedido organizado com sucesso.'
+        ? `Audio transcrito e pedido organizado com sucesso. Total de comandas detectadas: ${pedidoNormalizado.itens.length}.`
+        : `Pedido organizado com sucesso. Total de comandas detectadas: ${pedidoNormalizado.itens.length}.`
     });
   };
 
@@ -388,21 +495,61 @@ export default function PedidoIA() {
     setPedidoCriadoInfo(null);
   };
 
-  const alternarItem = (campo, item) => {
+  const atualizarCampoComanda = (indice, campo, valor) => {
     setPedido((anterior) => {
-      const listaAtual = anterior[campo] || [];
-      const jaSelecionado = listaAtual.some((valor) => normalizarChave(valor) === normalizarChave(item));
+      const itens = anterior.itens.map((comanda, itemIndice) => (
+        itemIndice === indice
+          ? {
+            ...comanda,
+            [campo]: campo === 'nome' || campo === 'observacoes' ? valor : comanda[campo]
+          }
+          : comanda
+      ));
 
-      return {
-        ...anterior,
-        [campo]: jaSelecionado
+      return { ...anterior, itens, total_comandas: itens.length };
+    });
+
+    setPedidoCriadoInfo(null);
+  };
+
+  const alternarItemComanda = (indice, campo, item) => {
+    setPedido((anterior) => {
+      const itens = anterior.itens.map((comanda, itemIndice) => {
+        if (itemIndice !== indice) return comanda;
+
+        const listaAtual = comanda[campo] || [];
+        const jaSelecionado = listaAtual.some((valor) => normalizarChave(valor) === normalizarChave(item));
+        const proximaLista = jaSelecionado
           ? listaAtual.filter((valor) => normalizarChave(valor) !== normalizarChave(item))
           : campo === 'complementos'
             ? ordenarListaPorReferencia([...listaAtual, item], COMPLEMENTOS)
-            : [...listaAtual, item]
-      };
+            : [...listaAtual, item];
+
+        return {
+          ...comanda,
+          [campo]: proximaLista
+        };
+      });
+
+      return { ...anterior, itens, total_comandas: itens.length };
     });
 
+    setPedidoCriadoInfo(null);
+  };
+
+  const adicionarComanda = () => {
+    setPedido((anterior) => {
+      const itens = [...anterior.itens, criarComandaVazia()];
+      return { ...anterior, itens, total_comandas: itens.length };
+    });
+    setPedidoCriadoInfo(null);
+  };
+
+  const removerComanda = (indice) => {
+    setPedido((anterior) => {
+      const itens = anterior.itens.filter((_, itemIndice) => itemIndice !== indice);
+      return { ...anterior, itens, total_comandas: itens.length };
+    });
     setPedidoCriadoInfo(null);
   };
 
@@ -421,29 +568,25 @@ export default function PedidoIA() {
   };
 
   const imprimirChecklist = () => {
-    if (totalMarcados === 0) {
+    const comandasValidas = pedido.itens.filter(temConteudoComanda);
+
+    if (!comandasValidas.length) {
       setFeedback({
         tipo: 'error',
-        texto: 'Marque ao menos um item antes de imprimir a comanda.'
+        texto: 'Nao existe nenhuma comanda valida para imprimir.'
       });
       return;
     }
 
     try {
-      abrirImpressaoComandaChecklist({
-        tituloJanela: 'Pedido por IA',
-        nome: pedido.nome,
-        telefone: pedido.telefone,
-        endereco: pedido.endereco,
-        pagamento: pedido.pagamento,
-        observacoes: pedido.observacoes,
-        itensProteina: PROTEINAS,
-        itensComplemento: COMPLEMENTOS,
-        proteinasSelecionadas: pedido.proteinas,
-        complementosSelecionados: pedido.complementos
-      });
+      abrirImpressaoComandasChecklist(
+        comandasValidas.map((comanda, indice) => montarDadosImpressaoComanda(pedido, comanda, indice, comandasValidas.length))
+      );
 
-      setFeedback({ tipo: 'success', texto: 'Checklist enviado para impressao.' });
+      setFeedback({
+        tipo: 'success',
+        texto: `${comandasValidas.length} comandas enviadas para impressao.`
+      });
     } catch {
       setFeedback({
         tipo: 'error',
@@ -477,15 +620,30 @@ export default function PedidoIA() {
       return;
     }
 
-    const itens = montarItensPedidoEmpresa(pedido);
+    const comandasValidas = pedido.itens.filter(temConteudoComanda);
 
-    if (!itens.length) {
+    if (!comandasValidas.length) {
       setFeedback({
         tipo: 'error',
-        texto: 'Selecione ao menos um item antes de criar o pedido empresarial.'
+        texto: 'Nao existe nenhuma comanda valida para criar no fluxo empresarial.'
       });
       return;
     }
+
+    const existeComandaSemItens = comandasValidas.some((comanda) => !montarItensPedidoEmpresa(comanda).length);
+    if (existeComandaSemItens) {
+      setFeedback({
+        tipo: 'error',
+        texto: 'Cada comanda precisa ter ao menos um item marcado antes do envio.'
+      });
+      return;
+    }
+
+    const pedidoParaEnvio = {
+      ...pedido,
+      itens: comandasValidas,
+      total_comandas: comandasValidas.length
+    };
 
     setEnviandoFluxo(true);
     setFeedback(null);
@@ -493,26 +651,25 @@ export default function PedidoIA() {
     try {
       const { data } = await pedidoEmpresaAPI.criar({
         empresaId: Number(empresaSelecionadaId),
-        lotes: [
-          {
-            itens,
-            quantidade: 1,
-            endereco: normalizarCampo(pedido.endereco),
-            nomes: normalizarCampo(pedido.nome) ? [normalizarCampo(pedido.nome)] : null
-          }
-        ],
-        totalPedidosDia: 1,
-        observacao: montarObservacaoFluxoEmpresa(pedido)
+        lotes: comandasValidas.map((comanda) => ({
+          itens: montarItensPedidoEmpresa(comanda),
+          quantidade: 1,
+          endereco: normalizarCampo(pedido.endereco),
+          nomes: normalizarCampo(comanda.nome) ? [normalizarCampo(comanda.nome)] : null
+        })),
+        totalPedidosDia: comandasValidas.length,
+        observacao: montarObservacaoFluxoEmpresa(pedidoParaEnvio)
       });
 
       setPedidoCriadoInfo({
         id: data?.id,
         status: data?.status || 'ENVIADO',
-        empresaNome: data?.empresa?.nome || empresaSelecionada?.nome || ''
+        empresaNome: data?.empresa?.nome || empresaSelecionada?.nome || '',
+        totalComandas: comandasValidas.length
       });
       setFeedback({
         tipo: 'success',
-        texto: `Pedido empresarial #${data?.id} criado com status ${data?.status || 'ENVIADO'}. Agora ele segue o mesmo fluxo de Pedidos Empresas.`
+        texto: `Pedido empresarial #${data?.id} criado com ${comandasValidas.length} comandas e status ${data?.status || 'ENVIADO'}.`
       });
     } catch (err) {
       setFeedback({
@@ -532,14 +689,14 @@ export default function PedidoIA() {
           <h1>Pedido por IA</h1>
           <p>
             Cole mensagens do WhatsApp ou envie um audio para a IA estruturar o pedido.
-            Depois da conferencia, o pedido entra no mesmo fluxo de Pedidos Empresas:
-            ENVIADO, AUTORIZADO e IMPRESSO.
+            Agora cada pessoa vira uma comanda individual em <code>pedido.itens</code>,
+            sem juntar varios pedidos na mesma impressao.
           </p>
         </div>
         <div className="pedido-ia-summary">
-          <span>Itens marcados</span>
-          <strong>{totalMarcados}</strong>
-          <small>1 lote / 1 refeicao por envio</small>
+          <span>Comandas detectadas</span>
+          <strong>{totalComandas}</strong>
+          <small>{totalMarcados} itens marcados nas comandas atuais</small>
         </div>
       </section>
 
@@ -562,7 +719,7 @@ export default function PedidoIA() {
             className="pedido-ia-textarea"
             value={mensagemTexto}
             onChange={(e) => setMensagemTexto(e.target.value)}
-            placeholder="Ex: Quero uma quentinha de frango com baiao, feijao e macarrao. Entrega na Rua 10, numero 55. Pix."
+            placeholder="Ex: 1 Paulo baiao ovo e salada&#10;2 Everson assado creme pouco arroz batata vinagrete maca&#10;3 Isabele arroz macarrao farofa"
             rows={11}
           />
 
@@ -588,7 +745,7 @@ export default function PedidoIA() {
             <div className="pedido-ia-recording-indicator" role="status" aria-live="polite">
               <span className="pedido-ia-recording-dot"></span>
               <strong>Microfone ouvindo agora</strong>
-              <small>Gravando pedido em tempo real • {formatarDuracao(duracaoGravacao)}</small>
+              <small>Gravando pedido em tempo real - {formatarDuracao(duracaoGravacao)}</small>
             </div>
           )}
 
@@ -683,14 +840,14 @@ export default function PedidoIA() {
         <section className="pedido-ia-card pedido-ia-resultado">
           <div className="pedido-ia-card-header">
             <h2>Conferencia editavel</h2>
-            <span>Revise antes de enviar para Pedidos Empresas</span>
+            <span>Revise cada comanda antes de enviar para Pedidos Empresas</span>
           </div>
 
           <div className="pedido-ia-flow-box">
             <div className="pedido-ia-flow-header">
               <div>
                 <strong><FiTruck size={16} /> Destino no fluxo empresarial</strong>
-                <p>Este envio cria 1 pedido empresarial com 1 lote e 1 refeicao.</p>
+                <p>Este envio cria 1 pedido empresarial com {totalComandas} lotes e {totalComandas} comandas individuais.</p>
               </div>
               <span className="pedido-ia-flow-status">
                 ENVIADO {'>'} AUTORIZADO {'>'} IMPRESSO
@@ -721,11 +878,17 @@ export default function PedidoIA() {
                 </select>
               </div>
 
+              <div className="pedido-ia-total-box">
+                <span>Total de comandas</span>
+                <strong>{totalComandas}</strong>
+                <small>Esse total acompanha pedido.itens.length</small>
+              </div>
+
               {pedidoCriadoInfo && (
                 <div className="pedido-ia-created-box">
                   <span>Pedido criado</span>
                   <strong>#{pedidoCriadoInfo.id}</strong>
-                  <small>{pedidoCriadoInfo.empresaNome || 'Empresa selecionada'} - {pedidoCriadoInfo.status}</small>
+                  <small>{pedidoCriadoInfo.empresaNome || 'Empresa selecionada'} - {pedidoCriadoInfo.status} - {pedidoCriadoInfo.totalComandas} comandas</small>
                 </div>
               )}
             </div>
@@ -733,7 +896,7 @@ export default function PedidoIA() {
 
           <div className="pedido-ia-form-grid">
             <div className="form-group">
-              <label className="form-label" htmlFor="pedido-ia-nome">Nome</label>
+              <label className="form-label" htmlFor="pedido-ia-nome">Contato / responsavel</label>
               <input
                 id="pedido-ia-nome"
                 className="form-input"
@@ -773,7 +936,7 @@ export default function PedidoIA() {
             </div>
 
             <div className="form-group full">
-              <label className="form-label" htmlFor="pedido-ia-observacoes">Observacoes</label>
+              <label className="form-label" htmlFor="pedido-ia-observacoes">Observacoes gerais</label>
               <textarea
                 id="pedido-ia-observacoes"
                 className="pedido-ia-textarea pedido-ia-textarea-sm"
@@ -784,37 +947,104 @@ export default function PedidoIA() {
             </div>
           </div>
 
-          <div className="pedido-ia-listas">
+          <div className="pedido-ia-comandas-header">
             <div>
-              <h3>Proteinas</h3>
-              <div className="pedido-ia-check-grid">
-                {PROTEINAS.map((item) => (
-                  <CheckboxVerde
-                    key={item}
-                    id={`pedido-ia-proteina-${normalizarChave(item)}`}
-                    label={item}
-                    selecionado={pedido.proteinas.some((valor) => normalizarChave(valor) === normalizarChave(item))}
-                    onChange={() => alternarItem('proteinas', item)}
-                  />
-                ))}
-              </div>
+              <h3>Comandas individuais</h3>
+              <p>Total de comandas: {totalComandas}</p>
             </div>
-
-            <div>
-              <h3>Complementos</h3>
-              <div className="pedido-ia-check-grid">
-                {COMPLEMENTOS.map((item) => (
-                  <CheckboxVerde
-                    key={item}
-                    id={`pedido-ia-complemento-${normalizarChave(item)}`}
-                    label={item}
-                    selecionado={pedido.complementos.some((valor) => normalizarChave(valor) === normalizarChave(item))}
-                    onChange={() => alternarItem('complementos', item)}
-                  />
-                ))}
-              </div>
-            </div>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={adicionarComanda}
+              id="btn-adicionar-comanda-pedido-ia"
+            >
+              <FiPlus size={16} /> Adicionar comanda
+            </button>
           </div>
+
+          <div className="pedido-ia-comandas-grid">
+            {pedido.itens.map((comanda, indice) => (
+              <article className="pedido-ia-comanda-card" key={`pedido-ia-comanda-${indice}`}>
+                <div className="pedido-ia-comanda-topo">
+                  <div>
+                    <span className="pedido-ia-comanda-index">Comanda {indice + 1} de {totalComandas}</span>
+                    <strong>{normalizarCampo(comanda.nome) || 'Sem nome informado'}</strong>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="btn btn-secondary pedido-ia-comanda-remove"
+                    onClick={() => removerComanda(indice)}
+                    disabled={enviandoFluxo}
+                    id={`btn-remover-comanda-pedido-ia-${indice + 1}`}
+                  >
+                    <FiTrash2 size={15} /> Remover
+                  </button>
+                </div>
+
+                <div className="pedido-ia-form-grid pedido-ia-comanda-grid">
+                  <div className="form-group">
+                    <label className="form-label" htmlFor={`pedido-ia-comanda-nome-${indice}`}>Nome</label>
+                    <input
+                      id={`pedido-ia-comanda-nome-${indice}`}
+                      className="form-input"
+                      value={comanda.nome}
+                      onChange={(e) => atualizarCampoComanda(indice, 'nome', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-group full">
+                    <label className="form-label" htmlFor={`pedido-ia-comanda-obs-${indice}`}>Observacoes da comanda</label>
+                    <textarea
+                      id={`pedido-ia-comanda-obs-${indice}`}
+                      className="pedido-ia-textarea pedido-ia-textarea-sm"
+                      value={comanda.observacoes}
+                      onChange={(e) => atualizarCampoComanda(indice, 'observacoes', e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                </div>
+
+                <div className="pedido-ia-comanda-listas">
+                  <div>
+                    <h4>Proteinas</h4>
+                    <div className="pedido-ia-check-grid">
+                      {PROTEINAS.map((item) => (
+                        <CheckboxVerde
+                          key={`${item}-${indice}-proteina`}
+                          id={`pedido-ia-comanda-${indice}-proteina-${normalizarChave(item)}`}
+                          label={item}
+                          selecionado={comanda.proteinas.some((valor) => normalizarChave(valor) === normalizarChave(item))}
+                          onChange={() => alternarItemComanda(indice, 'proteinas', item)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4>Complementos</h4>
+                    <div className="pedido-ia-check-grid">
+                      {COMPLEMENTOS.map((item) => (
+                        <CheckboxVerde
+                          key={`${item}-${indice}-complemento`}
+                          id={`pedido-ia-comanda-${indice}-complemento-${normalizarChave(item)}`}
+                          label={item}
+                          selecionado={comanda.complementos.some((valor) => normalizarChave(valor) === normalizarChave(item))}
+                          onChange={() => alternarItemComanda(indice, 'complementos', item)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          {!pedido.itens.length && (
+            <div className="pedido-ia-empty-state">
+              Nenhuma comanda detectada ainda. Adicione uma comanda manualmente para continuar.
+            </div>
+          )}
 
           <div className="pedido-ia-actions">
             <button type="button" className="btn btn-secondary" onClick={limparTudo} id="btn-limpar-pedido-ia">
@@ -826,7 +1056,7 @@ export default function PedidoIA() {
               onClick={imprimirChecklist}
               id="btn-imprimir-pedido-ia"
             >
-              <FiPrinter size={16} /> Imprimir checklist
+              <FiPrinter size={16} /> Imprimir {totalComandas || ''} comandas
             </button>
             <button
               type="button"
@@ -845,7 +1075,7 @@ export default function PedidoIA() {
                 </>
               ) : (
                 <>
-                  <FiSend size={16} /> Enviar para Pedidos Empresas
+                  <FiSend size={16} /> Enviar {totalComandas || 0} comandas para Pedidos Empresas
                 </>
               )}
             </button>

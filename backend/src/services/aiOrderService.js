@@ -16,41 +16,86 @@ const COMPLEMENTOS_PERMITIDOS = [
   'Batatinha Cozida',
   'Farofa',
   'Ma\u00e7\u00e3 picada',
-  'Vinagrete'
+  'Vinagrete',
+  'Salada',
+  'Ovo Cozido'
 ];
 
 const REGRAS_ITENS = [
-  { nome: 'Assado de panela', aliases: ['assado de panela', 'carne de panela', 'assado', 'carne'] },
-  { nome: 'Creme de Galinha', aliases: ['creme de galinha', 'creme', 'galinha'] },
-  { nome: 'Frango Forno', aliases: ['frango forno', 'frango'] },
-  { nome: 'Lingui\u00e7a-Brasa', aliases: ['linguica-brasa', 'linguica', 'lingui\u00e7a-brasa', 'lingui\u00e7a'] },
-  { nome: 'Su\u00edno-molho', aliases: ['suino-molho', 'suino', 'su\u00edno-molho', 'su\u00edno', 'porco'] },
-  { nome: 'Arroz Branco', aliases: ['arroz branco', 'arroz'] },
-  { nome: 'Bai\u00e3o', aliases: ['baiao', 'bai\u00e3o'] },
-  { nome: 'Feij\u00e3o', aliases: ['feijao', 'feij\u00e3o'] },
-  { nome: 'Macarr\u00e3o', aliases: ['macarrao', 'macarr\u00e3o'] },
-  { nome: 'Batatinha Cozida', aliases: ['batatinha cozida', 'batatinha'] },
-  { nome: 'Farofa', aliases: ['farofa'] },
-  { nome: 'Ma\u00e7\u00e3 picada', aliases: ['maca picada', 'ma\u00e7\u00e3 picada', 'maca', 'ma\u00e7\u00e3'] },
-  { nome: 'Vinagrete', aliases: ['vinagrete'] }
+  {
+    tipo: 'PROTEINA',
+    nome: 'Assado de panela',
+    aliases: ['assado de panela', 'carne de panela', 'assado', 'carne']
+  },
+  {
+    tipo: 'PROTEINA',
+    nome: 'Creme de Galinha',
+    aliases: ['creme de galinha', 'creme', 'galinha']
+  },
+  {
+    tipo: 'PROTEINA',
+    nome: 'Frango Forno',
+    aliases: ['frango forno', 'frango']
+  },
+  {
+    tipo: 'PROTEINA',
+    nome: 'Lingui\u00e7a-Brasa',
+    aliases: ['linguica-brasa', 'linguica na brasa', 'lingui\u00e7a-brasa', 'lingui\u00e7a na brasa', 'linguica', 'lingui\u00e7a']
+  },
+  {
+    tipo: 'PROTEINA',
+    nome: 'Su\u00edno-molho',
+    aliases: ['suino-molho', 'suino ao molho', 'su\u00edno-molho', 'su\u00edno ao molho', 'suino molho', 'su\u00edno molho', 'suino', 'su\u00edno', 'porco']
+  },
+  { tipo: 'COMPLEMENTO', nome: 'Arroz Branco', aliases: ['arroz branco', 'arroz'] },
+  { tipo: 'COMPLEMENTO', nome: 'Bai\u00e3o', aliases: ['baiao', 'bai\u00e3o'] },
+  { tipo: 'COMPLEMENTO', nome: 'Feij\u00e3o', aliases: ['feijao', 'feij\u00e3o'] },
+  { tipo: 'COMPLEMENTO', nome: 'Macarr\u00e3o', aliases: ['macarrao', 'macarr\u00e3o'] },
+  { tipo: 'COMPLEMENTO', nome: 'Batatinha Cozida', aliases: ['batatinha cozida', 'batatinha', 'batata cozida', 'batata'] },
+  { tipo: 'COMPLEMENTO', nome: 'Farofa', aliases: ['farofa'] },
+  { tipo: 'COMPLEMENTO', nome: 'Ma\u00e7\u00e3 picada', aliases: ['maca picada', 'ma\u00e7\u00e3 picada', 'maca', 'ma\u00e7\u00e3'] },
+  { tipo: 'COMPLEMENTO', nome: 'Vinagrete', aliases: ['vinagrete'] },
+  { tipo: 'COMPLEMENTO', nome: 'Salada', aliases: ['salada'] },
+  { tipo: 'COMPLEMENTO', nome: 'Ovo Cozido', aliases: ['ovo cozido', 'ovo', 'ovos'] }
 ];
 
-const OPENAI_API_BASE_URL = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
+const REGRAS_PROTEINAS = REGRAS_ITENS.filter((regra) => regra.tipo === 'PROTEINA');
+const REGRAS_ITEMS_ORDENADAS = REGRAS_ITENS.flatMap((regra) =>
+  regra.aliases.map((alias) => ({ nome: regra.nome, tipo: regra.tipo, alias }))
+).sort((a, b) => b.alias.length - a.alias.length);
+
+const MAPA_REGRAS_POR_NOME = new Map(REGRAS_ITENS.map((regra) => [regra.nome, regra]));
+
+const normalizarUrlBaseOpenAI = (valor = '') =>
+  String(valor || '')
+    .trim()
+    .replace(/\/+$/, '');
+
+const montarEndpointOpenAI = (baseUrl = '', caminho = '') =>
+  `${normalizarUrlBaseOpenAI(baseUrl)}${String(caminho || '').startsWith('/') ? caminho : `/${caminho}`}`;
+
+const normalizarUrlEndpointOpenAI = (valor = '') => {
+  const url = normalizarUrlBaseOpenAI(valor);
+  return url || '';
+};
+
+const DEFAULT_OPENAI_API_BASE_URL = 'https://api.openai.com/v1';
+const OPENAI_API_BASE_URL = normalizarUrlBaseOpenAI(process.env.OPENAI_BASE_URL || DEFAULT_OPENAI_API_BASE_URL);
+const OPENAI_RESPONSES_URL = normalizarUrlEndpointOpenAI(process.env.OPENAI_RESPONSES_URL) || montarEndpointOpenAI(OPENAI_API_BASE_URL, '/responses');
+const OPENAI_CHAT_COMPLETIONS_URL = normalizarUrlEndpointOpenAI(process.env.OPENAI_CHAT_COMPLETIONS_URL) || montarEndpointOpenAI(OPENAI_API_BASE_URL, '/chat/completions');
+const OPENAI_AUDIO_TRANSCRIPTIONS_URL = normalizarUrlEndpointOpenAI(process.env.OPENAI_AUDIO_TRANSCRIPTIONS_URL) || montarEndpointOpenAI(OPENAI_API_BASE_URL, '/audio/transcriptions');
 const OPENAI_ORDER_MODEL = process.env.OPENAI_ORDER_MODEL || 'gpt-4o-mini';
 const OPENAI_TRANSCRIPTION_MODEL = process.env.OPENAI_TRANSCRIPTION_MODEL || 'gpt-4o-mini-transcribe';
 const DEFAULT_OPENAI_ORDER_PROMPT_ID = 'pmpt_69eff987fdd081978262248c75b1bde904a0be003e1d66d0';
 const OPENAI_ORDER_PROMPT_ID = process.env.OPENAI_ORDER_PROMPT_ID || DEFAULT_OPENAI_ORDER_PROMPT_ID;
 const OPENAI_ORDER_PROMPT_VERSION = process.env.OPENAI_ORDER_PROMPT_VERSION || '';
 
-const PEDIDO_OUTPUT_SCHEMA = {
+const PEDIDO_ITEM_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['nome', 'telefone', 'endereco', 'pagamento', 'observacoes', 'proteinas', 'complementos'],
+  required: ['nome', 'observacoes', 'proteinas', 'complementos', 'quantidade'],
   properties: {
     nome: { type: 'string' },
-    telefone: { type: 'string' },
-    endereco: { type: 'string' },
-    pagamento: { type: 'string' },
     observacoes: { type: 'string' },
     proteinas: {
       type: 'array',
@@ -65,9 +110,50 @@ const PEDIDO_OUTPUT_SCHEMA = {
         type: 'string',
         enum: COMPLEMENTOS_PERMITIDOS
       }
+    },
+    quantidade: {
+      type: 'integer',
+      minimum: 1,
+      maximum: 100
     }
   }
 };
+
+const PEDIDO_OUTPUT_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['nome', 'telefone', 'endereco', 'pagamento', 'observacoes', 'total_comandas', 'itens'],
+  properties: {
+    nome: { type: 'string' },
+    telefone: { type: 'string' },
+    endereco: { type: 'string' },
+    pagamento: { type: 'string' },
+    observacoes: { type: 'string' },
+    total_comandas: {
+      type: 'integer',
+      minimum: 0,
+      maximum: 100
+    },
+    itens: {
+      type: 'array',
+      minItems: 0,
+      maxItems: 100,
+      items: PEDIDO_ITEM_SCHEMA
+    }
+  }
+};
+
+const REGRAS_CRITICAS_ITENS = [
+  'Regra critica: cada pedido individual, pessoa, linha, nome ou comanda precisa virar um objeto separado no array "itens".',
+  'Nunca agrupe varias pessoas em um unico item.',
+  'Nunca coloque varios nomes em uma unica observacao.',
+  'Nunca use quantidade maior que 1 em um item final.',
+  'Se vier quantidade maior que 1, expanda em varios itens separados com quantidade 1.',
+  'Se o cliente mandar 30 pedidos, o array "itens" precisa ter 30 objetos.',
+  'Se a lista vier numerada como "1 Paulo", "2 Everson", o numero inicial e so posicao da lista, nao quantidade.',
+  'Se houver um numero final como "16" ou "Sao 4 hoje", ele serve como confirmacao do total de comandas.',
+  'Nao crie item "outros pedidos" e nao resuma a lista.'
+].join('\n');
 
 class AiOrderError extends Error {
   constructor(message, statusCode = 500) {
@@ -77,14 +163,22 @@ class AiOrderError extends Error {
   }
 }
 
+const criarItemVazio = () => ({
+  nome: '',
+  observacoes: '',
+  proteinas: [],
+  complementos: [],
+  quantidade: 1
+});
+
 const criarRespostaVazia = () => ({
   nome: '',
   telefone: '',
   endereco: '',
   pagamento: '',
   observacoes: '',
-  proteinas: [],
-  complementos: []
+  total_comandas: 0,
+  itens: []
 });
 
 const normalizarTexto = (valor = '') =>
@@ -96,6 +190,15 @@ const normalizarTexto = (valor = '') =>
 const normalizarCampo = (valor = '') =>
   String(valor)
     .replace(/\s+/g, ' ')
+    .trim();
+
+const normalizarMensagemPedido = (valor = '') =>
+  String(valor)
+    .replace(/\r/g, '')
+    .split('\n')
+    .map((linha) => normalizarCampo(linha))
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
     .trim();
 
 const escaparRegExp = (valor = '') =>
@@ -118,6 +221,12 @@ const limparJsonTextual = (conteudo = '') => {
 
   const blocoMarkdown = texto.match(/```(?:json)?\s*([\s\S]*?)```/i);
   return blocoMarkdown ? blocoMarkdown[1].trim() : texto;
+};
+
+const capitalizarFrase = (valor = '') => {
+  const texto = normalizarCampo(valor);
+  if (!texto) return '';
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
 };
 
 const encontrarMelhorCorrespondencia = (valor = '', listaPermitida = []) => {
@@ -215,8 +324,8 @@ const extrairTelefone = (mensagem) => {
 
 const extrairNome = (mensagem) => {
   const padroes = [
-    /(?:meu nome e|meu nome é|nome[:\s-]+)\s*([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s]{2,60}?)(?=$|[,.!\n]| telefone| fone| rua| avenida| av\.| travessa| pix| dinheiro| cartao| cartão| quero| gostaria)/i,
-    /(?:sou o|sou a)\s*([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s]{2,60}?)(?=$|[,.!\n]| telefone| fone| rua| avenida| av\.| travessa| pix| dinheiro| cartao| cartão| quero| gostaria)/i
+    /(?:meu nome e|meu nome \u00e9|nome[:\s-]+)\s*([A-Za-z\u00c0-\u00ff][A-Za-z\u00c0-\u00ff\s]{2,60}?)(?=$|[,.!\n]| telefone| fone| rua| avenida| av\.| travessa| pix| dinheiro| cartao| cart\u00e3o| quero| gostaria)/i,
+    /(?:sou o|sou a)\s*([A-Za-z\u00c0-\u00ff][A-Za-z\u00c0-\u00ff\s]{2,60}?)(?=$|[,.!\n]| telefone| fone| rua| avenida| av\.| travessa| pix| dinheiro| cartao| cart\u00e3o| quero| gostaria)/i
   ];
 
   for (const padrao of padroes) {
@@ -233,13 +342,13 @@ const limparTrechoEndereco = (valor = '') => {
   const trecho = normalizarCampo(valor);
   if (!trecho) return '';
 
-  const delimitador = trecho.search(/\b(?:pix|dinheiro|cart[aã]o|credito|crédito|debito|débito|telefone|fone|whatsapp|zap|meu nome|nome)\b/i);
+  const delimitador = trecho.search(/\b(?:pix|dinheiro|carta[o\u0303]|credito|cr\u00e9dito|debito|d\u00e9bito|telefone|fone|whatsapp|zap|meu nome|nome)\b/i);
   return normalizarCampo(delimitador > 0 ? trecho.slice(0, delimitador) : trecho);
 };
 
 const extrairEndereco = (mensagem) => {
   const padroes = [
-    /(?:entrega\s+(?:na|no|em)|manda\s+(?:na|no|em)|levar\s+(?:na|no|em)|endere(?:co|ço)[:\s-]*)\s*([^.!?\n]+)/i,
+    /(?:entrega\s+(?:na|no|em)|manda\s+(?:na|no|em)|levar\s+(?:na|no|em)|endere(?:co|\u00e7o)[:\s-]*)\s*([^.!?\n]+)/i,
     /((?:Rua|R\.|Avenida|Av\.|Travessa|Tv\.|Alameda|Estrada|Rodovia)\s+[^.!?\n]+)/i
   ];
 
@@ -258,9 +367,9 @@ const extrairPagamento = (mensagem) => {
   const opcoes = [
     { valor: 'Pix', regex: /\bpix\b/i },
     { valor: 'Dinheiro', regex: /\bdinheiro\b|\bgrana\b/i },
-    { valor: 'Cartao de credito', regex: /\bcredito\b|\bcrédito\b|\bcart[aã]o de cr[eé]dito\b/i },
-    { valor: 'Cartao de debito', regex: /\bdebito\b|\bdébito\b|\bcart[aã]o de d[eé]bito\b/i },
-    { valor: 'Cartao', regex: /\bcart[aã]o\b/i }
+    { valor: 'Cartao de credito', regex: /\bcredito\b|\bcr\u00e9dito\b|\bcart[a\u00e3]o de cr[e\u00e9]dito\b/i },
+    { valor: 'Cartao de debito', regex: /\bdebito\b|\bd\u00e9bito\b|\bcart[a\u00e3]o de d[e\u00e9]bito\b/i },
+    { valor: 'Cartao', regex: /\bcart[a\u00e3]o\b/i }
   ];
 
   let melhorIndice = Infinity;
@@ -277,27 +386,417 @@ const extrairPagamento = (mensagem) => {
   return melhorValor;
 };
 
+const limparSufixoProteinaObservacao = (valor = '') => {
+  let texto = normalizarCampo(valor);
+  if (!texto) return '';
+
+  REGRAS_PROTEINAS.forEach((regra) => {
+    regra.aliases.forEach((alias) => {
+      const regex = new RegExp(`\\s+(?:o|a|do|da)?\\s*${escaparRegExp(alias).replace(/\s+/g, '\\s+')}\\b`, 'i');
+      texto = texto.replace(regex, '');
+    });
+  });
+
+  return normalizarCampo(texto);
+};
+
+const extrairObservacoesLivresLinha = (mensagem) => {
+  const observacoes = [];
+  const texto = String(mensagem || '');
+  const regras = [
+    { prefixo: 'Sem', regex: /\b(?:sem|tirar|retirar)\s+([^,.;\n]+)/gi },
+    { prefixo: 'Pouco', regex: /\bpouco\s+([^,.;\n]+)/gi }
+  ];
+
+  regras.forEach(({ prefixo, regex }) => {
+    let match;
+    while ((match = regex.exec(texto)) !== null) {
+      const trecho = limparSufixoProteinaObservacao(match[1]);
+      if (trecho) {
+        observacoes.push(`${prefixo} ${trecho}`);
+      }
+    }
+  });
+
+  return deduplicarStrings(observacoes.map(capitalizarFrase));
+};
+
 const extrairObservacoes = (mensagem, observacoesNegativas = []) => {
-  const match = String(mensagem || '').match(/(?:obs(?:ervac[aã]o)?[:\s-]*)([^.!?\n]+)/i);
+  const match = String(mensagem || '').match(/(?:obs(?:ervac[a\u00e3]o)?[:\s-]*)([^.!?\n]+)/i);
   const observacaoExplicita = normalizarCampo(match?.[1] || '');
-  return juntarObservacoes(observacaoExplicita, observacoesNegativas.join('; '));
+  return juntarObservacoes(
+    observacaoExplicita,
+    extrairObservacoesLivresLinha(mensagem).join('; '),
+    observacoesNegativas.join('; ')
+  );
 };
 
 const mensagemIndicaObservacao = (mensagem = '') =>
-  /\b(?:obs|observa|sem|tirar|retirar|nao quero|nao precisa)\b/i.test(normalizarTexto(mensagem));
+  /\b(?:obs|observa|sem|tirar|retirar|nao quero|nao precisa|pouco)\b/i.test(normalizarTexto(mensagem));
 
-const normalizarResultadoPedido = (pedido = {}) => ({
-  nome: normalizarCampo(pedido.nome),
-  telefone: normalizarCampo(pedido.telefone),
-  endereco: normalizarCampo(pedido.endereco),
-  pagamento: normalizarCampo(pedido.pagamento),
-  observacoes: normalizarCampo(pedido.observacoes),
-  proteinas: normalizarListaItens(pedido.proteinas, PROTEINAS_PERMITIDAS),
-  complementos: normalizarListaItens(pedido.complementos, COMPLEMENTOS_PERMITIDOS)
-});
+const normalizarQuantidade = (valor, padrao = 1) => {
+  const quantidade = Number.parseInt(valor, 10);
+  if (!Number.isInteger(quantidade) || quantidade < 1) return padrao;
+  return Math.min(quantidade, 100);
+};
+
+const normalizarItemPedido = (item = {}, baseItem = null) => {
+  const base = baseItem
+    ? {
+      nome: normalizarCampo(baseItem.nome),
+      observacoes: normalizarCampo(baseItem.observacoes),
+      proteinas: normalizarListaItens(baseItem.proteinas, PROTEINAS_PERMITIDAS),
+      complementos: normalizarListaItens(baseItem.complementos, COMPLEMENTOS_PERMITIDOS)
+    }
+    : criarItemVazio();
+
+  const proteinas = normalizarListaItens(
+    [...base.proteinas, ...(Array.isArray(item.proteinas) ? item.proteinas : [])],
+    PROTEINAS_PERMITIDAS
+  );
+  const complementos = normalizarListaItens(
+    [...base.complementos, ...(Array.isArray(item.complementos) ? item.complementos : [])],
+    COMPLEMENTOS_PERMITIDOS
+  );
+
+  return {
+    nome: normalizarCampo(item.nome || base.nome),
+    observacoes: juntarObservacoes(base.observacoes, item.observacoes),
+    proteinas,
+    complementos,
+    quantidade: normalizarQuantidade(item.quantidade, 1)
+  };
+};
+
+const removerObservacoesQueNegamProteinasSelecionadas = (item = criarItemVazio()) => {
+  const observacoes = String(item.observacoes || '')
+    .split(/\s*;\s*/)
+    .map((observacao) => normalizarCampo(observacao))
+    .filter(Boolean)
+    .filter((observacao) => !item.proteinas.some((proteina) => normalizarTexto(observacao) === normalizarTexto(`Sem ${proteina}`)));
+
+  return {
+    ...item,
+    observacoes: juntarObservacoes(observacoes.join('; '))
+  };
+};
+
+const expandirItensPorQuantidade = (itens = []) => {
+  const itensExpandidos = [];
+
+  (Array.isArray(itens) ? itens : []).forEach((item) => {
+    const itemNormalizado = removerObservacoesQueNegamProteinasSelecionadas(normalizarItemPedido(item));
+    const quantidade = normalizarQuantidade(itemNormalizado.quantidade, 1);
+
+    for (let indice = 0; indice < quantidade; indice += 1) {
+      itensExpandidos.push({
+        ...itemNormalizado,
+        quantidade: 1
+      });
+    }
+  });
+
+  return itensExpandidos;
+};
+
+const migrarRespostaLegadaParaItens = (pedido = {}) => {
+  if (Array.isArray(pedido.itens)) {
+    return pedido.itens;
+  }
+
+  const itemLegado = normalizarItemPedido({
+    nome: pedido.nome,
+    observacoes: pedido.observacoes,
+    proteinas: pedido.proteinas,
+    complementos: pedido.complementos,
+    quantidade: 1
+  });
+
+  if (!itemLegado.nome && !itemLegado.observacoes && !itemLegado.proteinas.length && !itemLegado.complementos.length) {
+    return [];
+  }
+
+  return [itemLegado];
+};
+
+const normalizarResultadoPedido = (pedido = {}) => {
+  const itens = expandirItensPorQuantidade(migrarRespostaLegadaParaItens(pedido));
+
+  return {
+    nome: normalizarCampo(pedido.nome),
+    telefone: normalizarCampo(pedido.telefone),
+    endereco: normalizarCampo(pedido.endereco),
+    pagamento: normalizarCampo(pedido.pagamento),
+    observacoes: normalizarCampo(pedido.observacoes),
+    total_comandas: itens.length,
+    itens
+  };
+};
+
+const limparPrefixoLista = (linha = '') =>
+  normalizarCampo(linha).replace(/^\d{1,3}\s*(?:[.)-]|)\s+/, '');
+
+const extrairTotalComandasInformado = (mensagem = '') => {
+  const linhas = String(mensagem || '')
+    .split('\n')
+    .map((linha) => normalizarCampo(linha))
+    .filter(Boolean);
+
+  const ultimaLinha = linhas.at(-1) || '';
+  const textoUltimaLinha = normalizarTexto(ultimaLinha);
+
+  if (/^\d{1,3}$/.test(textoUltimaLinha)) {
+    return Number.parseInt(textoUltimaLinha, 10);
+  }
+
+  const matchUltimaLinha = textoUltimaLinha.match(/\b(?:sao|s[o\u0303]o|sao)\s+(\d{1,3})(?:\s*(?:hj|hoje))?\b/);
+  if (matchUltimaLinha?.[1]) {
+    return Number.parseInt(matchUltimaLinha[1], 10);
+  }
+
+  const matchTexto = normalizarTexto(mensagem).match(/\btotal\s*:?\s*(\d{1,3})\b/);
+  if (matchTexto?.[1]) {
+    return Number.parseInt(matchTexto[1], 10);
+  }
+
+  return null;
+};
+
+const ehLinhaConfirmacaoTotal = (linha = '') => {
+  const texto = normalizarTexto(linha);
+  return (
+    /^\d{1,3}$/.test(texto) ||
+    /^(?:sao|s[o\u0303]o|sao)\s+\d{1,3}(?:\s*(?:hj|hoje))?$/.test(texto) ||
+    /^total\s*:?\s*\d{1,3}$/.test(texto)
+  );
+};
+
+const encontrarPrimeiroIngrediente = (linha = '') => {
+  let melhorMatch = null;
+
+  REGRAS_ITEMS_ORDENADAS.forEach((regra) => {
+    const regex = new RegExp(`\\b${escaparRegExp(regra.alias).replace(/\s+/g, '\\s+')}\\b`, 'i');
+    const match = regex.exec(linha);
+
+    if (!match) return;
+
+    if (!melhorMatch || match.index < melhorMatch.index) {
+      melhorMatch = { index: match.index, alias: regra.alias, nome: regra.nome, tipo: regra.tipo };
+      return;
+    }
+
+    if (match.index === melhorMatch.index && regra.alias.length > melhorMatch.alias.length) {
+      melhorMatch = { index: match.index, alias: regra.alias, nome: regra.nome, tipo: regra.tipo };
+    }
+  });
+
+  return melhorMatch;
+};
+
+const limparConectoresFinaisNome = (valor = '') =>
+  normalizarCampo(valor).replace(/\b(?:com|e|de|do|da|dos|das)\b$/i, '').trim();
+
+const ehLinhaProvavelNome = (linha = '') => {
+  const texto = normalizarCampo(linha);
+  if (!texto || /\d/.test(texto)) return false;
+  if (encontrarPrimeiroIngrediente(texto)) return false;
+  return /^[A-Za-z\u00c0-\u00ff'\- ]+$/.test(texto) && texto.split(/\s+/).length <= 4;
+};
+
+const extrairNomeDaLinha = (linha = '') => {
+  const texto = limparPrefixoLista(linha);
+  if (!texto) return '';
+
+  const primeiroIngrediente = encontrarPrimeiroIngrediente(texto);
+
+  if (!primeiroIngrediente) {
+    return ehLinhaProvavelNome(texto) ? texto : '';
+  }
+
+  const prefixo = limparConectoresFinaisNome(texto.slice(0, primeiroIngrediente.index));
+  if (!prefixo) return '';
+
+  return ehLinhaProvavelNome(prefixo) ? prefixo : '';
+};
+
+const parseLinhaComoItem = (linha, opcoes = {}) => {
+  const baseItem = opcoes.baseItem ? normalizarItemPedido(opcoes.baseItem) : null;
+  const linhaSemPrefixo = opcoes.removerPrefixoLista === false ? normalizarCampo(linha) : limparPrefixoLista(linha);
+
+  if (!linhaSemPrefixo || ehLinhaConfirmacaoTotal(linhaSemPrefixo)) {
+    return null;
+  }
+
+  const detectado = detectarItensPorRegras(linhaSemPrefixo);
+  const nome = extrairNomeDaLinha(linhaSemPrefixo);
+  const observacoes = juntarObservacoes(
+    baseItem?.observacoes,
+    detectado.observacoesNegativas.join('; '),
+    extrairObservacoesLivresLinha(linhaSemPrefixo).join('; ')
+  );
+
+  const item = normalizarItemPedido({
+    nome,
+    observacoes,
+    proteinas: detectado.proteinas,
+    complementos: detectado.complementos,
+    quantidade: 1
+  }, baseItem);
+
+  if (!item.nome && !item.observacoes && !item.proteinas.length && !item.complementos.length) {
+    return null;
+  }
+
+  if (!baseItem && !item.proteinas.length && !item.complementos.length && !item.observacoes) {
+    return null;
+  }
+
+  return item;
+};
+
+const dividirParagrafos = (mensagem = '') =>
+  String(mensagem || '')
+    .split(/\n\s*\n/)
+    .map((bloco) => bloco
+      .split('\n')
+      .map((linha) => normalizarCampo(linha))
+      .filter(Boolean))
+    .filter((linhas) => linhas.length);
+
+const paragrafoPareceBlocoPorProteina = (linhas = []) => {
+  if (linhas.length < 2) return false;
+
+  const primeiraLinha = normalizarCampo(linhas[0]);
+  if (!primeiraLinha || /^\d/.test(primeiraLinha)) return false;
+
+  const cabecalho = parseLinhaComoItem(primeiraLinha, { removerPrefixoLista: false });
+  if (!cabecalho) return false;
+  if (cabecalho.nome) return false;
+  if (!cabecalho.proteinas.length && !cabecalho.complementos.length) return false;
+
+  return linhas.slice(1).some((linha) => ehLinhaProvavelNome(limparPrefixoLista(linha)));
+};
+
+const extrairItensPorLinhas = (mensagem = '') => {
+  const paragrafos = dividirParagrafos(mensagem);
+  const itens = [];
+
+  paragrafos.forEach((linhas) => {
+    if (paragrafoPareceBlocoPorProteina(linhas)) {
+      const baseItem = parseLinhaComoItem(linhas[0], { removerPrefixoLista: false });
+
+      linhas.slice(1).forEach((linha) => {
+        const item = parseLinhaComoItem(linha, { baseItem });
+        if (item) itens.push(item);
+      });
+
+      return;
+    }
+
+    linhas.forEach((linha) => {
+      const item = parseLinhaComoItem(linha, { removerPrefixoLista: linhas.length > 1 });
+      if (item) itens.push(item);
+    });
+  });
+
+  return expandirItensPorQuantidade(itens);
+};
+
+const extrairObservacoesParaProteina = (mensagem, nomeProteina) => {
+  const regra = MAPA_REGRAS_POR_NOME.get(nomeProteina);
+  if (!regra) return '';
+
+  const observacoes = [];
+  const segmentos = String(mensagem || '')
+    .split(/[,\n;]/)
+    .map((parte) => normalizarCampo(parte))
+    .filter(Boolean);
+
+  segmentos.forEach((segmento) => {
+    const textoNormalizado = normalizarTexto(segmento);
+    const mencionaProteina = regra.aliases.some((alias) => construirRegexPositivo(alias).test(textoNormalizado));
+    if (!mencionaProteina) return;
+
+    observacoes.push(...extrairObservacoesLivresLinha(segmento));
+    observacoes.push(...detectarItensPorRegras(segmento).observacoesNegativas);
+  });
+
+  return juntarObservacoes(observacoes.join('; '));
+};
+
+const extrairItensPorContagemAgregada = (mensagem = '') => {
+  const itens = [];
+  const ocorrencias = [];
+
+  REGRAS_PROTEINAS.forEach((regra) => {
+    regra.aliases.forEach((alias) => {
+      const regex = new RegExp(
+        `(\\d+)\\s+(?:quentinhas?\\s*(?:de|do|da)?\\s*)?${escaparRegExp(alias).replace(/\s+/g, '\\s+')}\\b`,
+        'gi'
+      );
+
+      let match;
+      while ((match = regex.exec(String(mensagem || ''))) !== null) {
+        const inicio = match.index;
+        const fim = regex.lastIndex;
+        const colide = ocorrencias.some((ocorrencia) => !(fim <= ocorrencia.inicio || inicio >= ocorrencia.fim));
+        if (colide) continue;
+
+        ocorrencias.push({
+          inicio,
+          fim,
+          nome: regra.nome,
+          quantidade: normalizarQuantidade(match[1], 1)
+        });
+      }
+    });
+  });
+
+  ocorrencias
+    .sort((a, b) => a.inicio - b.inicio)
+    .forEach((ocorrencia) => {
+      const observacoes = extrairObservacoesParaProteina(mensagem, ocorrencia.nome);
+      for (let indice = 0; indice < ocorrencia.quantidade; indice += 1) {
+        itens.push(normalizarItemPedido({
+          proteinas: [ocorrencia.nome],
+          observacoes,
+          quantidade: 1
+        }));
+      }
+    });
+
+  return itens;
+};
+
+const construirItensFallback = (mensagem = '') => {
+  const itensPorLinhas = extrairItensPorLinhas(mensagem);
+  const itensPorContagem = extrairItensPorContagemAgregada(mensagem);
+  const totalConfirmado = extrairTotalComandasInformado(mensagem);
+  const candidatos = [itensPorLinhas, itensPorContagem].filter((lista) => lista.length > 0);
+
+  if (!candidatos.length) {
+    const itemUnico = parseLinhaComoItem(mensagem, { removerPrefixoLista: false });
+    return itemUnico ? [itemUnico] : [];
+  }
+
+  const pontuar = (lista) => {
+    let pontuacao = lista.length;
+    if (totalConfirmado && lista.length === totalConfirmado) {
+      pontuacao += 1000;
+    }
+    if (lista.some((item) => item.nome)) {
+      pontuacao += 10;
+    }
+    return pontuacao;
+  };
+
+  return [...candidatos].sort((a, b) => pontuar(b) - pontuar(a))[0];
+};
 
 const construirFallbackPorRegras = (mensagem) => {
-  const { proteinas, complementos, observacoesNegativas } = detectarItensPorRegras(mensagem);
+  const itemUnicoDetectado = detectarItensPorRegras(mensagem);
+  const observacoesNegativas = extrairObservacoesLivresLinha(mensagem);
+  const itens = construirItensFallback(mensagem);
 
   return {
     nome: extrairNome(mensagem),
@@ -305,17 +804,40 @@ const construirFallbackPorRegras = (mensagem) => {
     endereco: extrairEndereco(mensagem),
     pagamento: extrairPagamento(mensagem),
     observacoes: extrairObservacoes(mensagem, observacoesNegativas),
-    proteinas,
-    complementos
+    total_comandas: itens.length,
+    itens: itens.length
+      ? itens
+      : [
+        normalizarItemPedido({
+          observacoes: extrairObservacoes(mensagem, itemUnicoDetectado.observacoesNegativas),
+          proteinas: itemUnicoDetectado.proteinas,
+          complementos: itemUnicoDetectado.complementos,
+          quantidade: 1
+        })
+      ].filter((item) => item.proteinas.length || item.complementos.length || item.observacoes)
   };
 };
 
 const consolidarPedido = (pedidoPrincipal, pedidoApoio, mensagemOriginal = '') => {
   const principal = normalizarResultadoPedido(pedidoPrincipal);
   const apoio = normalizarResultadoPedido(pedidoApoio);
+  const totalConfirmado = extrairTotalComandasInformado(mensagemOriginal);
 
-  const proteinasConsolidadas = apoio.proteinas.length ? apoio.proteinas : principal.proteinas;
-  const complementosConsolidados = apoio.complementos.length ? apoio.complementos : principal.complementos;
+  const candidatosItens = [principal.itens, apoio.itens].filter((lista) => lista.length > 0);
+  const pontuar = (lista) => {
+    let pontuacao = lista.length;
+    if (totalConfirmado && lista.length === totalConfirmado) {
+      pontuacao += 1000;
+    }
+    if (lista.some((item) => item.nome)) {
+      pontuacao += 10;
+    }
+    return pontuacao;
+  };
+
+  const itensConsolidados = candidatosItens.length
+    ? [...candidatosItens].sort((a, b) => pontuar(b) - pontuar(a))[0]
+    : [];
   const observacoesConsolidadas = apoio.observacoes
     || (mensagemIndicaObservacao(mensagemOriginal) ? principal.observacoes : '');
 
@@ -325,8 +847,8 @@ const consolidarPedido = (pedidoPrincipal, pedidoApoio, mensagemOriginal = '') =
     endereco: principal.endereco || apoio.endereco,
     pagamento: principal.pagamento || apoio.pagamento,
     observacoes: observacoesConsolidadas,
-    proteinas: proteinasConsolidadas,
-    complementos: complementosConsolidados
+    total_comandas: itensConsolidados.length,
+    itens: itensConsolidados
   };
 };
 
@@ -378,7 +900,7 @@ const organizarPedidoComPromptOpenAI = async (mensagem) => {
     prompt.version = OPENAI_ORDER_PROMPT_VERSION;
   }
 
-  const response = await fetch(`${OPENAI_API_BASE_URL}/responses`, {
+  const response = await fetch(OPENAI_RESPONSES_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -387,6 +909,26 @@ const organizarPedidoComPromptOpenAI = async (mensagem) => {
     body: JSON.stringify({
       model: OPENAI_ORDER_MODEL,
       prompt,
+      input: [
+        {
+          role: 'system',
+          content: [
+            {
+              type: 'input_text',
+              text: REGRAS_CRITICAS_ITENS
+            }
+          ]
+        },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'input_text',
+              text: mensagem
+            }
+          ]
+        }
+      ],
       text: {
         format: {
           type: 'json_schema',
@@ -417,7 +959,7 @@ const organizarPedidoComPromptOpenAI = async (mensagem) => {
 };
 
 const organizarPedidoComMensagensOpenAI = async (mensagem) => {
-  const response = await fetch(`${OPENAI_API_BASE_URL}/chat/completions`, {
+  const response = await fetch(OPENAI_CHAT_COMPLETIONS_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -434,26 +976,35 @@ const organizarPedidoComMensagensOpenAI = async (mensagem) => {
             'Voce organiza pedidos de marmitaria em JSON.',
             'Retorne somente JSON valido, sem markdown e sem texto extra.',
             'Use exatamente este formato:',
-            '{"nome":"","telefone":"","endereco":"","pagamento":"","observacoes":"","proteinas":[],"complementos":[]}',
-            'Nunca invente dados ausentes.',
+            '{"nome":"","telefone":"","endereco":"","pagamento":"","observacoes":"","total_comandas":0,"itens":[{"nome":"","observacoes":"","proteinas":[],"complementos":[],"quantidade":1}]}',
+            'Cada pessoa, linha, nome ou pedido individual precisa virar um item separado em "itens".',
+            'Nunca agrupe varios pedidos dentro do mesmo item.',
+            'Nunca coloque varios nomes dentro da mesma observacao.',
+            'Todo item final precisa ter "quantidade": 1.',
+            'Se houver quantidade maior que 1, expanda em varios itens separados.',
+            'Se a lista vier numerada como "1 Paulo", "2 Everson", o numero inicial e so posicao da lista.',
+            'Um numero final como "16" ou "Sao 4 hoje" confirma total de comandas; nao e um item.',
             'Mapeie somente itens desta lista de proteinas:',
             PROTEINAS_PERMITIDAS.join(', '),
             'Mapeie somente itens desta lista de complementos:',
             COMPLEMENTOS_PERMITIDOS.join(', '),
-            'A ordem fixa obrigatoria dos complementos no retorno deve ser:',
+            'A ordem fixa obrigatoria dos complementos em cada item deve ser:',
             COMPLEMENTOS_PERMITIDOS.join(' > '),
             'Regras obrigatorias:',
             '- frango -> Frango Forno',
-            '- linguica ou linguiça -> Linguiça-Brasa',
-            '- porco, suino ou suíno -> Suíno-molho',
+            '- linguica ou lingui\u00e7a -> Lingui\u00e7a-Brasa',
+            '- porco, suino ou su\u00edno -> Su\u00edno-molho',
             '- carne, carne de panela ou assado -> Assado de panela',
             '- creme, creme de galinha ou galinha -> Creme de Galinha',
             '- arroz -> Arroz Branco',
-            '- macarrao ou macarrão -> Macarrão',
-            '- maca, maçã ou maçã picada -> Maçã picada',
-            '- Se o cliente disser "sem farofa", "sem feijao" etc., nao marque o item e registre em observacoes.',
+            '- macarrao ou macarr\u00e3o -> Macarr\u00e3o',
+            '- maca, ma\u00e7a ou ma\u00e7a picada -> Ma\u00e7\u00e3 picada',
+            '- ovo -> Ovo Cozido',
+            '- Se o cliente disser "sem farofa", "sem feijao" etc., nao marque o item e registre em observacoes do item correto.',
             '- Se um campo nao for informado, devolva string vazia.',
-            '- Nao crie itens fora das listas permitidas.'
+            '- Nao crie itens fora das listas permitidas.',
+            '- Nao crie item "outros pedidos".',
+            '- total_comandas deve ser exatamente igual a itens.length.'
           ].join('\n')
         },
         {
@@ -505,7 +1056,7 @@ const transcreverAudioComOpenAI = async (arquivo) => {
   formData.append('language', 'pt');
   formData.append('prompt', 'Transcreva fielmente um pedido de marmitaria em portugues do Brasil.');
 
-  const response = await fetch(`${OPENAI_API_BASE_URL}/audio/transcriptions`, {
+  const response = await fetch(OPENAI_AUDIO_TRANSCRIPTIONS_URL, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
@@ -528,7 +1079,7 @@ const transcreverAudioComOpenAI = async (arquivo) => {
 };
 
 async function organizarPedidoTexto(mensagem) {
-  const mensagemLimpa = normalizarCampo(mensagem);
+  const mensagemLimpa = normalizarMensagemPedido(mensagem);
 
   if (!mensagemLimpa) {
     throw new AiOrderError('Informe a mensagem para organizar o pedido.', 400);

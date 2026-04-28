@@ -14,7 +14,9 @@ export const COMPLEMENTOS_COMANDA = [
   'Batatinha Cozida',
   'Farofa',
   'Ma\u00e7\u00e3 picada',
-  'Vinagrete'
+  'Vinagrete',
+  'Salada',
+  'Ovo Cozido'
 ];
 
 export const normalizarChaveComanda = (valor = '') =>

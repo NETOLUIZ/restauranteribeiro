@@ -537,6 +537,32 @@ export const gerarHtmlComandaChecklist = ({
   `;
 };
 
+const extrairCardComandaChecklist = (html = '') => {
+  const match = String(html).match(/<article class="comanda-vazia[\s\S]*?<\/article>/i);
+  return match?.[0] || '';
+};
+
+const substituirCardsHtml = (htmlBase = '', cardsHtml = '') =>
+  String(htmlBase).replace(
+    /<div class="print-area">[\s\S]*?<\/div>/i,
+    `<div class="print-area">${cardsHtml}</div>`
+  );
+
+export const gerarHtmlComandasChecklist = (lista = []) => {
+  const comandas = Array.isArray(lista) ? lista.filter(Boolean) : [];
+
+  if (!comandas.length) {
+    return gerarHtmlComandaChecklist();
+  }
+
+  const htmlBase = gerarHtmlComandaChecklist(comandas[0]);
+  const cardsHtml = comandas
+    .map((dadosComanda) => extrairCardComandaChecklist(gerarHtmlComandaChecklist(dadosComanda)))
+    .join('');
+
+  return substituirCardsHtml(htmlBase, cardsHtml);
+};
+
 export const abrirImpressaoComandaChecklist = (dados = {}) => {
   const printWindow = window.open('', '_blank');
 
@@ -545,6 +571,19 @@ export const abrirImpressaoComandaChecklist = (dados = {}) => {
   }
 
   printWindow.document.write(gerarHtmlComandaChecklist(dados));
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+};
+
+export const abrirImpressaoComandasChecklist = (lista = []) => {
+  const printWindow = window.open('', '_blank');
+
+  if (!printWindow) {
+    throw new Error('Bloqueador de pop-up ativo');
+  }
+
+  printWindow.document.write(gerarHtmlComandasChecklist(lista));
   printWindow.document.close();
   printWindow.focus();
   printWindow.print();
