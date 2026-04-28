@@ -68,6 +68,13 @@
   line-height: 1;
 }
 
+.pedido-ia-summary small {
+  color: var(--cinza-500);
+  font-size: 0.78rem;
+  text-align: right;
+  line-height: 1.35;
+}
+
 .pedido-ia-feedback {
   padding: 14px 16px;
   border-radius: 14px;
@@ -164,15 +171,174 @@
   display: none;
 }
 
+.pedido-ia-recording-indicator {
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at left center, rgba(211, 47, 47, 0.14), transparent 30%),
+    linear-gradient(135deg, #fff7f7 0%, #fff1f1 100%);
+  border: 1px solid rgba(211, 47, 47, 0.18);
+  display: grid;
+  gap: 4px;
+  position: relative;
+}
+
+.pedido-ia-recording-indicator strong {
+  color: #8e1f1f;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pedido-ia-recording-indicator small {
+  color: #a33a3a;
+  line-height: 1.4;
+}
+
+.pedido-ia-recording-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #d32f2f;
+  box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.5);
+  animation: pedido-ia-pulse 1.2s infinite;
+}
+
 .pedido-ia-audio-hint {
   margin: 14px 0 18px;
   color: var(--cinza-500);
   font-size: 0.9rem;
 }
 
+.pedido-ia-audio-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.pedido-ia-audio-warning {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(211, 47, 47, 0.08);
+  border: 1px solid rgba(211, 47, 47, 0.14);
+  color: #8e2424;
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.pedido-ia-audio-preview {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 16px;
+  background: #f7fbf8;
+  border: 1px solid rgba(27, 94, 32, 0.12);
+  display: grid;
+  gap: 10px;
+}
+
+.pedido-ia-audio-preview span {
+  color: #1f512a;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.pedido-ia-audio-preview audio {
+  width: 100%;
+}
+
 .pedido-ia-resultado {
   display: grid;
   gap: 18px;
+}
+
+.pedido-ia-flow-box {
+  padding: 16px 18px;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at top right, rgba(67, 160, 71, 0.12), transparent 44%),
+    linear-gradient(135deg, #fcfffc 0%, #f3faf4 100%);
+  border: 1px solid rgba(27, 94, 32, 0.12);
+  display: grid;
+  gap: 14px;
+}
+
+.pedido-ia-flow-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.pedido-ia-flow-header strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #17361f;
+}
+
+.pedido-ia-flow-header p {
+  margin: 6px 0 0;
+  color: var(--cinza-500);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.pedido-ia-flow-status {
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(21, 53, 29, 0.08);
+  color: #15351d;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.pedido-ia-flow-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(220px, 0.9fr);
+  gap: 16px;
+  align-items: end;
+}
+
+.pedido-ia-select {
+  width: 100%;
+}
+
+.pedido-ia-created-box {
+  min-height: 46px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(67, 160, 71, 0.12);
+  border: 1px solid rgba(67, 160, 71, 0.2);
+  display: grid;
+  gap: 4px;
+  align-content: center;
+}
+
+.pedido-ia-created-box span {
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #2e7d32;
+}
+
+.pedido-ia-created-box strong {
+  color: #15351d;
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.pedido-ia-created-box small {
+  color: var(--cinza-600);
+  line-height: 1.4;
 }
 
 .pedido-ia-form-grid {
@@ -222,10 +388,28 @@
   }
 }
 
+@keyframes pedido-ia-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.5);
+    transform: scale(1);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(211, 47, 47, 0);
+    transform: scale(1.08);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(211, 47, 47, 0);
+    transform: scale(1);
+  }
+}
+
 @media (max-width: 980px) {
   .pedido-ia-grid,
   .pedido-ia-listas,
-  .pedido-ia-form-grid {
+  .pedido-ia-form-grid,
+  .pedido-ia-flow-grid {
     grid-template-columns: 1fr;
   }
 
@@ -240,6 +424,10 @@
   .pedido-ia-summary {
     align-items: flex-start;
   }
+
+  .pedido-ia-summary small {
+    text-align: left;
+  }
 }
 
 @media (max-width: 640px) {
@@ -247,6 +435,11 @@
   .pedido-ia-hero {
     padding: 18px;
     border-radius: 16px;
+  }
+
+  .pedido-ia-audio-actions {
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
   .pedido-ia-actions {

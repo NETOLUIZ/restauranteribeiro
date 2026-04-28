@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
-import { FiPrinter, FiCheck, FiFilter, FiSearch } from 'react-icons/fi';
+import { useEffect, useRef, useState } from 'react';
+import { FiBell, FiCheck, FiFilter, FiPrinter, FiSearch } from 'react-icons/fi';
 import { pedidoEmpresaAPI } from '../../services/api';
 import { COMANDA_PRINT_CSS, TELEFONE_RESTAURANTE, escapeHtml } from '../../utils/comandaPrint';
+
+const INTERVALO_ATUALIZACAO_MS = 8000;
 
 const gerarHtmlComandas = (comandas) => {
   const cards = comandas.map((comanda) => {
@@ -76,50 +78,152 @@ const gerarHtmlComandas = (comandas) => {
   `;
 };
 
+const tocarAvisoNovoPedido = () => {
+  try {
+    const AudioContextRef = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextRef) return;
+
+    const context = new AudioContextRef();
+    const oscillator = context.createOscillator();
+    const gainNode = context.createGain();
+
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(880, context.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(660, context.currentTime + 0.18);
+
+    gainNode.gain.setValueAtTime(0.0001, context.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.08, context.currentTime + 0.02);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.28);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(context.destination);
+    oscillator.start();
+    oscillator.stop(context.currentTime + 0.3);
+
+    window.setTimeout(() => {
+      context.close().catch(() => {});
+    }, 500);
+  } catch (err) {
+    console.error('Nao foi possivel tocar o aviso sonoro de pedido empresa:', err);
+  }
+};
+
+const emitirNotificacaoNavegador = (novosPedidos) => {
+  if (typeof window === 'undefined' || typeof window.Notification === 'undefined') return;
+  if (window.Notification.permission !== 'granted' || !novosPedidos.length) return;
+
+  const primeiroPedido = novosPedidos[0];
+  const totalNovos = novosPedidos.length;
+  const titulo = totalNovos === 1
+    ? 'Novo pedido de empresa'
+    : `${totalNovos} novos pedidos de empresa`;
+  const corpo = totalNovos === 1
+    ? `${primeiroPedido.empresa?.nome || 'Empresa'} aguardando autorizacao`
+    : 'Existem novos pedidos aguardando autorizacao';
+
+  try {
+    new window.Notification(titulo, { body: corpo });
+  } catch (err) {
+    console.error('Nao foi possivel emitir notificacao do navegador:', err);
+  }
+};
+
 export default function PedidosEmpresas() {
   const [pedidos, setPedidos] = useState([]);
   const [filtroStatus, setFiltroStatus] = useState('');
   const [filtroEmpresa, setFiltroEmpresa] = useState('');
   const [carregando, setCarregando] = useState(true);
+  const [mensagemAviso, setMensagemAviso] = useState(null);
+  const [pendentesAutorizacao, setPendentesAutorizacao] = useState(0);
+  const idsConhecidosRef = useRef(new Set());
+  const iniciouMonitoramentoRef = useRef(false);
+  const tituloPadraoRef = useRef(typeof document !== 'undefined' ? document.title : 'Restaurante Ribeiro');
 
-  async function carregar() {
-    try {
-      const params = {};
-      if (filtroStatus) params.status = filtroStatus;
-      const { data } = await pedidoEmpresaAPI.listarTodos(params);
-      setPedidos(data);
-    } catch (err) { console.error('Erro:', err); }
-    setCarregando(false);
-  }
+  const processarListaRecebida = (lista = [], notificarNovos = false) => {
+    const listaSegura = Array.isArray(lista) ? lista : [];
+    const novosPedidos = notificarNovos
+      ? listaSegura.filter((pedido) => pedido.status === 'ENVIADO' && !idsConhecidosRef.current.has(pedido.id))
+      : [];
+
+    idsConhecidosRef.current = new Set(listaSegura.map((pedido) => pedido.id));
+    setPedidos(listaSegura);
+    setPendentesAutorizacao(listaSegura.filter((pedido) => pedido.status === 'ENVIADO').length);
+
+    if (!novosPedidos.length) return;
+
+    const totalNovos = novosPedidos.length;
+    const primeiroPedido = novosPedidos[0];
+    const texto = totalNovos === 1
+      ? `Novo pedido de empresa de ${primeiroPedido.empresa?.nome || 'empresa'} aguardando autorizacao.`
+      : `${totalNovos} novos pedidos de empresa aguardando autorizacao.`;
+
+    tocarAvisoNovoPedido();
+    emitirNotificacaoNavegador(novosPedidos);
+    setMensagemAviso({ tipo: 'warning', texto });
+  };
 
   useEffect(() => {
     let ativo = true;
-    const params = {};
 
-    if (filtroStatus) params.status = filtroStatus;
+    const sincronizarPedidos = (notificarNovos = false) => {
+      pedidoEmpresaAPI.listarTodos()
+        .then(({ data }) => {
+          if (!ativo) return;
 
-    pedidoEmpresaAPI.listarTodos(params)
-      .then(({ data }) => {
-        if (!ativo) return;
-        setPedidos(data);
-      })
-      .catch((err) => {
-        console.error('Erro:', err);
-      })
-      .finally(() => {
-        if (ativo) setCarregando(false);
-      });
+          processarListaRecebida(
+            data,
+            iniciouMonitoramentoRef.current && notificarNovos
+          );
+          iniciouMonitoramentoRef.current = true;
+        })
+        .catch((err) => {
+          console.error('Erro:', err);
+        })
+        .finally(() => {
+          if (ativo) setCarregando(false);
+        });
+    };
+
+    sincronizarPedidos(false);
+    const intervalo = window.setInterval(() => {
+      sincronizarPedidos(true);
+    }, INTERVALO_ATUALIZACAO_MS);
 
     return () => {
       ativo = false;
+      window.clearInterval(intervalo);
     };
-  }, [filtroStatus]);
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    const tituloPadrao = tituloPadraoRef.current;
+
+    document.title = pendentesAutorizacao > 0
+      ? `(${pendentesAutorizacao}) Pedidos Empresas | Restaurante Ribeiro`
+      : tituloPadrao;
+
+    return () => {
+      document.title = tituloPadrao;
+    };
+  }, [pendentesAutorizacao]);
+
+  const recarregar = async () => {
+    try {
+      const { data } = await pedidoEmpresaAPI.listarTodos();
+      processarListaRecebida(data, false);
+    } catch (err) {
+      console.error('Erro:', err);
+    }
+  };
 
   const autorizar = async (id) => {
     try {
       await pedidoEmpresaAPI.autorizar(id);
-      carregar();
-    } catch (err) { console.error('Erro:', err); }
+      recarregar();
+    } catch (err) {
+      console.error('Erro:', err);
+    }
   };
 
   const montarComandasPedido = (pedido) => {
@@ -158,7 +262,7 @@ export default function PedidosEmpresas() {
   const imprimir = async (pedido) => {
     try {
       await pedidoEmpresaAPI.imprimir(pedido.id);
-      carregar();
+      recarregar();
       abrirImpressao(pedido);
     } catch (err) {
       console.error('Erro:', err);
@@ -178,7 +282,9 @@ export default function PedidosEmpresas() {
 
   const termoEmpresa = filtroEmpresa.trim().toLowerCase();
   const pedidosFiltrados = pedidos.filter((pedido) => {
+    if (filtroStatus && pedido.status !== filtroStatus) return false;
     if (!termoEmpresa) return true;
+
     const nomeEmpresa = (pedido.empresa?.nome || '').toLowerCase();
     const siglaEmpresa = (pedido.empresa?.sigla || '').toLowerCase();
     return nomeEmpresa.includes(termoEmpresa) || siglaEmpresa.includes(termoEmpresa);
@@ -186,7 +292,20 @@ export default function PedidosEmpresas() {
 
   return (
     <div id="pedidos-empresas-admin">
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
+      {mensagemAviso && (
+        <div
+          className={`toast toast-${mensagemAviso.tipo}`}
+          onAnimationEnd={(event) => {
+            if (event.animationName === 'slideOut') {
+              setMensagemAviso(null);
+            }
+          }}
+        >
+          {mensagemAviso.texto}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
         <select className="form-select" value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)} style={{ maxWidth: '200px' }} id="filtro-status-empresa">
           <option value="">Todos os status</option>
           <option value="ENVIADO">Enviado</option>
@@ -216,7 +335,17 @@ export default function PedidosEmpresas() {
         </div>
       </div>
 
-      {pedidosFiltrados.map(pedido => {
+      <div className={`pedido-empresa-alerta ${pendentesAutorizacao > 0 ? 'ativo' : ''}`}>
+        <div className="pedido-empresa-alerta-icone">
+          <FiBell size={18} />
+        </div>
+        <div className="pedido-empresa-alerta-texto">
+          <strong>{pendentesAutorizacao} pedido(s) aguardando autorizacao</strong>
+          <span>A tela verifica novos pedidos automaticamente a cada {INTERVALO_ATUALIZACAO_MS / 1000} segundos.</span>
+        </div>
+      </div>
+
+      {pedidosFiltrados.map((pedido) => {
         const totalMarmitas = pedido.lotes.reduce((s, l) => s + l.quantidade, 0);
 
         return (
@@ -243,7 +372,7 @@ export default function PedidosEmpresas() {
               {pedido.lotes.map((lote, i) => (
                 <div key={lote.id} style={{ padding: '10px', margin: '8px 0', background: 'var(--cinza-50)', borderRadius: '8px' }}>
                   <p><strong>Lote {i + 1}:</strong> {lote.quantidade}x para {lote.endereco}</p>
-                  <p style={{ fontSize: '0.85rem' }}><strong>Itens:</strong> {Array.isArray(lote.itens) ? lote.itens.map(it => it.nome).join(', ') : '-'}</p>
+                  <p style={{ fontSize: '0.85rem' }}><strong>Itens:</strong> {Array.isArray(lote.itens) ? lote.itens.map((it) => it.nome).join(', ') : '-'}</p>
                   {lote.nomes && Array.isArray(lote.nomes) && lote.nomes.length > 0 && (
                     <p style={{ fontSize: '0.85rem' }}><strong>Nomes:</strong> {lote.nomes.join(', ')}</p>
                   )}
@@ -284,6 +413,3 @@ export default function PedidosEmpresas() {
     </div>
   );
 }
-
-
-

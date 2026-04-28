@@ -38,6 +38,36 @@ const REGRAS_ITENS = [
 const OPENAI_API_BASE_URL = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
 const OPENAI_ORDER_MODEL = process.env.OPENAI_ORDER_MODEL || 'gpt-4o-mini';
 const OPENAI_TRANSCRIPTION_MODEL = process.env.OPENAI_TRANSCRIPTION_MODEL || 'gpt-4o-mini-transcribe';
+const DEFAULT_OPENAI_ORDER_PROMPT_ID = 'pmpt_69eff987fdd081978262248c75b1bde904a0be003e1d66d0';
+const OPENAI_ORDER_PROMPT_ID = process.env.OPENAI_ORDER_PROMPT_ID || DEFAULT_OPENAI_ORDER_PROMPT_ID;
+const OPENAI_ORDER_PROMPT_VERSION = process.env.OPENAI_ORDER_PROMPT_VERSION || '';
+
+const PEDIDO_OUTPUT_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['nome', 'telefone', 'endereco', 'pagamento', 'observacoes', 'proteinas', 'complementos'],
+  properties: {
+    nome: { type: 'string' },
+    telefone: { type: 'string' },
+    endereco: { type: 'string' },
+    pagamento: { type: 'string' },
+    observacoes: { type: 'string' },
+    proteinas: {
+      type: 'array',
+      items: {
+        type: 'string',
+        enum: PROTEINAS_PERMITIDAS
+      }
+    },
+    complementos: {
+      type: 'array',
+      items: {
+        type: 'string',
+        enum: COMPLEMENTOS_PERMITIDOS
+      }
+    }
+  }
+};
 
 class AiOrderError extends Error {
   constructor(message, statusCode = 500) {
@@ -253,6 +283,9 @@ const extrairObservacoes = (mensagem, observacoesNegativas = []) => {
   return juntarObservacoes(observacaoExplicita, observacoesNegativas.join('; '));
 };
 
+const mensagemIndicaObservacao = (mensagem = '') =>
+  /\b(?:obs|observa|sem|tirar|retirar|nao quero|nao precisa)\b/i.test(normalizarTexto(mensagem));
+
 const normalizarResultadoPedido = (pedido = {}) => ({
   nome: normalizarCampo(pedido.nome),
   telefone: normalizarCampo(pedido.telefone),
@@ -277,18 +310,23 @@ const construirFallbackPorRegras = (mensagem) => {
   };
 };
 
-const consolidarPedido = (pedidoPrincipal, pedidoApoio) => {
+const consolidarPedido = (pedidoPrincipal, pedidoApoio, mensagemOriginal = '') => {
   const principal = normalizarResultadoPedido(pedidoPrincipal);
   const apoio = normalizarResultadoPedido(pedidoApoio);
+
+  const proteinasConsolidadas = apoio.proteinas.length ? apoio.proteinas : principal.proteinas;
+  const complementosConsolidados = apoio.complementos.length ? apoio.complementos : principal.complementos;
+  const observacoesConsolidadas = apoio.observacoes
+    || (mensagemIndicaObservacao(mensagemOriginal) ? principal.observacoes : '');
 
   return {
     nome: principal.nome || apoio.nome,
     telefone: principal.telefone || apoio.telefone,
     endereco: principal.endereco || apoio.endereco,
     pagamento: principal.pagamento || apoio.pagamento,
-    observacoes: juntarObservacoes(principal.observacoes, apoio.observacoes),
-    proteinas: normalizarListaItens([...principal.proteinas, ...apoio.proteinas], PROTEINAS_PERMITIDAS),
-    complementos: normalizarListaItens([...principal.complementos, ...apoio.complementos], COMPLEMENTOS_PERMITIDOS)
+    observacoes: observacoesConsolidadas,
+    proteinas: proteinasConsolidadas,
+    complementos: complementosConsolidados
   };
 };
 
@@ -308,7 +346,77 @@ const tratarErroOpenAI = async (response) => {
   throw new AiOrderError(`Falha ao consultar a IA: ${mensagem || response.statusText}`, response.status);
 };
 
-const organizarPedidoComOpenAI = async (mensagem) => {
+const extrairTextoRespostaResponses = (resposta = {}) => {
+  const textos = [];
+
+  for (const item of Array.isArray(resposta.output) ? resposta.output : []) {
+    for (const contentItem of Array.isArray(item?.content) ? item.content : []) {
+      if (contentItem?.type === 'output_text' && typeof contentItem.text === 'string') {
+        textos.push(contentItem.text);
+      }
+    }
+  }
+
+  return textos.join('\n').trim();
+};
+
+const montarPromptVariablesPedido = (mensagem) => ({
+  mensagem,
+  texto: mensagem,
+  pedido: mensagem,
+  user_message: mensagem,
+  input_text: mensagem
+});
+
+const organizarPedidoComPromptOpenAI = async (mensagem) => {
+  const prompt = {
+    id: OPENAI_ORDER_PROMPT_ID,
+    variables: montarPromptVariablesPedido(mensagem)
+  };
+
+  if (OPENAI_ORDER_PROMPT_VERSION) {
+    prompt.version = OPENAI_ORDER_PROMPT_VERSION;
+  }
+
+  const response = await fetch(`${OPENAI_API_BASE_URL}/responses`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: OPENAI_ORDER_MODEL,
+      prompt,
+      text: {
+        format: {
+          type: 'json_schema',
+          name: 'pedido_marmitaria',
+          strict: true,
+          schema: PEDIDO_OUTPUT_SCHEMA
+        }
+      }
+    })
+  });
+
+  if (!response.ok) {
+    await tratarErroOpenAI(response);
+  }
+
+  const json = await response.json();
+  const content = extrairTextoRespostaResponses(json);
+
+  if (!content) {
+    throw new AiOrderError('A IA nao retornou um JSON utilizavel.', 502);
+  }
+
+  try {
+    return JSON.parse(content);
+  } catch (err) {
+    throw new AiOrderError('Nao foi possivel interpretar o JSON retornado pela IA.', 502);
+  }
+};
+
+const organizarPedidoComMensagensOpenAI = async (mensagem) => {
   const response = await fetch(`${OPENAI_API_BASE_URL}/chat/completions`, {
     method: 'POST',
     headers: {
@@ -374,6 +482,18 @@ const organizarPedidoComOpenAI = async (mensagem) => {
   }
 };
 
+const organizarPedidoComOpenAI = async (mensagem) => {
+  if (OPENAI_ORDER_PROMPT_ID) {
+    try {
+      return await organizarPedidoComPromptOpenAI(mensagem);
+    } catch (err) {
+      console.error('Erro ao organizar pedido com prompt reutilizavel, tentando fallback por mensagens:', err);
+    }
+  }
+
+  return organizarPedidoComMensagensOpenAI(mensagem);
+};
+
 const transcreverAudioComOpenAI = async (arquivo) => {
   const buffer = await fs.readFile(arquivo.path);
   const formData = new FormData();
@@ -422,7 +542,7 @@ async function organizarPedidoTexto(mensagem) {
 
   try {
     const respostaIA = await organizarPedidoComOpenAI(mensagemLimpa);
-    return consolidarPedido(respostaIA, fallback);
+    return consolidarPedido(respostaIA, fallback, mensagemLimpa);
   } catch (err) {
     console.error('Erro ao organizar pedido com IA, usando fallback local:', err);
     return normalizarResultadoPedido(fallback);

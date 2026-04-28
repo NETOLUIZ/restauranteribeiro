@@ -524,6 +524,59 @@
   flex-wrap: wrap;
 }
 
+.pedido-empresa-alerta {
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--cinza-200);
+  background: linear-gradient(135deg, #ffffff 0%, #f7f9f8 100%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: var(--transition-fast);
+}
+
+.pedido-empresa-alerta.ativo {
+  border-color: rgba(255, 160, 0, 0.3);
+  background:
+    radial-gradient(circle at left center, rgba(255, 160, 0, 0.14), transparent 34%),
+    linear-gradient(135deg, #fffdf6 0%, #fff9ea 100%);
+  box-shadow: 0 10px 24px rgba(255, 160, 0, 0.12);
+}
+
+.pedido-empresa-alerta-icone {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cinza-100);
+  color: var(--cinza-600);
+}
+
+.pedido-empresa-alerta.ativo .pedido-empresa-alerta-icone {
+  background: rgba(255, 160, 0, 0.14);
+  color: var(--amarelo);
+}
+
+.pedido-empresa-alerta-texto {
+  display: grid;
+  gap: 2px;
+}
+
+.pedido-empresa-alerta-texto strong {
+  color: var(--preto);
+  font-size: 0.95rem;
+}
+
+.pedido-empresa-alerta-texto span {
+  color: var(--cinza-600);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
 /* ===== DINHEIRO CONTROL ===== */
 .dinheiro-card {
   background: var(--branco);
