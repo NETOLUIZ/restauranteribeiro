@@ -156,6 +156,77 @@ async function criarPagamentoPixPedidoAvulso({
   };
 }
 
+async function criarPagamentoPixSelfService({
+  reservaId,
+  nomeCliente,
+  whatsapp,
+  descricaoPrato,
+  valorTotal,
+  webhookUrl
+}) {
+  const client = getClient();
+  if (!client) {
+    throw new Error('Mercado Pago nao configurado');
+  }
+
+  const valorTotalFinal = Number(valorTotal);
+  if (!Number.isFinite(valorTotalFinal) || valorTotalFinal <= 0) {
+    throw new Error('Valor total invalido para Pix');
+  }
+
+  const payment = new Payment(client);
+  const telefonePayer = montarTelefonePayer(whatsapp);
+  const body = {
+    transaction_amount: Number(valorTotalFinal.toFixed(2)),
+    description: `Self-service #${reservaId} - ${descricaoPrato}`,
+    payment_method_id: 'pix',
+    external_reference: `SELF_SERVICE_${reservaId}`,
+    payer: {
+      email: obterEmailPayer(`self-service-${reservaId}`),
+      first_name: nomeCliente || 'Cliente',
+      ...(telefonePayer ? { phone: telefonePayer } : {})
+    },
+    additional_info: {
+      items: [
+        {
+          id: `self-service-${reservaId}`,
+          title: descricaoPrato,
+          description: 'Reserva de self-service para retirada no balcao',
+          quantity: 1,
+          unit_price: Number(valorTotalFinal.toFixed(2))
+        }
+      ],
+      payer: {
+        first_name: nomeCliente || 'Cliente',
+        ...(telefonePayer ? { phone: telefonePayer } : {})
+      }
+    }
+  };
+
+  if (isHttpsPublico(webhookUrl)) {
+    body.notification_url = webhookUrl;
+  }
+
+  const resposta = await payment.create({
+    body,
+    requestOptions: {
+      idempotencyKey: `self-service-pix-${reservaId}`
+    }
+  });
+
+  const dadosPix = resposta.point_of_interaction?.transaction_data || {};
+
+  return {
+    pagamentoId: String(resposta.id),
+    status: resposta.status,
+    qrCode: dadosPix.qr_code || null,
+    qrCodeBase64: dadosPix.qr_code_base64 || null,
+    copiaecola: dadosPix.qr_code || null,
+    valor: resposta.transaction_amount,
+    reservaId
+  };
+}
+
 async function consultarPagamento(paymentId) {
   const client = getClient();
   if (!client) {
@@ -209,6 +280,7 @@ module.exports = {
   mercadoPagoConfigurado,
   obterStatusMercadoPago,
   criarPagamentoPixPedidoAvulso,
+  criarPagamentoPixSelfService,
   consultarPagamento,
   buscarPagamentoPorReferenciaExterna
 };

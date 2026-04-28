@@ -118,3 +118,11 @@ export const aiOrderAPI = {
     headers: { 'Content-Type': 'multipart/form-data' }
   })
 };
+
+// Self-service
+export const selfServiceAPI = {
+  criar: (dados) => api.post('/self-service', dados),
+  statusPagamento: (id) => api.get(`/self-service/${id}/status-pagamento`),
+  listar: (params) => api.get('/self-service', { params }),
+  marcarRetirado: (id) => api.put(`/self-service/${id}/retirar`)
+};

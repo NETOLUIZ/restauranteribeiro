@@ -89,6 +89,7 @@ const OPENAI_TRANSCRIPTION_MODEL = process.env.OPENAI_TRANSCRIPTION_MODEL || 'gp
 const DEFAULT_OPENAI_ORDER_PROMPT_ID = 'pmpt_69eff987fdd081978262248c75b1bde904a0be003e1d66d0';
 const OPENAI_ORDER_PROMPT_ID = process.env.OPENAI_ORDER_PROMPT_ID || DEFAULT_OPENAI_ORDER_PROMPT_ID;
 const OPENAI_ORDER_PROMPT_VERSION = process.env.OPENAI_ORDER_PROMPT_VERSION || '';
+const MAX_PEDIDOS_FLUXO_IA = 50;
 
 const PEDIDO_ITEM_SCHEMA = {
   type: 'object',
@@ -149,7 +150,8 @@ const REGRAS_CRITICAS_ITENS = [
   'Nunca coloque varios nomes em uma unica observacao.',
   'Nunca use quantidade maior que 1 em um item final.',
   'Se vier quantidade maior que 1, expanda em varios itens separados com quantidade 1.',
-  'Se o cliente mandar 30 pedidos, o array "itens" precisa ter 30 objetos.',
+  `O fluxo precisa ler listas com ate ${MAX_PEDIDOS_FLUXO_IA} pedidos sem truncar.`,
+  `Se o cliente mandar ${MAX_PEDIDOS_FLUXO_IA} pedidos, o array "itens" precisa ter ${MAX_PEDIDOS_FLUXO_IA} objetos.`,
   'Se a lista vier numerada como "1 Paulo", "2 Everson", o numero inicial e so posicao da lista, nao quantidade.',
   'Se houver um numero final como "16" ou "Sao 4 hoje", ele serve como confirmacao do total de comandas.',
   'Nao crie item "outros pedidos" e nao resuma a lista.'
@@ -982,6 +984,8 @@ const organizarPedidoComMensagensOpenAI = async (mensagem) => {
             'Nunca coloque varios nomes dentro da mesma observacao.',
             'Todo item final precisa ter "quantidade": 1.',
             'Se houver quantidade maior que 1, expanda em varios itens separados.',
+            `O fluxo precisa ler listas com ate ${MAX_PEDIDOS_FLUXO_IA} pedidos sem truncar.`,
+            `Se o cliente mandar ${MAX_PEDIDOS_FLUXO_IA} pedidos, o array "itens" precisa ter ${MAX_PEDIDOS_FLUXO_IA} objetos.`,
             'Se a lista vier numerada como "1 Paulo", "2 Everson", o numero inicial e so posicao da lista.',
             'Um numero final como "16" ou "Sao 4 hoje" confirma total de comandas; nao e um item.',
             'Mapeie somente itens desta lista de proteinas:',

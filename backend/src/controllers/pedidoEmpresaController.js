@@ -5,6 +5,7 @@ async function criar(req, res) {
   try {
     const isEmpresa = req.usuario.role === 'EMPRESA_FUNC';
     const isAdmin = req.usuario.role === 'ADMIN';
+    const statusInicial = isAdmin ? 'AUTORIZADO' : 'ENVIADO';
 
     if (!isEmpresa && !isAdmin) {
       return res.status(403).json({ erro: 'Acesso negado para criar pedido de empresa' });
@@ -83,6 +84,7 @@ async function criar(req, res) {
       data: {
         empresaId,
         observacao: observacaoNormalizada || null,
+        status: statusInicial,
         lotes: {
           create: lotesNormalizados.map((lote) => ({
             itens: lote.itens,

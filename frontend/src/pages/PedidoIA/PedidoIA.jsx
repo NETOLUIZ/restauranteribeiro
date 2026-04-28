@@ -847,10 +847,10 @@ export default function PedidoIA() {
             <div className="pedido-ia-flow-header">
               <div>
                 <strong><FiTruck size={16} /> Destino no fluxo empresarial</strong>
-                <p>Este envio cria 1 pedido empresarial com {totalComandas} lotes e {totalComandas} comandas individuais.</p>
+                <p>Este envio cria 1 pedido empresarial com {totalComandas} lotes, {totalComandas} comandas individuais e status inicial autorizado.</p>
               </div>
               <span className="pedido-ia-flow-status">
-                ENVIADO {'>'} AUTORIZADO {'>'} IMPRESSO
+                AUTORIZADO {'>'} IMPRESSO
               </span>
             </div>
 

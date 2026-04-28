@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/useAuth';
 import { FiMenu, FiX, FiLogOut } from 'react-icons/fi';
+import { useAuth } from '../context/useAuth';
 
 export default function Navbar() {
   const [menuAberto, setMenuAberto] = useState(false);
@@ -41,11 +41,12 @@ export default function Navbar() {
         <Link to="/" className="navbar-logo">
           <span>Restaurante Ribeiro</span>
         </Link>
-        
+
         <div className="navbar-links">
-          <Link to="/">Início</Link>
+          <Link to="/">Inicio</Link>
+          <Link to="/self-service">Self-service</Link>
           <Link to="/pedido">Fazer Pedido</Link>
-          {!usuario && <Link to="/empresa/login">Área da Empresa</Link>}
+          {!usuario && <Link to="/empresa/login">Area da Empresa</Link>}
           {usuario && usuario.role === 'EMPRESA_FUNC' && <Link to="/empresa/pedidos">Meus Pedidos</Link>}
           {usuario && (
             <button onClick={handleLogout} className="btn btn-sm btn-secondary">
@@ -53,21 +54,22 @@ export default function Navbar() {
             </button>
           )}
         </div>
-        
-        <button 
-          className="navbar-menu-btn" 
+
+        <button
+          className="navbar-menu-btn"
           onClick={() => setMenuAberto(!menuAberto)}
           id="btn-menu-mobile"
         >
           {menuAberto ? <FiX size={24} /> : <FiMenu size={24} />}
         </button>
       </div>
-      
+
       {menuAberto && menuMobileAtivo && (
         <div className="navbar-mobile">
-          <Link to="/" onClick={() => setMenuAberto(false)}>Início</Link>
+          <Link to="/" onClick={() => setMenuAberto(false)}>Inicio</Link>
+          <Link to="/self-service" onClick={() => setMenuAberto(false)}>Self-service</Link>
           <Link to="/pedido" onClick={() => setMenuAberto(false)}>Fazer Pedido</Link>
-          {!usuario && <Link to="/empresa/login" onClick={() => setMenuAberto(false)}>Área da Empresa</Link>}
+          {!usuario && <Link to="/empresa/login" onClick={() => setMenuAberto(false)}>Area da Empresa</Link>}
           {usuario && usuario.role === 'EMPRESA_FUNC' && <Link to="/empresa/pedidos" onClick={() => setMenuAberto(false)}>Meus Pedidos</Link>}
           {usuario && (
             <button onClick={handleLogout}>
@@ -79,4 +81,3 @@ export default function Navbar() {
     </nav>
   );
 }
-

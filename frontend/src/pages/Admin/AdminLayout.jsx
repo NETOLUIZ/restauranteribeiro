@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
+  FiClipboard,
+  FiClock,
   FiCpu,
+  FiDollarSign,
   FiGrid,
-  FiList,
   FiImage,
+  FiList,
+  FiLogOut,
+  FiMenu,
   FiShoppingBag,
   FiTruck,
   FiUsers,
-  FiClock,
-  FiDollarSign,
-  FiLogOut,
-  FiMenu,
   FiX
 } from 'react-icons/fi';
 import { useAuth } from '../../context/useAuth';
@@ -23,21 +24,23 @@ import PedidosEmpresas from './PedidosEmpresas';
 import CadastroEmpresas from './CadastroEmpresas';
 import Historico from './Historico';
 import ControleDinheiro from './ControleDinheiro';
+import SelfService from './SelfService';
 import PedidoIA from '../PedidoIA/PedidoIA';
 import '../../styles/admin.css';
 
 const PAGINAS = [
-  { id: 'dashboard', label: 'Dashboard', icon: <FiGrid />, componente: Dashboard },
-  { id: 'cardapio', label: 'Cardápio do Dia', icon: <FiList />, componente: GerenciarCardapio },
-  { id: 'banners', label: 'Banners e Promoções', icon: <FiImage />, componente: GerenciarBanners },
+  { id: 'dashboard', label: 'Dashboard', icon: <FiGrid />, componente: Dashboard, rota: '/admin' },
+  { id: 'cardapio', label: 'Cardapio do Dia', icon: <FiList />, componente: GerenciarCardapio },
+  { id: 'banners', label: 'Banners e Promocoes', icon: <FiImage />, componente: GerenciarBanners },
   { id: 'divider1', divider: true },
+  { id: 'self-service', label: 'Self-service', icon: <FiClipboard />, componente: SelfService, rota: '/admin/self-service' },
   { id: 'pedido-ia', label: 'Pedido por IA', icon: <FiCpu />, componente: PedidoIA, rota: '/admin/pedido-ia' },
   { id: 'avulsos', label: 'Pedidos Avulsos', icon: <FiShoppingBag />, componente: PedidosAvulsos },
   { id: 'empresas-pedidos', label: 'Pedidos Empresas', icon: <FiTruck />, componente: PedidosEmpresas },
   { id: 'dinheiro', label: 'Controle Dinheiro', icon: <FiDollarSign />, componente: ControleDinheiro },
   { id: 'divider2', divider: true },
   { id: 'empresas', label: 'Cadastro Empresas', icon: <FiUsers />, componente: CadastroEmpresas },
-  { id: 'historico', label: 'Histórico', icon: <FiClock />, componente: Historico }
+  { id: 'historico', label: 'Historico', icon: <FiClock />, componente: Historico }
 ];
 
 export default function AdminLayout({ paginaInicial = 'dashboard' }) {
@@ -69,9 +72,7 @@ export default function AdminLayout({ paginaInicial = 'dashboard' }) {
     navigate('/');
   };
 
-  const paginaAtual = location.pathname === '/admin/pedido-ia'
-    ? 'pedido-ia'
-    : paginaPadrao;
+  const paginaAtual = PAGINAS.find((item) => item.rota === location.pathname)?.id || paginaPadrao;
   const pagina = PAGINAS.find((item) => item.id === paginaAtual);
   const Componente = pagina?.componente || Dashboard;
   const tituloAtual = pagina?.label || 'Dashboard';

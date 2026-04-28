@@ -30,6 +30,18 @@ enum StatusPagamento {
   CANCELADO
 }
 
+enum TipoPratoSelfService {
+  SELF_SERVICE_18
+  SELF_SERVICE_15
+}
+
+enum StatusReservaSelfService {
+  AGUARDANDO_PAGAMENTO
+  PAGO
+  RETIRADO
+  CANCELADO
+}
+
 enum StatusPedidoEmpresa {
   ENVIADO
   AUTORIZADO
@@ -123,6 +135,26 @@ model PedidoEmpresa {
   impresso  Boolean             @default(false)
   createdAt DateTime            @default(now())
   updatedAt DateTime            @updatedAt
+}
+
+model ReservaSelfService {
+  id             Int                      @id @default(autoincrement())
+  nomeCliente    String
+  whatsapp       String
+  tipoPrato      TipoPratoSelfService
+  valorPrato     Float
+  taxaServico    Float                    @default(0.2)
+  valorTotal     Float
+  status         StatusReservaSelfService @default(AGUARDANDO_PAGAMENTO)
+  mercadoPagoId  String?
+  referenciaExterna String?               @unique
+  valorPago      Float?
+  pagoEm         DateTime?
+  codigoRetirada String?                  @unique
+  retiradoEm     DateTime?
+  canceladoEm    DateTime?
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
 }
 
 model LotePedido {

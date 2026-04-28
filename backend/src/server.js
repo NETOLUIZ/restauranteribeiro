@@ -12,6 +12,7 @@ const bannerRoutes = require('./routes/banner');
 const marmitaCardRoutes = require('./routes/marmitaCard');
 const dashboardRoutes = require('./routes/dashboard');
 const aiOrderRoutes = require('./routes/aiOrderRoutes');
+const selfServiceRoutes = require('./routes/selfService');
 const { webhookMercadoPago } = require('./controllers/pedidoAvulsoController');
 
 const app = express();
@@ -35,6 +36,7 @@ app.use('/api/banners', bannerRoutes);
 app.use('/api/marmitas', marmitaCardRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/ai-order', aiOrderRoutes);
+app.use('/api/self-service', selfServiceRoutes);
 app.post('/api/webhook/mercadopago', webhookMercadoPago);
 
 // Health check

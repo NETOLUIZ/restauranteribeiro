@@ -27,9 +27,22 @@ const responderErro = (res, err) => {
   res.status(500).json({ erro: 'Erro interno do servidor' });
 };
 
+const resolverMensagemTexto = (body) => {
+  if (typeof body === 'string') {
+    return body;
+  }
+
+  return body?.mensagem
+    || body?.texto
+    || body?.pedido
+    || body?.input_text
+    || body?.user_message
+    || '';
+};
+
 async function organizarTexto(req, res) {
   try {
-    const pedido = await organizarPedidoTexto(req.body?.mensagem);
+    const pedido = await organizarPedidoTexto(resolverMensagemTexto(req.body));
     res.json(pedido);
   } catch (err) {
     responderErro(res, err);
