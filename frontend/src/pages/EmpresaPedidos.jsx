@@ -6,7 +6,7 @@ import Navbar from '../components/Navbar';
 import CheckboxVerde from '../components/CheckboxVerde';
 import { useAuth } from '../context/useAuth';
 import { cardapioAPI, empresaAPI, pedidoEmpresaAPI } from '../services/api';
-import { escapeHtml } from '../utils/comandaPrint';
+import { escapeHtml, imprimirHtml } from '../utils/comandaPrint';
 import '../styles/empresa.css';
 
 const gerarHtmlLotesPdf = ({ empresaNome, lotes, totalNosLotes, totalDoDia, observacao }) => {
@@ -394,26 +394,13 @@ export default function EmpresaPedidos() {
     }
 
     const observacao = normalizarObservacao(observacaoPedido);
-    const janelaPdf = window.open('', '_blank');
-
-    if (!janelaPdf) {
-      setMensagem({ tipo: 'error', texto: 'Nao foi possivel abrir a janela para salvar em PDF.' });
-      return;
-    }
-
-    janelaPdf.document.write(gerarHtmlLotesPdf({
+    imprimirHtml(gerarHtmlLotesPdf({
       empresaNome: usuario?.empresa?.nome || 'Restaurante Ribeiro',
       lotes,
       totalNosLotes,
       totalDoDia,
       observacao
     }));
-    janelaPdf.document.close();
-    janelaPdf.focus();
-
-    window.setTimeout(() => {
-      janelaPdf.print();
-    }, 250);
   };
 
   const enviarPedido = async () => {

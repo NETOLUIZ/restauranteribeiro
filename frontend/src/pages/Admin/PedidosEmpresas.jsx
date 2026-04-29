@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { FiBell, FiCheck, FiFilter, FiPrinter, FiSearch } from 'react-icons/fi';
 import { pedidoEmpresaAPI } from '../../services/api';
-import { COMANDA_PRINT_CSS, TELEFONE_RESTAURANTE, escapeHtml } from '../../utils/comandaPrint';
+import { COMANDA_PRINT_CSS, TELEFONE_RESTAURANTE, escapeHtml, imprimirHtml } from '../../utils/comandaPrint';
 
 const INTERVALO_ATUALIZACAO_MS = 8000;
 
@@ -247,16 +247,7 @@ export default function PedidosEmpresas() {
 
   const abrirImpressao = (pedido) => {
     const comandas = montarComandasPedido(pedido);
-
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      throw new Error('Bloqueador de pop-up ativo');
-    }
-
-    printWindow.document.write(gerarHtmlComandas(comandas));
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
+    imprimirHtml(gerarHtmlComandas(comandas));
   };
 
   const imprimir = async (pedido) => {
@@ -274,7 +265,7 @@ export default function PedidosEmpresas() {
       abrirImpressao(pedido);
     } catch (err) {
       console.error('Erro:', err);
-      alert('Nao foi possivel reimprimir. Verifique o bloqueador de pop-up do navegador.');
+      alert('Nao foi possivel iniciar a reimpressao. Tente novamente.');
     }
   };
 

@@ -1,4 +1,4 @@
-import { COMANDA_PRINT_CSS, TELEFONE_RESTAURANTE, escapeHtml } from './comandaPrint';
+import { COMANDA_PRINT_CSS, TELEFONE_RESTAURANTE, escapeHtml, imprimirHtml } from './comandaPrint';
 import {
   COMPLEMENTOS_COMANDA,
   PROTEINAS_COMANDA,
@@ -595,27 +595,9 @@ export const gerarHtmlComandasChecklist = (lista = []) => {
 };
 
 export const abrirImpressaoComandaChecklist = (dados = {}) => {
-  const printWindow = window.open('', '_blank');
-
-  if (!printWindow) {
-    throw new Error('Bloqueador de pop-up ativo');
-  }
-
-  printWindow.document.write(gerarHtmlComandaChecklist(dados));
-  printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
+  imprimirHtml(gerarHtmlComandaChecklist(dados));
 };
 
 export const abrirImpressaoComandasChecklist = (lista = []) => {
-  const printWindow = window.open('', '_blank');
-
-  if (!printWindow) {
-    throw new Error('Bloqueador de pop-up ativo');
-  }
-
-  printWindow.document.write(gerarHtmlComandasChecklist(lista));
-  printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
+  imprimirHtml(gerarHtmlComandasChecklist(lista));
 };

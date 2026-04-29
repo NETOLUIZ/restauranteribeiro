@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { FiPrinter, FiCheck, FiFilter } from 'react-icons/fi';
 import { pedidoAvulsoAPI } from '../../services/api';
-import { COMANDA_PRINT_CSS, TELEFONE_RESTAURANTE, escapeHtml } from '../../utils/comandaPrint';
+import { COMANDA_PRINT_CSS, TELEFONE_RESTAURANTE, escapeHtml, imprimirHtml } from '../../utils/comandaPrint';
 
 function gerarHtmlComanda(pedido) {
   const itensHtml = Array.isArray(pedido.itens) && pedido.itens.length
@@ -96,15 +96,7 @@ export default function PedidosAvulsos() {
 
     imprimindoRef.current.add(pedido.id);
     try {
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) {
-        throw new Error('Bloqueador de pop-up ativo');
-      }
-
-      printWindow.document.write(gerarHtmlComanda(pedido));
-      printWindow.document.close();
-      printWindow.focus();
-      printWindow.print();
+      imprimirHtml(gerarHtmlComanda(pedido));
 
       if (!reimpressao) {
         await pedidoAvulsoAPI.imprimir(pedido.id);
@@ -113,7 +105,7 @@ export default function PedidosAvulsos() {
     } catch (err) {
       console.error('Erro ao imprimir comanda:', err);
       if (!automatico) {
-        alert('Nao foi possivel imprimir. Verifique o bloqueador de pop-up do navegador.');
+        alert('Nao foi possivel iniciar a impressao. Tente novamente.');
       }
     } finally {
       imprimindoRef.current.delete(pedido.id);

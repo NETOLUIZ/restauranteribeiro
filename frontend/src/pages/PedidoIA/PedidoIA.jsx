@@ -667,7 +667,7 @@ export default function PedidoIA() {
     } catch {
       setFeedback({
         tipo: 'error',
-        texto: 'Nao foi possivel abrir a impressao. Verifique o bloqueador de pop-up do navegador.'
+        texto: 'Nao foi possivel iniciar a impressao. Tente novamente.'
       });
     }
   };

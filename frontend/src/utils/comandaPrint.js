@@ -347,3 +347,67 @@ export const COMANDA_PRINT_CSS = `
     }
   }
 `;
+
+export const imprimirHtml = (html, { cleanupDelayMs = 1000 } = {}) => {
+  if (typeof document === 'undefined' || !document.body) {
+    throw new Error('Ambiente de impressao indisponivel');
+  }
+
+  const iframe = document.createElement('iframe');
+  iframe.setAttribute('aria-hidden', 'true');
+  iframe.style.position = 'fixed';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = '0';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.visibility = 'hidden';
+
+  let impressaoDisparada = false;
+  let timeoutFallbackId = null;
+  let timeoutLimpezaId = null;
+
+  const limparIframe = () => {
+    if (timeoutFallbackId) {
+      window.clearTimeout(timeoutFallbackId);
+    }
+    if (timeoutLimpezaId) {
+      window.clearTimeout(timeoutLimpezaId);
+    }
+    if (iframe.parentNode) {
+      iframe.parentNode.removeChild(iframe);
+    }
+  };
+
+  const dispararImpressao = () => {
+    if (impressaoDisparada) return;
+
+    const frameWindow = iframe.contentWindow;
+    if (!frameWindow) {
+      limparIframe();
+      throw new Error('Nao foi possivel preparar a impressao');
+    }
+
+    impressaoDisparada = true;
+    frameWindow.onafterprint = () => {
+      timeoutLimpezaId = window.setTimeout(limparIframe, cleanupDelayMs);
+    };
+
+    window.setTimeout(() => {
+      try {
+        frameWindow.focus();
+        frameWindow.print();
+      } catch (err) {
+        console.error('Nao foi possivel iniciar a impressao:', err);
+        limparIframe();
+      }
+    }, 150);
+
+    timeoutLimpezaId = window.setTimeout(limparIframe, 60000);
+  };
+
+  iframe.onload = dispararImpressao;
+  iframe.srcdoc = html;
+  document.body.appendChild(iframe);
+  timeoutFallbackId = window.setTimeout(dispararImpressao, 700);
+};

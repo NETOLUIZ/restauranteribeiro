@@ -103,7 +103,7 @@ export default function GerenciarCardapio() {
         itensComplemento: complementosAtivos
       });
     } catch {
-      alert('Nao foi possivel abrir a impressao. Verifique o bloqueador de pop-up do navegador.');
+      alert('Nao foi possivel iniciar a impressao. Tente novamente.');
     }
   };
 
