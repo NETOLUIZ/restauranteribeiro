@@ -1,6 +1,9 @@
 const fs = require('fs/promises');
+const { PrismaClient } = require('@prisma/client');
 
-const PROTEINAS_PERMITIDAS = [
+const prisma = new PrismaClient();
+
+const PROTEINAS_PADRAO = [
   'Assado de panela',
   'Creme de Galinha',
   'Frango Forno',
@@ -8,7 +11,7 @@ const PROTEINAS_PERMITIDAS = [
   'Su\u00edno-molho'
 ];
 
-const COMPLEMENTOS_PERMITIDOS = [
+const COMPLEMENTOS_PADRAO = [
   'Arroz Branco',
   'Feij\u00e3o',
   'Macarr\u00e3o',
@@ -20,51 +23,6 @@ const COMPLEMENTOS_PERMITIDOS = [
   'Salada',
   'Ovo Cozido'
 ];
-
-const REGRAS_ITENS = [
-  {
-    tipo: 'PROTEINA',
-    nome: 'Assado de panela',
-    aliases: ['assado de panela', 'carne de panela', 'assado', 'carne']
-  },
-  {
-    tipo: 'PROTEINA',
-    nome: 'Creme de Galinha',
-    aliases: ['creme de galinha', 'creme', 'galinha']
-  },
-  {
-    tipo: 'PROTEINA',
-    nome: 'Frango Forno',
-    aliases: ['frango forno', 'frango']
-  },
-  {
-    tipo: 'PROTEINA',
-    nome: 'Lingui\u00e7a-Brasa',
-    aliases: ['linguica-brasa', 'linguica na brasa', 'lingui\u00e7a-brasa', 'lingui\u00e7a na brasa', 'linguica', 'lingui\u00e7a']
-  },
-  {
-    tipo: 'PROTEINA',
-    nome: 'Su\u00edno-molho',
-    aliases: ['suino-molho', 'suino ao molho', 'su\u00edno-molho', 'su\u00edno ao molho', 'suino molho', 'su\u00edno molho', 'suino', 'su\u00edno', 'porco']
-  },
-  { tipo: 'COMPLEMENTO', nome: 'Arroz Branco', aliases: ['arroz branco', 'arroz'] },
-  { tipo: 'COMPLEMENTO', nome: 'Bai\u00e3o', aliases: ['baiao', 'bai\u00e3o'] },
-  { tipo: 'COMPLEMENTO', nome: 'Feij\u00e3o', aliases: ['feijao', 'feij\u00e3o'] },
-  { tipo: 'COMPLEMENTO', nome: 'Macarr\u00e3o', aliases: ['macarrao', 'macarr\u00e3o'] },
-  { tipo: 'COMPLEMENTO', nome: 'Batatinha Cozida', aliases: ['batatinha cozida', 'batatinha', 'batata cozida', 'batata'] },
-  { tipo: 'COMPLEMENTO', nome: 'Farofa', aliases: ['farofa'] },
-  { tipo: 'COMPLEMENTO', nome: 'Ma\u00e7\u00e3 picada', aliases: ['maca picada', 'ma\u00e7\u00e3 picada', 'maca', 'ma\u00e7\u00e3'] },
-  { tipo: 'COMPLEMENTO', nome: 'Vinagrete', aliases: ['vinagrete'] },
-  { tipo: 'COMPLEMENTO', nome: 'Salada', aliases: ['salada'] },
-  { tipo: 'COMPLEMENTO', nome: 'Ovo Cozido', aliases: ['ovo cozido', 'ovo', 'ovos'] }
-];
-
-const REGRAS_PROTEINAS = REGRAS_ITENS.filter((regra) => regra.tipo === 'PROTEINA');
-const REGRAS_ITEMS_ORDENADAS = REGRAS_ITENS.flatMap((regra) =>
-  regra.aliases.map((alias) => ({ nome: regra.nome, tipo: regra.tipo, alias }))
-).sort((a, b) => b.alias.length - a.alias.length);
-
-const MAPA_REGRAS_POR_NOME = new Map(REGRAS_ITENS.map((regra) => [regra.nome, regra]));
 
 const normalizarUrlBaseOpenAI = (valor = '') =>
   String(valor || '')
@@ -86,63 +44,9 @@ const OPENAI_CHAT_COMPLETIONS_URL = normalizarUrlEndpointOpenAI(process.env.OPEN
 const OPENAI_AUDIO_TRANSCRIPTIONS_URL = normalizarUrlEndpointOpenAI(process.env.OPENAI_AUDIO_TRANSCRIPTIONS_URL) || montarEndpointOpenAI(OPENAI_API_BASE_URL, '/audio/transcriptions');
 const OPENAI_ORDER_MODEL = process.env.OPENAI_ORDER_MODEL || 'gpt-4o-mini';
 const OPENAI_TRANSCRIPTION_MODEL = process.env.OPENAI_TRANSCRIPTION_MODEL || 'gpt-4o-mini-transcribe';
-const DEFAULT_OPENAI_ORDER_PROMPT_ID = 'pmpt_69eff987fdd081978262248c75b1bde904a0be003e1d66d0';
-const OPENAI_ORDER_PROMPT_ID = process.env.OPENAI_ORDER_PROMPT_ID || DEFAULT_OPENAI_ORDER_PROMPT_ID;
+const OPENAI_ORDER_PROMPT_ID = process.env.OPENAI_ORDER_PROMPT_ID || '';
 const OPENAI_ORDER_PROMPT_VERSION = process.env.OPENAI_ORDER_PROMPT_VERSION || '';
 const MAX_PEDIDOS_FLUXO_IA = 50;
-
-const PEDIDO_ITEM_SCHEMA = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['nome', 'observacoes', 'proteinas', 'complementos', 'quantidade'],
-  properties: {
-    nome: { type: 'string' },
-    observacoes: { type: 'string' },
-    proteinas: {
-      type: 'array',
-      items: {
-        type: 'string',
-        enum: PROTEINAS_PERMITIDAS
-      }
-    },
-    complementos: {
-      type: 'array',
-      items: {
-        type: 'string',
-        enum: COMPLEMENTOS_PERMITIDOS
-      }
-    },
-    quantidade: {
-      type: 'integer',
-      minimum: 1,
-      maximum: 100
-    }
-  }
-};
-
-const PEDIDO_OUTPUT_SCHEMA = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['nome', 'telefone', 'endereco', 'pagamento', 'observacoes', 'total_comandas', 'itens'],
-  properties: {
-    nome: { type: 'string' },
-    telefone: { type: 'string' },
-    endereco: { type: 'string' },
-    pagamento: { type: 'string' },
-    observacoes: { type: 'string' },
-    total_comandas: {
-      type: 'integer',
-      minimum: 0,
-      maximum: 100
-    },
-    itens: {
-      type: 'array',
-      minItems: 0,
-      maxItems: 100,
-      items: PEDIDO_ITEM_SCHEMA
-    }
-  }
-};
 
 const REGRAS_CRITICAS_ITENS = [
   'Regra critica: cada pedido individual, pessoa, linha, nome ou comanda precisa virar um objeto separado no array "itens".',
@@ -217,6 +121,186 @@ const deduplicarStrings = (valores = []) => {
   });
 };
 
+const PALAVRAS_IGNORADAS_ALIAS = new Set([
+  'a', 'ao', 'aos', 'as', 'com', 'da', 'das', 'de', 'do', 'dos', 'e', 'em', 'na', 'nas', 'no', 'nos', 'o', 'os'
+]);
+
+const gerarAliasesContextuaisItem = (tipo, nomeNormalizado = '') => {
+  const aliases = [];
+
+  if (tipo === 'PROTEINA') {
+    if (nomeNormalizado.includes('frango')) aliases.push('frango');
+    if (nomeNormalizado.includes('linguica')) aliases.push('linguica');
+    if (nomeNormalizado.includes('suino') || nomeNormalizado.includes('porco')) aliases.push('suino', 'porco');
+    if (nomeNormalizado.includes('creme') && nomeNormalizado.includes('galinha')) aliases.push('creme', 'galinha');
+    if (nomeNormalizado.includes('panela')) aliases.push('assado', 'carne', 'carne de panela');
+  }
+
+  if (tipo === 'COMPLEMENTO') {
+    if (nomeNormalizado.includes('arroz')) aliases.push('arroz');
+    if (nomeNormalizado.includes('feijao')) aliases.push('feijao');
+    if (nomeNormalizado.includes('macarrao')) aliases.push('macarrao');
+    if (nomeNormalizado.includes('baiao')) aliases.push('baiao');
+    if (nomeNormalizado.includes('batata')) aliases.push('batata', 'batatinha');
+    if (nomeNormalizado.includes('farofa')) aliases.push('farofa');
+    if (nomeNormalizado.includes('maca')) aliases.push('maca');
+    if (nomeNormalizado.includes('vinagrete')) aliases.push('vinagrete');
+    if (nomeNormalizado.includes('salada')) aliases.push('salada');
+    if (nomeNormalizado.includes('ovo')) aliases.push('ovo', 'ovos');
+  }
+
+  return aliases;
+};
+
+const gerarAliasesItemCardapio = (tipo, nome = '') => {
+  const nomeLimpo = normalizarCampo(nome);
+  const nomeNormalizado = normalizarCampo(
+    normalizarTexto(nomeLimpo)
+      .replace(/[-_/]+/g, ' ')
+      .replace(/[^a-z0-9\s]/g, ' ')
+  );
+
+  const tokens = nomeNormalizado
+    .split(/\s+/)
+    .filter(Boolean)
+    .filter((token) => token.length >= 3 && !PALAVRAS_IGNORADAS_ALIAS.has(token));
+
+  return deduplicarStrings([
+    nomeNormalizado,
+    ...tokens,
+    ...tokens.flatMap((token, indice) => (
+      indice < tokens.length - 1 ? [`${token} ${tokens[indice + 1]}`] : []
+    )),
+    ...gerarAliasesContextuaisItem(tipo, nomeNormalizado)
+  ]).filter(Boolean);
+};
+
+const criarEsquemaItemPedido = ({ proteinasPermitidas, complementosPermitidos }) => ({
+  type: 'object',
+  additionalProperties: false,
+  required: ['nome', 'observacoes', 'proteinas', 'complementos', 'quantidade'],
+  properties: {
+    nome: { type: 'string' },
+    observacoes: { type: 'string' },
+    proteinas: {
+      type: 'array',
+      items: {
+        type: 'string',
+        enum: proteinasPermitidas
+      }
+    },
+    complementos: {
+      type: 'array',
+      items: {
+        type: 'string',
+        enum: complementosPermitidos
+      }
+    },
+    quantidade: {
+      type: 'integer',
+      minimum: 1,
+      maximum: 100
+    }
+  }
+});
+
+const criarEsquemaSaidaPedido = (config) => ({
+  type: 'object',
+  additionalProperties: false,
+  required: ['nome', 'telefone', 'endereco', 'pagamento', 'observacoes', 'total_comandas', 'itens'],
+  properties: {
+    nome: { type: 'string' },
+    telefone: { type: 'string' },
+    endereco: { type: 'string' },
+    pagamento: { type: 'string' },
+    observacoes: { type: 'string' },
+    total_comandas: {
+      type: 'integer',
+      minimum: 0,
+      maximum: 100
+    },
+    itens: {
+      type: 'array',
+      minItems: 0,
+      maxItems: 100,
+      items: criarEsquemaItemPedido(config)
+    }
+  }
+});
+
+const criarConfiguracaoCardapioIA = (itensAtivos = []) => {
+  const proteinasAtivas = deduplicarStrings(
+    itensAtivos
+      .filter((item) => item?.tipo === 'PROTEINA')
+      .map((item) => normalizarCampo(item?.nome))
+      .filter(Boolean)
+  );
+
+  const complementosAtivos = deduplicarStrings(
+    itensAtivos
+      .filter((item) => item?.tipo === 'COMPLEMENTO')
+      .map((item) => normalizarCampo(item?.nome))
+      .filter(Boolean)
+  );
+
+  const proteinasPermitidas = proteinasAtivas.length ? proteinasAtivas : PROTEINAS_PADRAO;
+  const complementosPermitidos = complementosAtivos.length ? complementosAtivos : COMPLEMENTOS_PADRAO;
+
+  const regrasItens = [
+    ...proteinasPermitidas.map((nome) => ({
+      tipo: 'PROTEINA',
+      nome,
+      aliases: gerarAliasesItemCardapio('PROTEINA', nome)
+    })),
+    ...complementosPermitidos.map((nome) => ({
+      tipo: 'COMPLEMENTO',
+      nome,
+      aliases: gerarAliasesItemCardapio('COMPLEMENTO', nome)
+    }))
+  ];
+
+  return {
+    proteinasPermitidas,
+    complementosPermitidos,
+    regrasItens,
+    regrasProteinas: regrasItens.filter((regra) => regra.tipo === 'PROTEINA'),
+    regrasItemsOrdenadas: regrasItens
+      .flatMap((regra) => regra.aliases.map((alias) => ({ nome: regra.nome, tipo: regra.tipo, alias })))
+      .sort((a, b) => b.alias.length - a.alias.length),
+    mapaRegrasPorNome: new Map(regrasItens.map((regra) => [regra.nome, regra])),
+    pedidoOutputSchema: criarEsquemaSaidaPedido({ proteinasPermitidas, complementosPermitidos })
+  };
+};
+
+const CARDAPIO_IA_PADRAO = criarConfiguracaoCardapioIA();
+let cardapioIACache = CARDAPIO_IA_PADRAO;
+let cardapioIAAtualizadoEm = 0;
+const CARDAPIO_IA_CACHE_MS = 30 * 1000;
+
+const obterConfiguracaoCardapioIA = () => cardapioIACache;
+
+const carregarConfiguracaoCardapioIA = async () => {
+  const agora = Date.now();
+  if (agora - cardapioIAAtualizadoEm < CARDAPIO_IA_CACHE_MS) {
+    return cardapioIACache;
+  }
+
+  try {
+    const itensAtivos = await prisma.itemCardapio.findMany({
+      where: { ativo: true },
+      distinct: ['nome', 'tipo'],
+      orderBy: [{ tipo: 'asc' }, { nome: 'asc' }]
+    });
+
+    cardapioIACache = criarConfiguracaoCardapioIA(itensAtivos);
+    cardapioIAAtualizadoEm = agora;
+    return cardapioIACache;
+  } catch (err) {
+    console.error('Erro ao carregar cardapio ativo para a IA:', err);
+    return cardapioIACache;
+  }
+};
+
 const limparJsonTextual = (conteudo = '') => {
   const texto = String(conteudo || '').trim();
   if (!texto) return '';
@@ -278,14 +362,14 @@ const construirRegexPositivo = (alias) =>
 const extrairSegmentosNegativos = (mensagem) =>
   Array.from(normalizarTexto(mensagem).matchAll(/\bsem\s+([^,.!\n;]+)/g)).map((match) => normalizarCampo(match[1]));
 
-const detectarItensPorRegras = (mensagem) => {
+const detectarItensPorRegras = (mensagem, config = obterConfiguracaoCardapioIA()) => {
   const textoNormalizado = normalizarTexto(mensagem);
   const segmentosNegativos = extrairSegmentosNegativos(mensagem);
   const proteinas = [];
   const complementos = [];
   const observacoesNegativas = [];
 
-  REGRAS_ITENS.forEach((regra) => {
+  config.regrasItens.forEach((regra) => {
     const aliasesOrdenados = [...regra.aliases].sort((a, b) => b.length - a.length);
     const temNegacao = aliasesOrdenados.some((alias) => (
       construirRegexNegacao(alias).test(textoNormalizado) ||
@@ -302,19 +386,19 @@ const detectarItensPorRegras = (mensagem) => {
       return;
     }
 
-    if (PROTEINAS_PERMITIDAS.includes(regra.nome)) {
+    if (config.proteinasPermitidas.includes(regra.nome)) {
       proteinas.push(regra.nome);
       return;
     }
 
-    if (COMPLEMENTOS_PERMITIDOS.includes(regra.nome)) {
+    if (config.complementosPermitidos.includes(regra.nome)) {
       complementos.push(regra.nome);
     }
   });
 
   return {
-    proteinas: normalizarListaItens(proteinas, PROTEINAS_PERMITIDAS),
-    complementos: normalizarListaItens(complementos, COMPLEMENTOS_PERMITIDOS),
+    proteinas: normalizarListaItens(proteinas, config.proteinasPermitidas),
+    complementos: normalizarListaItens(complementos, config.complementosPermitidos),
     observacoesNegativas: deduplicarStrings(observacoesNegativas)
   };
 };
@@ -388,11 +472,11 @@ const extrairPagamento = (mensagem) => {
   return melhorValor;
 };
 
-const limparSufixoProteinaObservacao = (valor = '') => {
+const limparSufixoProteinaObservacao = (valor = '', config = obterConfiguracaoCardapioIA()) => {
   let texto = normalizarCampo(valor);
   if (!texto) return '';
 
-  REGRAS_PROTEINAS.forEach((regra) => {
+  config.regrasProteinas.forEach((regra) => {
     regra.aliases.forEach((alias) => {
       const regex = new RegExp(`\\s+(?:o|a|do|da)?\\s*${escaparRegExp(alias).replace(/\s+/g, '\\s+')}\\b`, 'i');
       texto = texto.replace(regex, '');
@@ -402,7 +486,7 @@ const limparSufixoProteinaObservacao = (valor = '') => {
   return normalizarCampo(texto);
 };
 
-const extrairObservacoesLivresLinha = (mensagem) => {
+const extrairObservacoesLivresLinha = (mensagem, config = obterConfiguracaoCardapioIA()) => {
   const observacoes = [];
   const texto = String(mensagem || '');
   const regras = [
@@ -413,7 +497,7 @@ const extrairObservacoesLivresLinha = (mensagem) => {
   regras.forEach(({ prefixo, regex }) => {
     let match;
     while ((match = regex.exec(texto)) !== null) {
-      const trecho = limparSufixoProteinaObservacao(match[1]);
+      const trecho = limparSufixoProteinaObservacao(match[1], config);
       if (trecho) {
         observacoes.push(`${prefixo} ${trecho}`);
       }
@@ -423,12 +507,12 @@ const extrairObservacoesLivresLinha = (mensagem) => {
   return deduplicarStrings(observacoes.map(capitalizarFrase));
 };
 
-const extrairObservacoes = (mensagem, observacoesNegativas = []) => {
+const extrairObservacoes = (mensagem, observacoesNegativas = [], config = obterConfiguracaoCardapioIA()) => {
   const match = String(mensagem || '').match(/(?:obs(?:ervac[a\u00e3]o)?[:\s-]*)([^.!?\n]+)/i);
   const observacaoExplicita = normalizarCampo(match?.[1] || '');
   return juntarObservacoes(
     observacaoExplicita,
-    extrairObservacoesLivresLinha(mensagem).join('; '),
+    extrairObservacoesLivresLinha(mensagem, config).join('; '),
     observacoesNegativas.join('; ')
   );
 };
@@ -442,23 +526,23 @@ const normalizarQuantidade = (valor, padrao = 1) => {
   return Math.min(quantidade, 100);
 };
 
-const normalizarItemPedido = (item = {}, baseItem = null) => {
+const normalizarItemPedido = (item = {}, baseItem = null, config = obterConfiguracaoCardapioIA()) => {
   const base = baseItem
     ? {
       nome: normalizarCampo(baseItem.nome),
       observacoes: normalizarCampo(baseItem.observacoes),
-      proteinas: normalizarListaItens(baseItem.proteinas, PROTEINAS_PERMITIDAS),
-      complementos: normalizarListaItens(baseItem.complementos, COMPLEMENTOS_PERMITIDOS)
+      proteinas: normalizarListaItens(baseItem.proteinas, config.proteinasPermitidas),
+      complementos: normalizarListaItens(baseItem.complementos, config.complementosPermitidos)
     }
     : criarItemVazio();
 
   const proteinas = normalizarListaItens(
     [...base.proteinas, ...(Array.isArray(item.proteinas) ? item.proteinas : [])],
-    PROTEINAS_PERMITIDAS
+    config.proteinasPermitidas
   );
   const complementos = normalizarListaItens(
     [...base.complementos, ...(Array.isArray(item.complementos) ? item.complementos : [])],
-    COMPLEMENTOS_PERMITIDOS
+    config.complementosPermitidos
   );
 
   return {
@@ -483,11 +567,11 @@ const removerObservacoesQueNegamProteinasSelecionadas = (item = criarItemVazio()
   };
 };
 
-const expandirItensPorQuantidade = (itens = []) => {
+const expandirItensPorQuantidade = (itens = [], config = obterConfiguracaoCardapioIA()) => {
   const itensExpandidos = [];
 
   (Array.isArray(itens) ? itens : []).forEach((item) => {
-    const itemNormalizado = removerObservacoesQueNegamProteinasSelecionadas(normalizarItemPedido(item));
+    const itemNormalizado = removerObservacoesQueNegamProteinasSelecionadas(normalizarItemPedido(item, null, config));
     const quantidade = normalizarQuantidade(itemNormalizado.quantidade, 1);
 
     for (let indice = 0; indice < quantidade; indice += 1) {
@@ -501,7 +585,7 @@ const expandirItensPorQuantidade = (itens = []) => {
   return itensExpandidos;
 };
 
-const migrarRespostaLegadaParaItens = (pedido = {}) => {
+const migrarRespostaLegadaParaItens = (pedido = {}, config = obterConfiguracaoCardapioIA()) => {
   if (Array.isArray(pedido.itens)) {
     return pedido.itens;
   }
@@ -512,7 +596,7 @@ const migrarRespostaLegadaParaItens = (pedido = {}) => {
     proteinas: pedido.proteinas,
     complementos: pedido.complementos,
     quantidade: 1
-  });
+  }, null, config);
 
   if (!itemLegado.nome && !itemLegado.observacoes && !itemLegado.proteinas.length && !itemLegado.complementos.length) {
     return [];
@@ -521,8 +605,10 @@ const migrarRespostaLegadaParaItens = (pedido = {}) => {
   return [itemLegado];
 };
 
-const normalizarResultadoPedido = (pedido = {}) => {
-  const itens = expandirItensPorQuantidade(migrarRespostaLegadaParaItens(pedido));
+const normalizarResultadoPedido = (pedido = {}, config = obterConfiguracaoCardapioIA()) => {
+  const itens = expandirItensPorQuantidade(
+    migrarRespostaLegadaParaItens(pedido, config).map((item) => normalizarItemPedido(item, null, config))
+  , config);
 
   return {
     nome: normalizarCampo(pedido.nome),
@@ -573,10 +659,10 @@ const ehLinhaConfirmacaoTotal = (linha = '') => {
   );
 };
 
-const encontrarPrimeiroIngrediente = (linha = '') => {
+const encontrarPrimeiroIngrediente = (linha = '', config = obterConfiguracaoCardapioIA()) => {
   let melhorMatch = null;
 
-  REGRAS_ITEMS_ORDENADAS.forEach((regra) => {
+  config.regrasItemsOrdenadas.forEach((regra) => {
     const regex = new RegExp(`\\b${escaparRegExp(regra.alias).replace(/\s+/g, '\\s+')}\\b`, 'i');
     const match = regex.exec(linha);
 
@@ -601,15 +687,15 @@ const limparConectoresFinaisNome = (valor = '') =>
 const ehLinhaProvavelNome = (linha = '') => {
   const texto = normalizarCampo(linha);
   if (!texto || /\d/.test(texto)) return false;
-  if (encontrarPrimeiroIngrediente(texto)) return false;
+  if (encontrarPrimeiroIngrediente(texto, obterConfiguracaoCardapioIA())) return false;
   return /^[A-Za-z\u00c0-\u00ff'\- ]+$/.test(texto) && texto.split(/\s+/).length <= 4;
 };
 
-const extrairNomeDaLinha = (linha = '') => {
+const extrairNomeDaLinha = (linha = '', config = obterConfiguracaoCardapioIA()) => {
   const texto = limparPrefixoLista(linha);
   if (!texto) return '';
 
-  const primeiroIngrediente = encontrarPrimeiroIngrediente(texto);
+  const primeiroIngrediente = encontrarPrimeiroIngrediente(texto, config);
 
   if (!primeiroIngrediente) {
     return ehLinhaProvavelNome(texto) ? texto : '';
@@ -621,20 +707,20 @@ const extrairNomeDaLinha = (linha = '') => {
   return ehLinhaProvavelNome(prefixo) ? prefixo : '';
 };
 
-const parseLinhaComoItem = (linha, opcoes = {}) => {
-  const baseItem = opcoes.baseItem ? normalizarItemPedido(opcoes.baseItem) : null;
+const parseLinhaComoItem = (linha, opcoes = {}, config = obterConfiguracaoCardapioIA()) => {
+  const baseItem = opcoes.baseItem ? normalizarItemPedido(opcoes.baseItem, null, config) : null;
   const linhaSemPrefixo = opcoes.removerPrefixoLista === false ? normalizarCampo(linha) : limparPrefixoLista(linha);
 
   if (!linhaSemPrefixo || ehLinhaConfirmacaoTotal(linhaSemPrefixo)) {
     return null;
   }
 
-  const detectado = detectarItensPorRegras(linhaSemPrefixo);
-  const nome = extrairNomeDaLinha(linhaSemPrefixo);
+  const detectado = detectarItensPorRegras(linhaSemPrefixo, config);
+  const nome = extrairNomeDaLinha(linhaSemPrefixo, config);
   const observacoes = juntarObservacoes(
     baseItem?.observacoes,
     detectado.observacoesNegativas.join('; '),
-    extrairObservacoesLivresLinha(linhaSemPrefixo).join('; ')
+    extrairObservacoesLivresLinha(linhaSemPrefixo, config).join('; ')
   );
 
   const item = normalizarItemPedido({
@@ -643,7 +729,7 @@ const parseLinhaComoItem = (linha, opcoes = {}) => {
     proteinas: detectado.proteinas,
     complementos: detectado.complementos,
     quantidade: 1
-  }, baseItem);
+  }, baseItem, config);
 
   if (!item.nome && !item.observacoes && !item.proteinas.length && !item.complementos.length) {
     return null;
@@ -665,13 +751,13 @@ const dividirParagrafos = (mensagem = '') =>
       .filter(Boolean))
     .filter((linhas) => linhas.length);
 
-const paragrafoPareceBlocoPorProteina = (linhas = []) => {
+const paragrafoPareceBlocoPorProteina = (linhas = [], config = obterConfiguracaoCardapioIA()) => {
   if (linhas.length < 2) return false;
 
   const primeiraLinha = normalizarCampo(linhas[0]);
   if (!primeiraLinha || /^\d/.test(primeiraLinha)) return false;
 
-  const cabecalho = parseLinhaComoItem(primeiraLinha, { removerPrefixoLista: false });
+  const cabecalho = parseLinhaComoItem(primeiraLinha, { removerPrefixoLista: false }, config);
   if (!cabecalho) return false;
   if (cabecalho.nome) return false;
   if (!cabecalho.proteinas.length && !cabecalho.complementos.length) return false;
@@ -679,16 +765,16 @@ const paragrafoPareceBlocoPorProteina = (linhas = []) => {
   return linhas.slice(1).some((linha) => ehLinhaProvavelNome(limparPrefixoLista(linha)));
 };
 
-const extrairItensPorLinhas = (mensagem = '') => {
+const extrairItensPorLinhas = (mensagem = '', config = obterConfiguracaoCardapioIA()) => {
   const paragrafos = dividirParagrafos(mensagem);
   const itens = [];
 
   paragrafos.forEach((linhas) => {
-    if (paragrafoPareceBlocoPorProteina(linhas)) {
-      const baseItem = parseLinhaComoItem(linhas[0], { removerPrefixoLista: false });
+    if (paragrafoPareceBlocoPorProteina(linhas, config)) {
+      const baseItem = parseLinhaComoItem(linhas[0], { removerPrefixoLista: false }, config);
 
       linhas.slice(1).forEach((linha) => {
-        const item = parseLinhaComoItem(linha, { baseItem });
+        const item = parseLinhaComoItem(linha, { baseItem }, config);
         if (item) itens.push(item);
       });
 
@@ -696,16 +782,16 @@ const extrairItensPorLinhas = (mensagem = '') => {
     }
 
     linhas.forEach((linha) => {
-      const item = parseLinhaComoItem(linha, { removerPrefixoLista: linhas.length > 1 });
+      const item = parseLinhaComoItem(linha, { removerPrefixoLista: linhas.length > 1 }, config);
       if (item) itens.push(item);
     });
   });
 
-  return expandirItensPorQuantidade(itens);
+  return expandirItensPorQuantidade(itens, config);
 };
 
-const extrairObservacoesParaProteina = (mensagem, nomeProteina) => {
-  const regra = MAPA_REGRAS_POR_NOME.get(nomeProteina);
+const extrairObservacoesParaProteina = (mensagem, nomeProteina, config = obterConfiguracaoCardapioIA()) => {
+  const regra = config.mapaRegrasPorNome.get(nomeProteina);
   if (!regra) return '';
 
   const observacoes = [];
@@ -719,18 +805,18 @@ const extrairObservacoesParaProteina = (mensagem, nomeProteina) => {
     const mencionaProteina = regra.aliases.some((alias) => construirRegexPositivo(alias).test(textoNormalizado));
     if (!mencionaProteina) return;
 
-    observacoes.push(...extrairObservacoesLivresLinha(segmento));
-    observacoes.push(...detectarItensPorRegras(segmento).observacoesNegativas);
+    observacoes.push(...extrairObservacoesLivresLinha(segmento, config));
+    observacoes.push(...detectarItensPorRegras(segmento, config).observacoesNegativas);
   });
 
   return juntarObservacoes(observacoes.join('; '));
 };
 
-const extrairItensPorContagemAgregada = (mensagem = '') => {
+const extrairItensPorContagemAgregada = (mensagem = '', config = obterConfiguracaoCardapioIA()) => {
   const itens = [];
   const ocorrencias = [];
 
-  REGRAS_PROTEINAS.forEach((regra) => {
+  config.regrasProteinas.forEach((regra) => {
     regra.aliases.forEach((alias) => {
       const regex = new RegExp(
         `(\\d+)\\s+(?:quentinhas?\\s*(?:de|do|da)?\\s*)?${escaparRegExp(alias).replace(/\s+/g, '\\s+')}\\b`,
@@ -757,27 +843,27 @@ const extrairItensPorContagemAgregada = (mensagem = '') => {
   ocorrencias
     .sort((a, b) => a.inicio - b.inicio)
     .forEach((ocorrencia) => {
-      const observacoes = extrairObservacoesParaProteina(mensagem, ocorrencia.nome);
+      const observacoes = extrairObservacoesParaProteina(mensagem, ocorrencia.nome, config);
       for (let indice = 0; indice < ocorrencia.quantidade; indice += 1) {
         itens.push(normalizarItemPedido({
           proteinas: [ocorrencia.nome],
           observacoes,
           quantidade: 1
-        }));
+        }, null, config));
       }
     });
 
   return itens;
 };
 
-const construirItensFallback = (mensagem = '') => {
-  const itensPorLinhas = extrairItensPorLinhas(mensagem);
-  const itensPorContagem = extrairItensPorContagemAgregada(mensagem);
+const construirItensFallback = (mensagem = '', config = obterConfiguracaoCardapioIA()) => {
+  const itensPorLinhas = extrairItensPorLinhas(mensagem, config);
+  const itensPorContagem = extrairItensPorContagemAgregada(mensagem, config);
   const totalConfirmado = extrairTotalComandasInformado(mensagem);
   const candidatos = [itensPorLinhas, itensPorContagem].filter((lista) => lista.length > 0);
 
   if (!candidatos.length) {
-    const itemUnico = parseLinhaComoItem(mensagem, { removerPrefixoLista: false });
+    const itemUnico = parseLinhaComoItem(mensagem, { removerPrefixoLista: false }, config);
     return itemUnico ? [itemUnico] : [];
   }
 
@@ -795,34 +881,34 @@ const construirItensFallback = (mensagem = '') => {
   return [...candidatos].sort((a, b) => pontuar(b) - pontuar(a))[0];
 };
 
-const construirFallbackPorRegras = (mensagem) => {
-  const itemUnicoDetectado = detectarItensPorRegras(mensagem);
-  const observacoesNegativas = extrairObservacoesLivresLinha(mensagem);
-  const itens = construirItensFallback(mensagem);
+const construirFallbackPorRegras = (mensagem, config = obterConfiguracaoCardapioIA()) => {
+  const itemUnicoDetectado = detectarItensPorRegras(mensagem, config);
+  const observacoesNegativas = extrairObservacoesLivresLinha(mensagem, config);
+  const itens = construirItensFallback(mensagem, config);
 
   return {
     nome: extrairNome(mensagem),
     telefone: extrairTelefone(mensagem),
     endereco: extrairEndereco(mensagem),
     pagamento: extrairPagamento(mensagem),
-    observacoes: extrairObservacoes(mensagem, observacoesNegativas),
+    observacoes: extrairObservacoes(mensagem, observacoesNegativas, config),
     total_comandas: itens.length,
     itens: itens.length
       ? itens
       : [
         normalizarItemPedido({
-          observacoes: extrairObservacoes(mensagem, itemUnicoDetectado.observacoesNegativas),
+          observacoes: extrairObservacoes(mensagem, itemUnicoDetectado.observacoesNegativas, config),
           proteinas: itemUnicoDetectado.proteinas,
           complementos: itemUnicoDetectado.complementos,
           quantidade: 1
-        })
+        }, null, config)
       ].filter((item) => item.proteinas.length || item.complementos.length || item.observacoes)
   };
 };
 
-const consolidarPedido = (pedidoPrincipal, pedidoApoio, mensagemOriginal = '') => {
-  const principal = normalizarResultadoPedido(pedidoPrincipal);
-  const apoio = normalizarResultadoPedido(pedidoApoio);
+const consolidarPedido = (pedidoPrincipal, pedidoApoio, mensagemOriginal = '', config = obterConfiguracaoCardapioIA()) => {
+  const principal = normalizarResultadoPedido(pedidoPrincipal, config);
+  const apoio = normalizarResultadoPedido(pedidoApoio, config);
   const totalConfirmado = extrairTotalComandasInformado(mensagemOriginal);
 
   const candidatosItens = [principal.itens, apoio.itens].filter((lista) => lista.length > 0);
@@ -884,18 +970,35 @@ const extrairTextoRespostaResponses = (resposta = {}) => {
   return textos.join('\n').trim();
 };
 
-const montarPromptVariablesPedido = (mensagem) => ({
+const montarInstrucaoCardapioAtual = (config = obterConfiguracaoCardapioIA()) => [
+  'Mapeie somente itens que estejam ativos no cardapio do dia.',
+  `Proteinas ativas: ${config.proteinasPermitidas.join(', ') || 'nenhuma'}.`,
+  `Complementos ativos: ${config.complementosPermitidos.join(', ') || 'nenhum'}.`,
+  `A ordem fixa dos complementos em cada item deve ser: ${config.complementosPermitidos.join(' > ') || 'sem complementos ativos'}.`,
+  '- Se o cliente disser um apelido curto, associe ao item ativo mais compativel do cardapio.',
+  '- Se o cliente citar algo fora do cardapio ativo, nao invente item novo e preserve isso em observacoes quando fizer sentido.',
+  '- total_comandas deve ser exatamente igual a itens.length.'
+].join('\n');
+
+const montarPromptVariablesPedido = (mensagem, config = obterConfiguracaoCardapioIA()) => ({
   mensagem,
   texto: mensagem,
   pedido: mensagem,
   user_message: mensagem,
-  input_text: mensagem
+  input_text: mensagem,
+  proteinas_cardapio: config.proteinasPermitidas.join(', '),
+  complementos_cardapio: config.complementosPermitidos.join(', '),
+  ordem_complementos: config.complementosPermitidos.join(' > '),
+  cardapio_do_dia: [
+    `Proteinas: ${config.proteinasPermitidas.join(', ') || 'nenhuma'}`,
+    `Complementos: ${config.complementosPermitidos.join(', ') || 'nenhum'}`
+  ].join(' | ')
 });
 
-const organizarPedidoComPromptOpenAI = async (mensagem) => {
+const organizarPedidoComPromptOpenAI = async (mensagem, config = obterConfiguracaoCardapioIA()) => {
   const prompt = {
     id: OPENAI_ORDER_PROMPT_ID,
-    variables: montarPromptVariablesPedido(mensagem)
+    variables: montarPromptVariablesPedido(mensagem, config)
   };
 
   if (OPENAI_ORDER_PROMPT_VERSION) {
@@ -917,7 +1020,7 @@ const organizarPedidoComPromptOpenAI = async (mensagem) => {
           content: [
             {
               type: 'input_text',
-              text: REGRAS_CRITICAS_ITENS
+              text: `${REGRAS_CRITICAS_ITENS}\n${montarInstrucaoCardapioAtual(config)}`
             }
           ]
         },
@@ -936,7 +1039,7 @@ const organizarPedidoComPromptOpenAI = async (mensagem) => {
           type: 'json_schema',
           name: 'pedido_marmitaria',
           strict: true,
-          schema: PEDIDO_OUTPUT_SCHEMA
+          schema: config.pedidoOutputSchema
         }
       }
     })
@@ -960,7 +1063,7 @@ const organizarPedidoComPromptOpenAI = async (mensagem) => {
   }
 };
 
-const organizarPedidoComMensagensOpenAI = async (mensagem) => {
+const organizarPedidoComMensagensOpenAI = async (mensagem, config = obterConfiguracaoCardapioIA()) => {
   const response = await fetch(OPENAI_CHAT_COMPLETIONS_URL, {
     method: 'POST',
     headers: {
@@ -988,22 +1091,14 @@ const organizarPedidoComMensagensOpenAI = async (mensagem) => {
             `Se o cliente mandar ${MAX_PEDIDOS_FLUXO_IA} pedidos, o array "itens" precisa ter ${MAX_PEDIDOS_FLUXO_IA} objetos.`,
             'Se a lista vier numerada como "1 Paulo", "2 Everson", o numero inicial e so posicao da lista.',
             'Um numero final como "16" ou "Sao 4 hoje" confirma total de comandas; nao e um item.',
+            'Mapeie somente itens que estejam ativos no cardapio do dia.',
             'Mapeie somente itens desta lista de proteinas:',
-            PROTEINAS_PERMITIDAS.join(', '),
+            config.proteinasPermitidas.join(', '),
             'Mapeie somente itens desta lista de complementos:',
-            COMPLEMENTOS_PERMITIDOS.join(', '),
+            config.complementosPermitidos.join(', '),
             'A ordem fixa obrigatoria dos complementos em cada item deve ser:',
-            COMPLEMENTOS_PERMITIDOS.join(' > '),
-            'Regras obrigatorias:',
-            '- frango -> Frango Forno',
-            '- linguica ou lingui\u00e7a -> Lingui\u00e7a-Brasa',
-            '- porco, suino ou su\u00edno -> Su\u00edno-molho',
-            '- carne, carne de panela ou assado -> Assado de panela',
-            '- creme, creme de galinha ou galinha -> Creme de Galinha',
-            '- arroz -> Arroz Branco',
-            '- macarrao ou macarr\u00e3o -> Macarr\u00e3o',
-            '- maca, ma\u00e7a ou ma\u00e7a picada -> Ma\u00e7\u00e3 picada',
-            '- ovo -> Ovo Cozido',
+            config.complementosPermitidos.join(' > '),
+            'Use o item ativo mais compativel quando o cliente falar apelidos curtos ou nomes sem acento.',
             '- Se o cliente disser "sem farofa", "sem feijao" etc., nao marque o item e registre em observacoes do item correto.',
             '- Se um campo nao for informado, devolva string vazia.',
             '- Nao crie itens fora das listas permitidas.',
@@ -1037,16 +1132,16 @@ const organizarPedidoComMensagensOpenAI = async (mensagem) => {
   }
 };
 
-const organizarPedidoComOpenAI = async (mensagem) => {
+const organizarPedidoComOpenAI = async (mensagem, config = obterConfiguracaoCardapioIA()) => {
   if (OPENAI_ORDER_PROMPT_ID) {
     try {
-      return await organizarPedidoComPromptOpenAI(mensagem);
+      return await organizarPedidoComPromptOpenAI(mensagem, config);
     } catch (err) {
       console.error('Erro ao organizar pedido com prompt reutilizavel, tentando fallback por mensagens:', err);
     }
   }
 
-  return organizarPedidoComMensagensOpenAI(mensagem);
+  return organizarPedidoComMensagensOpenAI(mensagem, config);
 };
 
 const transcreverAudioComOpenAI = async (arquivo) => {
@@ -1089,18 +1184,19 @@ async function organizarPedidoTexto(mensagem) {
     throw new AiOrderError('Informe a mensagem para organizar o pedido.', 400);
   }
 
-  const fallback = construirFallbackPorRegras(mensagemLimpa);
+  const config = await carregarConfiguracaoCardapioIA();
+  const fallback = construirFallbackPorRegras(mensagemLimpa, config);
 
   if (!openAIConfigurado()) {
-    return normalizarResultadoPedido(fallback);
+    return normalizarResultadoPedido(fallback, config);
   }
 
   try {
-    const respostaIA = await organizarPedidoComOpenAI(mensagemLimpa);
-    return consolidarPedido(respostaIA, fallback, mensagemLimpa);
+    const respostaIA = await organizarPedidoComOpenAI(mensagemLimpa, config);
+    return consolidarPedido(respostaIA, fallback, mensagemLimpa, config);
   } catch (err) {
     console.error('Erro ao organizar pedido com IA, usando fallback local:', err);
-    return normalizarResultadoPedido(fallback);
+    return normalizarResultadoPedido(fallback, config);
   }
 }
 
@@ -1119,9 +1215,10 @@ async function transcreverEOrganizarPedidoAudio(arquivo) {
 
 module.exports = {
   AiOrderError,
-  PROTEINAS_PERMITIDAS,
-  COMPLEMENTOS_PERMITIDOS,
+  PROTEINAS_PADRAO,
+  COMPLEMENTOS_PADRAO,
   criarRespostaVazia,
+  carregarConfiguracaoCardapioIA,
   organizarPedidoTexto,
   transcreverEOrganizarPedidoAudio
 };

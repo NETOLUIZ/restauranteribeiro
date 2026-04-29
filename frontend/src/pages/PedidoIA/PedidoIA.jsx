@@ -13,30 +13,9 @@ import {
   FiUploadCloud
 } from 'react-icons/fi';
 import CheckboxVerde from '../../components/CheckboxVerde';
-import { aiOrderAPI, empresaAPI, pedidoEmpresaAPI } from '../../services/api';
+import { aiOrderAPI, cardapioAPI, empresaAPI, pedidoEmpresaAPI } from '../../services/api';
 import { abrirImpressaoComandasChecklist } from '../../utils/comandaChecklistPrint';
 import './PedidoIA.css';
-
-const PROTEINAS = [
-  'Assado de panela',
-  'Creme de Galinha',
-  'Frango Forno',
-  'Lingui\u00e7a-Brasa',
-  'Su\u00edno-molho'
-];
-
-const COMPLEMENTOS = [
-  'Arroz Branco',
-  'Feij\u00e3o',
-  'Macarr\u00e3o',
-  'Bai\u00e3o',
-  'Batatinha Cozida',
-  'Farofa',
-  'Ma\u00e7\u00e3 picada',
-  'Vinagrete',
-  'Salada',
-  'Ovo Cozido'
-];
 
 const criarComandaVazia = () => ({
   nome: '',
@@ -105,11 +84,15 @@ const normalizarListaRecebida = (lista = [], referencia = []) => {
   );
 };
 
-const normalizarComandaRecebida = (item = {}) => ({
+const normalizarComandaRecebida = (
+  item = {},
+  proteinasPermitidas = [],
+  complementosPermitidos = []
+) => ({
   nome: normalizarCampo(item?.nome || ''),
   observacoes: normalizarCampo(item?.observacoes || ''),
-  proteinas: normalizarListaRecebida(item?.proteinas, PROTEINAS),
-  complementos: normalizarListaRecebida(item?.complementos, COMPLEMENTOS),
+  proteinas: normalizarListaRecebida(item?.proteinas, proteinasPermitidas),
+  complementos: normalizarListaRecebida(item?.complementos, complementosPermitidos),
   quantidade: 1
 });
 
@@ -119,7 +102,10 @@ const temConteudoComanda = (comanda = {}) =>
   || Array.isArray(comanda?.proteinas) && comanda.proteinas.length > 0
   || Array.isArray(comanda?.complementos) && comanda.complementos.length > 0;
 
-const normalizarPedidoRecebido = (pedido = {}) => {
+const normalizarPedidoRecebido = (
+  pedido = {},
+  { proteinasPermitidas = [], complementosPermitidos = [] } = {}
+) => {
   const itensOriginais = Array.isArray(pedido?.itens) ? pedido.itens : [];
   const itensLegados = !itensOriginais.length && (
     Array.isArray(pedido?.proteinas) && pedido.proteinas.length
@@ -138,7 +124,7 @@ const normalizarPedidoRecebido = (pedido = {}) => {
 
   const itens = [...itensOriginais, ...itensLegados]
     .flatMap((item) => {
-      const comandaNormalizada = normalizarComandaRecebida(item);
+      const comandaNormalizada = normalizarComandaRecebida(item, proteinasPermitidas, complementosPermitidos);
       const quantidade = Math.max(1, Math.min(100, Number.parseInt(item?.quantidade, 10) || 1));
       return Array.from({ length: quantidade }, () => ({ ...comandaNormalizada, quantidade: 1 }));
     })
@@ -200,15 +186,22 @@ const montarObservacaoFluxoEmpresa = (pedido = {}) => {
   return partes.join(' | ');
 };
 
-const montarDadosImpressaoComanda = (pedido = {}, comanda = {}, indice = 0, total = 0) => ({
+const montarDadosImpressaoComanda = (
+  pedido = {},
+  comanda = {},
+  indice = 0,
+  total = 0,
+  proteinasPermitidas = [],
+  complementosPermitidos = []
+) => ({
   tituloJanela: `Pedido por IA - Comanda ${indice + 1}/${total}`,
   nome: normalizarCampo(comanda.nome) || normalizarCampo(pedido.nome),
   telefone: normalizarCampo(pedido.telefone),
   endereco: normalizarCampo(pedido.endereco),
   pagamento: normalizarCampo(pedido.pagamento),
   observacoes: juntarObservacoes(pedido.observacoes, comanda.observacoes),
-  itensProteina: PROTEINAS,
-  itensComplemento: COMPLEMENTOS,
+  itensProteina: proteinasPermitidas,
+  itensComplemento: complementosPermitidos,
   proteinasSelecionadas: comanda.proteinas,
   complementosSelecionados: comanda.complementos
 });
@@ -225,6 +218,8 @@ export default function PedidoIA() {
   const [preparandoGravacao, setPreparandoGravacao] = useState(false);
   const [duracaoGravacao, setDuracaoGravacao] = useState(0);
   const [feedback, setFeedback] = useState(null);
+  const [cardapioAtivo, setCardapioAtivo] = useState([]);
+  const [carregandoCardapio, setCarregandoCardapio] = useState(true);
   const [empresas, setEmpresas] = useState([]);
   const [empresaSelecionadaId, setEmpresaSelecionadaId] = useState('');
   const [carregandoEmpresas, setCarregandoEmpresas] = useState(true);
@@ -252,10 +247,58 @@ export default function PedidoIA() {
     [pedido.itens]
   );
 
+  const proteinasDisponiveis = useMemo(
+    () => cardapioAtivo.filter((item) => item.tipo === 'PROTEINA').map((item) => item.nome),
+    [cardapioAtivo]
+  );
+
+  const complementosDisponiveis = useMemo(
+    () => cardapioAtivo.filter((item) => item.tipo === 'COMPLEMENTO').map((item) => item.nome),
+    [cardapioAtivo]
+  );
+
+  const cardapioCarregado = proteinasDisponiveis.length > 0 || complementosDisponiveis.length > 0;
+
+  const exemploMensagem = useMemo(() => {
+    const proteinaA = proteinasDisponiveis[0] || 'proteina do dia';
+    const proteinaB = proteinasDisponiveis[1] || proteinaA;
+    const complementoA = complementosDisponiveis[0] || 'complemento 1';
+    const complementoB = complementosDisponiveis[1] || 'complemento 2';
+    const complementoC = complementosDisponiveis[2] || complementoA;
+
+    return `Ex: 1 Paulo ${proteinaA} ${complementoA} e ${complementoB}&#10;2 Everson ${proteinaB} pouco ${complementoA} ${complementoC}&#10;3 Isabele sem ${complementoB}`;
+  }, [proteinasDisponiveis, complementosDisponiveis]);
+
   const empresaSelecionada = useMemo(
     () => empresas.find((empresa) => String(empresa.id) === String(empresaSelecionadaId)) || null,
     [empresas, empresaSelecionadaId]
   );
+
+  useEffect(() => {
+    let ativo = true;
+
+    cardapioAPI.listarAtivos()
+      .then(({ data }) => {
+        if (!ativo) return;
+        setCardapioAtivo(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        if (!ativo) return;
+
+        console.error('Erro ao carregar cardapio ativo para Pedido IA:', err);
+        setFeedback({
+          tipo: 'error',
+          texto: 'Nao foi possivel carregar o cardapio ativo. Atualize o cardapio do dia antes de usar a IA.'
+        });
+      })
+      .finally(() => {
+        if (ativo) setCarregandoCardapio(false);
+      });
+
+    return () => {
+      ativo = false;
+    };
+  }, []);
 
   useEffect(() => {
     let ativo = true;
@@ -299,7 +342,10 @@ export default function PedidoIA() {
   }, [audioPreviewUrl]);
 
   const aplicarResultado = (data, tipoOrigem) => {
-    const pedidoNormalizado = normalizarPedidoRecebido(data);
+    const pedidoNormalizado = normalizarPedidoRecebido(data, {
+      proteinasPermitidas: proteinasDisponiveis,
+      complementosPermitidos: complementosDisponiveis
+    });
 
     setPedido(pedidoNormalizado);
     setResultadoDisponivel(true);
@@ -313,6 +359,14 @@ export default function PedidoIA() {
   };
 
   const processarArquivoAudio = async (audioFile, { automatico = false } = {}) => {
+    if (carregandoCardapio || !cardapioCarregado) {
+      setFeedback({
+        tipo: 'error',
+        texto: 'Carregue um cardapio ativo antes de usar a IA.'
+      });
+      return;
+    }
+
     if (!audioFile) {
       setFeedback({ tipo: 'error', texto: 'Selecione um arquivo de audio antes de transcrever.' });
       return;
@@ -342,6 +396,14 @@ export default function PedidoIA() {
   };
 
   const organizarTexto = async () => {
+    if (carregandoCardapio || !cardapioCarregado) {
+      setFeedback({
+        tipo: 'error',
+        texto: 'Carregue um cardapio ativo antes de usar a IA.'
+      });
+      return;
+    }
+
     if (!mensagemTexto.trim()) {
       setFeedback({ tipo: 'error', texto: 'Cole a mensagem do cliente antes de organizar.' });
       return;
@@ -382,6 +444,14 @@ export default function PedidoIA() {
 
   const iniciarGravacao = async () => {
     if (!suporteGravacao || gravandoAudio || preparandoGravacao) return;
+
+    if (carregandoCardapio || !cardapioCarregado) {
+      setFeedback({
+        tipo: 'error',
+        texto: 'Carregue um cardapio ativo antes de usar a IA.'
+      });
+      return;
+    }
 
     setPreparandoGravacao(true);
     setFeedback(null);
@@ -522,7 +592,7 @@ export default function PedidoIA() {
         const proximaLista = jaSelecionado
           ? listaAtual.filter((valor) => normalizarChave(valor) !== normalizarChave(item))
           : campo === 'complementos'
-            ? ordenarListaPorReferencia([...listaAtual, item], COMPLEMENTOS)
+            ? ordenarListaPorReferencia([...listaAtual, item], complementosDisponiveis)
             : [...listaAtual, item];
 
         return {
@@ -580,7 +650,14 @@ export default function PedidoIA() {
 
     try {
       abrirImpressaoComandasChecklist(
-        comandasValidas.map((comanda, indice) => montarDadosImpressaoComanda(pedido, comanda, indice, comandasValidas.length))
+        comandasValidas.map((comanda, indice) => montarDadosImpressaoComanda(
+          pedido,
+          comanda,
+          indice,
+          comandasValidas.length,
+          proteinasDisponiveis,
+          complementosDisponiveis
+        ))
       );
 
       setFeedback({
@@ -692,6 +769,13 @@ export default function PedidoIA() {
             Agora cada pessoa vira uma comanda individual em <code>pedido.itens</code>,
             sem juntar varios pedidos na mesma impressao.
           </p>
+          <small>
+            {carregandoCardapio
+              ? 'Carregando cardapio ativo do dia...'
+              : cardapioCarregado
+                ? `Cardapio ativo sincronizado: ${proteinasDisponiveis.length} proteinas e ${complementosDisponiveis.length} complementos.`
+                : 'Nenhum item ativo no cardapio do dia. Cadastre ou ative o cardapio antes de usar a IA.'}
+          </small>
         </div>
         <div className="pedido-ia-summary">
           <span>Comandas detectadas</span>
@@ -719,7 +803,7 @@ export default function PedidoIA() {
             className="pedido-ia-textarea"
             value={mensagemTexto}
             onChange={(e) => setMensagemTexto(e.target.value)}
-            placeholder="Ex: 1 Paulo baiao ovo e salada&#10;2 Everson assado creme pouco arroz batata vinagrete maca&#10;3 Isabele arroz macarrao farofa"
+            placeholder={exemploMensagem}
             rows={11}
           />
 
@@ -727,7 +811,7 @@ export default function PedidoIA() {
             type="button"
             className="btn btn-primary"
             onClick={organizarTexto}
-            disabled={carregandoTexto || carregandoAudio}
+            disabled={carregandoTexto || carregandoAudio || carregandoCardapio || !cardapioCarregado}
             id="btn-organizar-pedido-ia-texto"
           >
             {carregandoTexto ? <FiRefreshCw className="spin" size={16} /> : <FiCpu size={16} />}
@@ -775,7 +859,7 @@ export default function PedidoIA() {
               type="button"
               className={`btn ${gravandoAudio ? 'btn-danger' : 'btn-secondary'}`}
               onClick={gravandoAudio ? pararGravacao : iniciarGravacao}
-              disabled={!suporteGravacao || preparandoGravacao || carregandoAudio}
+              disabled={!suporteGravacao || preparandoGravacao || carregandoAudio || carregandoCardapio || !cardapioCarregado}
               id={gravandoAudio ? 'btn-parar-gravacao-pedido-ia' : 'btn-gravar-pedido-ia'}
             >
               {preparandoGravacao ? (
@@ -827,7 +911,7 @@ export default function PedidoIA() {
             type="button"
             className="btn btn-secondary"
             onClick={organizarAudio}
-            disabled={carregandoTexto || carregandoAudio || gravandoAudio || !arquivoAudio}
+            disabled={carregandoTexto || carregandoAudio || gravandoAudio || !arquivoAudio || carregandoCardapio || !cardapioCarregado}
             id="btn-organizar-pedido-ia-audio"
           >
             {carregandoAudio ? <FiRefreshCw className="spin" size={16} /> : <FiMic size={16} />}
@@ -847,10 +931,10 @@ export default function PedidoIA() {
             <div className="pedido-ia-flow-header">
               <div>
                 <strong><FiTruck size={16} /> Destino no fluxo empresarial</strong>
-                <p>Este envio cria 1 pedido empresarial com {totalComandas} lotes, {totalComandas} comandas individuais e status inicial autorizado.</p>
+                <p>Este envio cria 1 pedido empresarial com {totalComandas} lotes, {totalComandas} comandas individuais e status inicial enviado para autorizacao.</p>
               </div>
               <span className="pedido-ia-flow-status">
-                AUTORIZADO {'>'} IMPRESSO
+                ENVIADO {'>'} AUTORIZADO {'>'} IMPRESSO
               </span>
             </div>
 
@@ -1009,7 +1093,7 @@ export default function PedidoIA() {
                   <div>
                     <h4>Proteinas</h4>
                     <div className="pedido-ia-check-grid">
-                      {PROTEINAS.map((item) => (
+                      {proteinasDisponiveis.map((item) => (
                         <CheckboxVerde
                           key={`${item}-${indice}-proteina`}
                           id={`pedido-ia-comanda-${indice}-proteina-${normalizarChave(item)}`}
@@ -1024,7 +1108,7 @@ export default function PedidoIA() {
                   <div>
                     <h4>Complementos</h4>
                     <div className="pedido-ia-check-grid">
-                      {COMPLEMENTOS.map((item) => (
+                      {complementosDisponiveis.map((item) => (
                         <CheckboxVerde
                           key={`${item}-${indice}-complemento`}
                           id={`pedido-ia-comanda-${indice}-complemento-${normalizarChave(item)}`}

@@ -115,7 +115,7 @@ export default function ControleDinheiro() {
               />
             </div>
             <button className="btn btn-primary" onClick={() => confirmar(pedido)} id={`btn-confirmar-${pedido.id}`}>
-              <FiCheck size={16} /> Confirmar
+              <FiCheck size={16} /> Autorizar Pagamento
             </button>
           </div>
         </div>

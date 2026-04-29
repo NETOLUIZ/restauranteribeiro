@@ -193,6 +193,10 @@ export default function PedidosAvulsos() {
         </select>
       </div>
 
+      <p style={{ color: 'var(--cinza-600)', marginBottom: '16px' }}>
+        O botao de autorizacao aparece para pedidos em dinheiro com status pendente. Pedidos Pix continuam aguardando confirmacao automatica do Mercado Pago.
+      </p>
+
       {pedidos.map(pedido => (
         <div key={pedido.id} className={`pedido-admin-card ${pedido.statusPagamento.toLowerCase()}`} id={`pedido-avulso-${pedido.id}`}>
           <div className="pedido-admin-card-header">
@@ -224,7 +228,7 @@ export default function PedidosAvulsos() {
           <div className="pedido-admin-card-actions">
             {pedido.statusPagamento === 'PENDENTE' && pedido.formaPagamento === 'DINHEIRO' && (
               <button className="btn btn-sm btn-primary" onClick={() => confirmarPagamentoDinheiro(pedido.id)}>
-                <FiCheck size={14} /> Confirmar Pagamento
+                <FiCheck size={14} /> Autorizar Pagamento
               </button>
             )}
 
