@@ -171,49 +171,6 @@ export default function Home() {
 
         <section className="cards-section" id="secao-cards">
           <div className="container">
-            <div className="section-header" style={{ marginBottom: '26px' }}>
-              <h2>Self-service</h2>
-              <p>Retirada no balcao com pagamento via Pix e comprovante liberado apos aprovacao.</p>
-            </div>
-
-            <div className="marmitas-grid" style={{ marginBottom: '40px' }}>
-              <article className="marmita-card" id="card-self-service-18">
-                <img
-                  src={imagemCardMarmita}
-                  alt="Prato Self-service R$ 18,00"
-                  className="marmita-foto"
-                />
-                <div className="marmita-conteudo">
-                  <h3>Prato Self-service R$ 18,00</h3>
-                  <p className="marmita-preco">{formatarMoeda(18)}</p>
-                  <Link
-                    to="/self-service?tipo=SELF_SERVICE_18"
-                    className="btn btn-primary"
-                  >
-                    Reservar agora
-                  </Link>
-                </div>
-              </article>
-
-              <article className="marmita-card" id="card-self-service-15">
-                <img
-                  src={imagemCardMarmita}
-                  alt="Prato Self-service R$ 15,00"
-                  className="marmita-foto"
-                />
-                <div className="marmita-conteudo">
-                  <h3>Prato Self-service R$ 15,00</h3>
-                  <p className="marmita-preco">{formatarMoeda(15)}</p>
-                  <Link
-                    to="/self-service?tipo=SELF_SERVICE_15"
-                    className="btn btn-primary"
-                  >
-                    Reservar agora
-                  </Link>
-                </div>
-              </article>
-            </div>
-
             <div className="section-header">
               <h2>Marmitas</h2>
               <p>Escolha o tamanho, confira o valor e abra a tela de pedido.</p>
