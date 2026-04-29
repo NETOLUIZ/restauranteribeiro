@@ -347,6 +347,9 @@ export default function PedidosEmpresas() {
 
       {pedidosFiltrados.map((pedido) => {
         const totalMarmitas = pedido.lotes.reduce((s, l) => s + l.quantidade, 0);
+        const pedidoEnviado = pedido.status === 'ENVIADO';
+        const pedidoAutorizadoOuImpresso = pedido.status === 'AUTORIZADO' || pedido.status === 'IMPRESSO' || pedido.impresso;
+        const pedidoJaImpresso = pedido.status === 'IMPRESSO' || pedido.impresso;
 
         return (
           <div key={pedido.id} className={`pedido-admin-card ${pedido.status.toLowerCase()}`} id={`pedido-empresa-${pedido.id}`}>
@@ -381,19 +384,23 @@ export default function PedidosEmpresas() {
             </div>
 
             <div className="pedido-admin-card-actions">
-              {pedido.status === 'ENVIADO' && (
+              {pedidoEnviado && (
                 <button className="btn btn-sm btn-primary" onClick={() => autorizar(pedido.id)}>
                   <FiCheck size={14} /> Autorizar
                 </button>
               )}
-              {pedido.status === 'AUTORIZADO' && (
+
+              {pedidoAutorizadoOuImpresso && (
                 <button className="btn btn-sm btn-secondary" onClick={() => imprimir(pedido)}>
                   <FiPrinter size={14} /> Imprimir Comandas ({totalMarmitas}x)
                 </button>
               )}
-              {pedido.status === 'IMPRESSO' && (
+
+              {pedidoAutorizadoOuImpresso && (
                 <>
-                  <span className="badge badge-success">Impresso</span>
+                  {pedidoJaImpresso && (
+                    <span className="badge badge-success">Impresso</span>
+                  )}
                   <button className="btn btn-sm btn-warning" onClick={() => reimprimir(pedido)}>
                     <FiPrinter size={14} /> Reimprimir Comandas ({totalMarmitas}x)
                   </button>

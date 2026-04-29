@@ -72,7 +72,10 @@ export default function AdminLayout({ paginaInicial = 'dashboard' }) {
     navigate('/');
   };
 
-  const paginaAtual = PAGINAS.find((item) => item.rota === location.pathname)?.id || paginaPadrao;
+  const paginaAtualViaRota = location.pathname !== '/admin'
+    ? PAGINAS.find((item) => item.rota === location.pathname)?.id
+    : null;
+  const paginaAtual = paginaAtualViaRota || paginaPadrao;
   const pagina = PAGINAS.find((item) => item.id === paginaAtual);
   const Componente = pagina?.componente || Dashboard;
   const tituloAtual = pagina?.label || 'Dashboard';

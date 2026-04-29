@@ -197,7 +197,10 @@ export default function PedidosAvulsos() {
         O botao de autorizacao aparece para pedidos em dinheiro com status pendente. Pedidos Pix continuam aguardando confirmacao automatica do Mercado Pago.
       </p>
 
-      {pedidos.map(pedido => (
+      {pedidos.map(pedido => {
+        const pedidoConfirmado = pedido.statusPagamento === 'CONFIRMADO';
+
+        return (
         <div key={pedido.id} className={`pedido-admin-card ${pedido.statusPagamento.toLowerCase()}`} id={`pedido-avulso-${pedido.id}`}>
           <div className="pedido-admin-card-header">
             <div>
@@ -236,15 +239,17 @@ export default function PedidosAvulsos() {
               <span className="badge badge-warning">Aguardando Mercado Pago</span>
             )}
 
-            {pedido.statusPagamento === 'CONFIRMADO' && !pedido.impresso && (
+            {pedidoConfirmado && !pedido.impresso && (
               <button className="btn btn-sm btn-secondary" onClick={() => imprimirComanda(pedido)}>
                 <FiPrinter size={14} /> Imprimir Comanda
               </button>
             )}
 
-            {pedido.impresso && (
+            {pedidoConfirmado && (
               <>
-                <span className="badge badge-success">Impresso</span>
+                {pedido.impresso && (
+                  <span className="badge badge-success">Impresso</span>
+                )}
                 <button className="btn btn-sm btn-warning" onClick={() => imprimirComanda(pedido, false, true)}>
                   <FiPrinter size={14} /> Reimprimir Comanda
                 </button>
@@ -252,7 +257,8 @@ export default function PedidosAvulsos() {
             )}
           </div>
         </div>
-      ))}
+        );
+      })}
 
       {pedidos.length === 0 && (
         <div style={{ textAlign: 'center', padding: '60px', color: 'var(--cinza-400)' }}>
