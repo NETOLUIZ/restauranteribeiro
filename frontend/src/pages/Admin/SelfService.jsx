@@ -129,6 +129,22 @@ export default function SelfService() {
     }
   };
 
+  const descricaoComprovanteIndisponivel = (reserva) => {
+    if (!reserva) {
+      return 'O comprovante ainda nao esta disponivel.';
+    }
+
+    if (reserva.status === 'AGUARDANDO_PAGAMENTO') {
+      return 'O comprovante so fica disponivel depois que o pagamento Pix e aprovado.';
+    }
+
+    if (reserva.status === 'CANCELADO') {
+      return 'Esta reserva foi cancelada e nao possui comprovante liberado.';
+    }
+
+    return 'O comprovante ainda nao esta disponivel para esta reserva.';
+  };
+
   if (carregando) {
     return <div className="loading-spinner"><div className="spinner"></div></div>;
   }
@@ -253,7 +269,6 @@ export default function SelfService() {
                         type="button"
                         className="table-action-btn table-action-edit"
                         onClick={() => setComprovanteAberto(reserva)}
-                        disabled={!reserva.comprovante}
                       >
                         <FiEye size={14} /> Ver comprovante
                       </button>
@@ -302,7 +317,12 @@ export default function SelfService() {
                 <SelfServiceReceipt reserva={comprovanteAberto} />
               ) : (
                 <div style={{ color: 'var(--cinza-600)' }}>
-                  O comprovante so fica disponivel depois que o pagamento e aprovado.
+                  <p style={{ marginBottom: '8px' }}>
+                    {descricaoComprovanteIndisponivel(comprovanteAberto)}
+                  </p>
+                  <p>
+                    <strong>Status atual:</strong> {obterTextoStatusSelfService(comprovanteAberto.status)}
+                  </p>
                 </div>
               )}
             </div>

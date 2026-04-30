@@ -92,8 +92,14 @@ export default function Home() {
           <div className="container hero-content">
             <h1>Restaurante Ribeiro</h1>
             <div className="hero-buttons">
-              <Link to="/self-service" className="btn btn-hero-secondary" id="btn-self-service">
-                <FiClipboard size={20} /> Self-service
+              <Link to="/self-service" className="btn btn-hero-secondary btn-hero-self-service" id="btn-self-service">
+                <span className="btn-hero-self-service-icon">
+                  <FiClipboard size={18} />
+                </span>
+                <span className="btn-hero-self-service-copy">
+                  <strong>Self-service</strong>
+                  <small>Retirada no balcao</small>
+                </span>
               </Link>
               <Link to="/pedido" className="btn btn-hero-primary" id="btn-fazer-pedido">
                 <FiShoppingBag size={20} /> Fazer Pedido

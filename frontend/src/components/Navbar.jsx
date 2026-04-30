@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiMenu, FiX, FiLogOut } from 'react-icons/fi';
+import { FiMenu, FiX, FiLogOut, FiClipboard } from 'react-icons/fi';
 import { useAuth } from '../context/useAuth';
 
 export default function Navbar() {
@@ -44,7 +44,9 @@ export default function Navbar() {
 
         <div className="navbar-links">
           <Link to="/">Inicio</Link>
-          <Link to="/self-service">Self-service</Link>
+          <Link to="/self-service" className="navbar-link-self-service">
+            <FiClipboard size={16} /> <span>Self-service</span>
+          </Link>
           <Link to="/pedido">Fazer Pedido</Link>
           {!usuario && <Link to="/empresa/login">Area da Empresa</Link>}
           {usuario && usuario.role === 'EMPRESA_FUNC' && <Link to="/empresa/pedidos">Meus Pedidos</Link>}
@@ -67,7 +69,9 @@ export default function Navbar() {
       {menuAberto && menuMobileAtivo && (
         <div className="navbar-mobile">
           <Link to="/" onClick={() => setMenuAberto(false)}>Inicio</Link>
-          <Link to="/self-service" onClick={() => setMenuAberto(false)}>Self-service</Link>
+          <Link to="/self-service" className="navbar-link-self-service" onClick={() => setMenuAberto(false)}>
+            <FiClipboard size={18} /> <span>Self-service</span>
+          </Link>
           <Link to="/pedido" onClick={() => setMenuAberto(false)}>Fazer Pedido</Link>
           {!usuario && <Link to="/empresa/login" onClick={() => setMenuAberto(false)}>Area da Empresa</Link>}
           {usuario && usuario.role === 'EMPRESA_FUNC' && <Link to="/empresa/pedidos" onClick={() => setMenuAberto(false)}>Meus Pedidos</Link>}

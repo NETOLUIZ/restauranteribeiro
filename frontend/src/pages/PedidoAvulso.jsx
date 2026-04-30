@@ -168,23 +168,43 @@ export default function PedidoAvulso() {
     document.getElementById('checkout-avulso')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [etapaAtual]);
 
+  const pedidoClienteId = pixPagamento?.pedidoId || pedidoDinheiro?.id || null;
+  const statusPedidoCliente = pixPagamento?.statusPedido || pedidoDinheiro?.statusPagamento || null;
+
   useEffect(() => {
-    if (!pixPagamento?.pedidoId || pixPagamento.statusPedido === 'CONFIRMADO' || pixPagamento.statusPedido === 'CANCELADO') {
+    if (!pedidoClienteId || statusPedidoCliente === 'CONFIRMADO' || statusPedidoCliente === 'CANCELADO') {
       return undefined;
     }
 
     const consultarStatus = async () => {
       try {
-        const { data } = await pedidoAvulsoAPI.statusPagamento(pixPagamento.pedidoId);
-        setPixPagamento((atual) => {
-          if (!atual || atual.pedidoId !== pixPagamento.pedidoId) return atual;
-          return { ...atual, statusPedido: data.statusPagamento };
-        });
+        const { data } = await pedidoAvulsoAPI.statusPagamento(pedidoClienteId);
 
-        if (data.statusPagamento === 'CONFIRMADO') {
-          setMensagem({ tipo: 'success', texto: 'Pagamento confirmado. Pedido enviado com sucesso!' });
-        } else if (data.statusPagamento === 'CANCELADO') {
-          setMensagem({ tipo: 'error', texto: 'Pagamento cancelado. Gere um novo pedido se necessario.' });
+        if (pixPagamento) {
+          setPixPagamento((atual) => {
+            if (!atual || atual.pedidoId !== pedidoClienteId) return atual;
+            return { ...atual, statusPedido: data.statusPagamento };
+          });
+        }
+
+        if (pedidoDinheiro) {
+          setPedidoDinheiro((atual) => {
+            if (!atual || atual.id !== pedidoClienteId) return atual;
+            return { ...atual, statusPagamento: data.statusPagamento };
+          });
+        }
+
+        if (data.statusPagamento !== statusPedidoCliente) {
+          if (data.statusPagamento === 'CONFIRMADO') {
+            setMensagem({
+              tipo: 'success',
+              texto: pixPagamento
+                ? 'Pagamento confirmado. Pedido confirmado com sucesso!'
+                : 'Pedido confirmado com sucesso pela equipe.'
+            });
+          } else if (data.statusPagamento === 'CANCELADO') {
+            setMensagem({ tipo: 'error', texto: 'Pagamento cancelado. Gere um novo pedido se necessario.' });
+          }
         }
       } catch {
         // Mantem a tela em aguardando pagamento se a consulta temporaria falhar.
@@ -195,7 +215,7 @@ export default function PedidoAvulso() {
     consultarStatus();
 
     return () => window.clearInterval(intervalo);
-  }, [pixPagamento?.pedidoId, pixPagamento?.statusPedido]);
+  }, [pedidoClienteId, pedidoDinheiro, pixPagamento, statusPedidoCliente]);
 
   const toggleItem = (item) => {
     if (!marmitaSelecionada.tamanho) {
@@ -480,12 +500,56 @@ export default function PedidoAvulso() {
     { numero: 3, titulo: 'Pagamento' }
   ];
   const statusPedidoPix = pixPagamento?.statusPedido || (pixPagamento?.status === 'approved' ? 'CONFIRMADO' : 'PENDENTE');
+  const statusPedidoDinheiro = pedidoDinheiro?.statusPagamento || 'PENDENTE';
   const statusPixTexto =
     statusPedidoPix === 'CONFIRMADO'
       ? 'Pagamento confirmado'
       : statusPedidoPix === 'CANCELADO'
         ? 'Pagamento cancelado'
         : 'Aguardando pagamento';
+  const avisoPedidoCliente = (() => {
+    if (pixPagamento) {
+      if (statusPedidoPix === 'CONFIRMADO') {
+        return {
+          classe: 'sucesso',
+          titulo: `Pedido #${pixPagamento.pedidoId} confirmado com sucesso`,
+          texto: 'Pix aprovado. Agora e so aguardar o preparo e a entrega do seu pedido.'
+        };
+      }
+
+      if (statusPedidoPix === 'CANCELADO') {
+        return {
+          classe: 'erro',
+          titulo: `Pedido #${pixPagamento.pedidoId} com pagamento cancelado`,
+          texto: 'Se ainda quiser finalizar, gere um novo Pix para concluir o pedido.'
+        };
+      }
+
+      return {
+        classe: 'pendente',
+        titulo: `Pedido #${pixPagamento.pedidoId} enviado com sucesso`,
+        texto: 'Falta apenas pagar o Pix abaixo para confirmar o pedido no sistema.'
+      };
+    }
+
+    if (pedidoDinheiro) {
+      if (statusPedidoDinheiro === 'CONFIRMADO') {
+        return {
+          classe: 'sucesso',
+          titulo: `Pedido #${pedidoDinheiro.id} confirmado com sucesso`,
+          texto: 'Nossa equipe ja validou o pagamento em dinheiro. Agora e so aguardar a entrega.'
+        };
+      }
+
+      return {
+        classe: 'pendente',
+        titulo: `Pedido #${pedidoDinheiro.id} enviado com sucesso`,
+        texto: 'Seu pedido foi registrado. O pagamento em dinheiro sera confirmado pela equipe.'
+      };
+    }
+
+    return null;
+  })();
 
   const selecionarMarmita = (opcao) => {
     setMarmitaSelecionada({
@@ -593,6 +657,19 @@ export default function PedidoAvulso() {
         <div className="container">
           <h1>Fazer Pedido</h1>
           <p className="subtitulo">Selecione os itens desejados e finalize seu pedido</p>
+
+          {avisoPedidoCliente && (
+            <section
+              className={`pedido-cliente-alerta ${avisoPedidoCliente.classe}`}
+              aria-live="polite"
+            >
+              <div className="pedido-cliente-alerta-topo">
+                {avisoPedidoCliente.classe === 'sucesso' ? <FiCheckCircle size={20} /> : <FiClock size={20} />}
+                <strong>{avisoPedidoCliente.titulo}</strong>
+              </div>
+              <p>{avisoPedidoCliente.texto}</p>
+            </section>
+          )}
 
           <div className="checkout-steps" aria-label="Etapas do checkout">
             {etapasCheckout.map((etapa) => {

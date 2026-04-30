@@ -91,7 +91,7 @@ export default function PedidosAvulsos() {
     ));
   }, []);
 
-  const imprimirComanda = useCallback(async (pedido, automatico = false, reimpressao = false) => {
+  const imprimirComanda = useCallback(async (pedido, reimpressao = false) => {
     if (imprimindoRef.current.has(pedido.id)) return;
 
     imprimindoRef.current.add(pedido.id);
@@ -104,26 +104,11 @@ export default function PedidosAvulsos() {
       }
     } catch (err) {
       console.error('Erro ao imprimir comanda:', err);
-      if (!automatico) {
-        alert('Nao foi possivel iniciar a impressao. Tente novamente.');
-      }
+      alert('Nao foi possivel iniciar a impressao. Tente novamente.');
     } finally {
       imprimindoRef.current.delete(pedido.id);
     }
   }, [marcarImpressoLocal]);
-
-  const autoImprimirPendentesOnline = useCallback(async (lista) => {
-    const pendentesOnline = lista.filter(
-      (pedido) =>
-        pedido.statusPagamento === 'CONFIRMADO' &&
-        !pedido.impresso &&
-        pedido.formaPagamento !== 'DINHEIRO'
-    );
-
-    for (const pedido of pendentesOnline) {
-      await imprimirComanda(pedido, true);
-    }
-  }, [imprimirComanda]);
 
   const carregar = useCallback(async (silencioso = false) => {
     if (carregandoPedidosRef.current) return;
@@ -141,7 +126,6 @@ export default function PedidosAvulsos() {
       if (!componenteMontadoRef.current) return;
 
       setPedidos(data);
-      await autoImprimirPendentesOnline(data);
     } catch (err) {
       console.error('Erro:', err);
     } finally {
@@ -150,7 +134,7 @@ export default function PedidosAvulsos() {
       }
       carregandoPedidosRef.current = false;
     }
-  }, [autoImprimirPendentesOnline, filtroStatus]);
+  }, [filtroStatus]);
 
   useEffect(() => {
     carregar();
@@ -186,7 +170,7 @@ export default function PedidosAvulsos() {
       </div>
 
       <p style={{ color: 'var(--cinza-600)', marginBottom: '16px' }}>
-        O botao de autorizacao aparece para pedidos em dinheiro com status pendente. Pedidos Pix continuam aguardando confirmacao automatica do Mercado Pago.
+        O botao de autorizacao aparece para pedidos em dinheiro com status pendente. Pedidos confirmados aguardam impressao manual nesta tela.
       </p>
 
       {pedidos.map(pedido => {
@@ -242,9 +226,14 @@ export default function PedidosAvulsos() {
                 {pedido.impresso && (
                   <span className="badge badge-success">Impresso</span>
                 )}
-                <button className="btn btn-sm btn-warning" onClick={() => imprimirComanda(pedido, false, true)}>
-                  <FiPrinter size={14} /> Reimprimir Comanda
-                </button>
+                {!pedido.impresso && (
+                  <span className="badge badge-warning">Aguardando impressao</span>
+                )}
+                {pedido.impresso && (
+                  <button className="btn btn-sm btn-warning" onClick={() => imprimirComanda(pedido, true)}>
+                    <FiPrinter size={14} /> Reimprimir Comanda
+                  </button>
+                )}
               </>
             )}
           </div>
