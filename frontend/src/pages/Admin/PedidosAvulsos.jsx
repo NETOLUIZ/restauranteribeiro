@@ -3,10 +3,23 @@ import { FiPrinter, FiCheck, FiFilter } from 'react-icons/fi';
 import { pedidoAvulsoAPI } from '../../services/api';
 import { COMANDA_PRINT_CSS, TELEFONE_RESTAURANTE, escapeHtml, imprimirHtml } from '../../utils/comandaPrint';
 
+function formatarTamanhoMarmita(tamanhoMarmita) {
+  if (tamanhoMarmita === 'GRANDE') return 'G';
+  if (tamanhoMarmita === 'PEQUENA') return 'P';
+  return '-';
+}
+
+function deveImprimirAutomaticamente(pedido) {
+  if (!pedido || pedido.impresso || pedido.statusPagamento === 'CANCELADO') return false;
+  if (pedido.formaPagamento === 'DINHEIRO') return true;
+  return pedido.formaPagamento === 'PIX' && pedido.statusPagamento === 'CONFIRMADO';
+}
+
 function gerarHtmlComanda(pedido) {
   const itensHtml = Array.isArray(pedido.itens) && pedido.itens.length
     ? pedido.itens.map((item) => `<li>${escapeHtml(item?.nome || '-')}</li>`).join('')
     : '<li>-</li>';
+  const tamanhoMarmita = formatarTamanhoMarmita(pedido.tamanhoMarmita);
 
   return `
     <html>
@@ -52,7 +65,7 @@ function gerarHtmlComanda(pedido) {
 
               <section class="info-extra">
                 <p><strong>Pagamento:</strong> ${escapeHtml(pedido.formaPagamento || '-')}</p>
-                <p><strong>Qtd:</strong> ${escapeHtml(pedido.quantidade || '-')}</p>
+                <p><strong>Qtd/Marmita:</strong> ${escapeHtml(pedido.quantidade || '-')} / ${escapeHtml(tamanhoMarmita)}</p>
                 <p><strong>Telefone:</strong> ${escapeHtml(pedido.telefone || '-')}</p>
                 ${pedido.observacao ? `<p class="info-obs"><strong>Obs:</strong> ${escapeHtml(pedido.observacao)}</p>` : ''}
               </section>
@@ -147,6 +160,14 @@ export default function PedidosAvulsos() {
     };
   }, [carregar]);
 
+  useEffect(() => {
+    pedidos
+      .filter((pedido) => deveImprimirAutomaticamente(pedido))
+      .forEach((pedido) => {
+        void imprimirComanda(pedido);
+      });
+  }, [pedidos, imprimirComanda]);
+
   const confirmarPagamentoDinheiro = async (id) => {
     try {
       await pedidoAvulsoAPI.atualizarStatus(id, { statusPagamento: 'CONFIRMADO' });
@@ -170,11 +191,13 @@ export default function PedidosAvulsos() {
       </div>
 
       <p style={{ color: 'var(--cinza-600)', marginBottom: '16px' }}>
-        O botao de autorizacao aparece para pedidos em dinheiro com status pendente. Pedidos confirmados aguardam impressao manual nesta tela.
+        Impressao automatica: dinheiro imprime assim que chega; Pix imprime apos confirmacao. Reimpressao continua disponivel.
       </p>
 
       {pedidos.map(pedido => {
         const pedidoConfirmado = pedido.statusPagamento === 'CONFIRMADO';
+        const podeImprimirManual =
+          (pedido.formaPagamento === 'DINHEIRO' && pedido.statusPagamento !== 'CANCELADO') || pedidoConfirmado;
 
         return (
         <div key={pedido.id} className={`pedido-admin-card ${pedido.statusPagamento.toLowerCase()}`} id={`pedido-avulso-${pedido.id}`}>
@@ -197,6 +220,7 @@ export default function PedidosAvulsos() {
             <p><strong>Cliente:</strong> {pedido.nomeCliente}</p>
             <p><strong>Telefone:</strong> {pedido.telefone}</p>
             <p><strong>Endereco:</strong> {pedido.endereco}</p>
+            <p><strong>Marmita:</strong> {formatarTamanhoMarmita(pedido.tamanhoMarmita)}</p>
             <p><strong>Quantidade:</strong> {pedido.quantidade}</p>
             <p><strong>Itens:</strong> {Array.isArray(pedido.itens) ? pedido.itens.map(i => i.nome).join(', ') : '-'}</p>
             {pedido.observacao && <p><strong>Observacao:</strong> {pedido.observacao}</p>}
@@ -215,19 +239,19 @@ export default function PedidosAvulsos() {
               <span className="badge badge-warning">Aguardando Mercado Pago</span>
             )}
 
-            {pedidoConfirmado && !pedido.impresso && (
+            {podeImprimirManual && !pedido.impresso && (
               <button className="btn btn-sm btn-secondary" onClick={() => imprimirComanda(pedido)}>
                 <FiPrinter size={14} /> Imprimir Comanda
               </button>
             )}
 
-            {pedidoConfirmado && (
+            {podeImprimirManual && (
               <>
                 {pedido.impresso && (
                   <span className="badge badge-success">Impresso</span>
                 )}
                 {!pedido.impresso && (
-                  <span className="badge badge-warning">Aguardando impressao</span>
+                  <span className="badge badge-warning">Aguardando impressao automatica</span>
                 )}
                 {pedido.impresso && (
                   <button className="btn btn-sm btn-warning" onClick={() => imprimirComanda(pedido, true)}>

@@ -106,6 +106,7 @@ model PedidoAvulso {
   nomeCliente     String
   telefone        String
   endereco        String
+  tamanhoMarmita  TamanhoMarmita?
   itens           Json
   quantidade      Int             @default(1)
   valorUnitario   Float           @default(0)

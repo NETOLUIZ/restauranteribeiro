@@ -280,6 +280,7 @@ export default function PedidoAvulso() {
         nomeCliente: normalizarCampo(dados.nomeCliente),
         telefone: normalizarCampo(dados.telefone),
         endereco: enderecoEntrega,
+        tamanhoMarmita: marmitaSelecionada.tamanho || undefined,
         observacao: normalizarCampo(dados.observacao),
         itens: itensSelecionados.map(i => ({ id: i.id, nome: i.nome, tipo: i.tipo })),
         quantidade,

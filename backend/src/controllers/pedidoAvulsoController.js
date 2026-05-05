@@ -110,6 +110,7 @@ async function criar(req, res) {
       nomeCliente,
       telefone,
       endereco,
+      tamanhoMarmita,
       itens,
       quantidade,
       observacao,
@@ -124,6 +125,10 @@ async function criar(req, res) {
 
     if (!['PIX', 'DINHEIRO'].includes(formaPagamento)) {
       return res.status(400).json({ erro: 'Forma de pagamento invalida para pedido avulso' });
+    }
+
+    if (tamanhoMarmita && !['GRANDE', 'PEQUENA'].includes(tamanhoMarmita)) {
+      return res.status(400).json({ erro: 'Tamanho de marmita invalido' });
     }
 
     const quantidadeFinal = Math.max(1, parseInt(quantidade, 10) || 1);
@@ -162,6 +167,7 @@ async function criar(req, res) {
         nomeCliente,
         telefone,
         endereco,
+        tamanhoMarmita: tamanhoMarmita || null,
         itens,
         quantidade: quantidadeFinal,
         valorUnitario: valorUnitarioFinal,
