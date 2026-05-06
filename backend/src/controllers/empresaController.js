@@ -16,7 +16,18 @@ function mapEmpresaPublic(empresa) {
 
 function getEmpresaIdDoUsuario(req) {
   const empresaId = Number(req.usuario?.empresaId);
-  return Number.isInteger(empresaId) && empresaId > 0 ? empresaId : null;
+  if (Number.isInteger(empresaId) && empresaId > 0) {
+    return empresaId;
+  }
+
+  const idToken = String(req.usuario?.id || '');
+  const matchEmpresaToken = idToken.match(/^empresa-(\d+)$/);
+  if (matchEmpresaToken) {
+    const empresaIdToken = Number(matchEmpresaToken[1]);
+    return Number.isInteger(empresaIdToken) && empresaIdToken > 0 ? empresaIdToken : null;
+  }
+
+  return null;
 }
 
 function mapFuncionarioEmpresa(funcionario) {

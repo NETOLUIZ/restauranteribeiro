@@ -126,8 +126,9 @@ export default function ComandaManualPage() {
           </div>
 
           <div className="comanda-manual-preview">
-            <article id="comanda-manual-print" className="comanda-manual-print comanda comanda-vazia">
-              <div className="comanda-vazia-conteudo">
+            <div className="comanda-manual-stage">
+              <article id="comanda-manual-print" className="comanda-manual-print comanda comanda-vazia">
+                <div className="comanda-vazia-conteudo">
                 <header className="comanda-vazia-topo">
                   <div className="comanda-vazia-titulo">R.Ribeiro</div>
                   <div className="comanda-vazia-subinfo">WhatsApp: (85) 99658-6824</div>
@@ -190,8 +191,9 @@ export default function ComandaManualPage() {
                     </div>
                   </div>
                 </section>
-              </div>
-            </article>
+                </div>
+              </article>
+            </div>
           </div>
         </>
       )}

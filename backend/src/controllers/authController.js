@@ -150,6 +150,36 @@ async function registrar(req, res) {
 // Obter perfil do usuario logado
 async function perfil(req, res) {
   try {
+    const idToken = String(req.usuario?.id || '');
+    const matchEmpresaToken = idToken.match(/^empresa-(\d+)$/);
+    const empresaIdDoToken = Number(req.usuario?.empresaId);
+
+    if (
+      req.usuario?.role === 'EMPRESA_FUNC' &&
+      (matchEmpresaToken || (Number.isInteger(empresaIdDoToken) && empresaIdDoToken > 0))
+    ) {
+      const empresaId = Number.isInteger(empresaIdDoToken) && empresaIdDoToken > 0
+        ? empresaIdDoToken
+        : Number(matchEmpresaToken?.[1]);
+
+      const empresa = await prisma.empresa.findUnique({
+        where: { id: empresaId }
+      });
+
+      if (!empresa || !empresa.ativo) {
+        return res.status(404).json({ erro: 'Empresa nao encontrada' });
+      }
+
+      return res.json({
+        id: idToken || `empresa-${empresa.id}`,
+        nome: empresa.nome,
+        email: null,
+        role: 'EMPRESA_FUNC',
+        empresaId: empresa.id,
+        empresa: mapEmpresaPublic(empresa)
+      });
+    }
+
     const usuario = await prisma.usuario.findUnique({
       where: { id: req.usuario.id },
       include: { empresa: true }
