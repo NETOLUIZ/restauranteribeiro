@@ -59,7 +59,8 @@ export const pedidoAvulsoAPI = {
   statusPagamento: (id) => api.get(`/pedidos-avulsos/${id}/status-pagamento`),
   listar: (params) => api.get('/pedidos-avulsos', { params }),
   atualizarStatus: (id, dados) => api.put(`/pedidos-avulsos/${id}/status`, dados),
-  imprimir: (id) => api.put(`/pedidos-avulsos/${id}/imprimir`)
+  imprimir: (id) => api.put(`/pedidos-avulsos/${id}/imprimir`),
+  deletar: (id) => api.delete(`/pedidos-avulsos/${id}`)
 };
 
 // Pedidos Empresa
@@ -69,6 +70,7 @@ export const pedidoEmpresaAPI = {
   listarTodos: (params) => api.get('/pedidos-empresa', { params }),
   autorizar: (id) => api.put(`/pedidos-empresa/${id}/autorizar`),
   imprimir: (id) => api.put(`/pedidos-empresa/${id}/imprimir`),
+  deletar: (id) => api.delete(`/pedidos-empresa/${id}`),
   historico: (params) => api.get('/pedidos-empresa/historico', { params })
 };
 

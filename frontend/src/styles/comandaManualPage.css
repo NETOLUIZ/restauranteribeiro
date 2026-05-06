@@ -1,0 +1,201 @@
+#comanda-manual-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.comanda-manual-loading,
+.comanda-manual-empty {
+  padding: 14px;
+  border: 1px solid var(--cinza-300);
+  border-radius: 10px;
+  background: var(--branco);
+  color: var(--cinza-700);
+  font-weight: 600;
+}
+
+.comanda-manual-actions {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px;
+  border: 1px solid var(--cinza-200);
+  border-radius: 12px;
+  background: var(--cinza-50);
+}
+
+.comanda-manual-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 10px;
+  width: min(100%, 620px);
+}
+
+.comanda-manual-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--cinza-700);
+}
+
+.comanda-manual-card {
+  width: 105mm;
+  height: 70mm;
+  margin: 0;
+  padding: 1.5mm;
+  border: 0.45mm solid #111111;
+  border-radius: 1mm;
+  background: #ffffff;
+  color: #111111;
+  display: flex;
+  flex-direction: column;
+  gap: 1mm;
+  overflow: hidden;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.comanda-manual-topo {
+  text-align: center;
+  border-bottom: 0.35mm solid #111111;
+  padding-bottom: 0.6mm;
+}
+
+.comanda-manual-titulo {
+  font-size: 4.2mm;
+  font-weight: 900;
+  letter-spacing: 0.3mm;
+  line-height: 1;
+}
+
+.comanda-manual-subinfo {
+  font-size: 2.5mm;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.comanda-manual-campos {
+  display: grid;
+  gap: 0.6mm;
+  border: 0.35mm solid #111111;
+  border-radius: 0.8mm;
+  padding: 0.8mm;
+}
+
+.comanda-manual-campo {
+  display: grid;
+  grid-template-columns: 18mm 1fr;
+  gap: 1mm;
+  align-items: start;
+}
+
+.comanda-manual-label {
+  font-size: 2.35mm;
+  font-weight: 900;
+  letter-spacing: 0.2mm;
+}
+
+.comanda-manual-valor {
+  font-size: 2.6mm;
+  font-weight: 800;
+  line-height: 1.1;
+  word-break: break-word;
+}
+
+.comanda-manual-colunas {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 1fr 0.35mm 1fr;
+  border: 0.35mm solid #111111;
+  border-radius: 0.8mm;
+  overflow: hidden;
+}
+
+.comanda-manual-divisor {
+  background: #111111;
+}
+
+.comanda-manual-coluna {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.comanda-manual-coluna-titulo {
+  padding: 0.55mm 0.8mm;
+  background: #111111;
+  color: #ffffff;
+  font-size: 2.4mm;
+  font-weight: 900;
+  letter-spacing: 0.2mm;
+}
+
+.comanda-manual-lista {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0.8mm;
+  display: grid;
+  align-content: start;
+  gap: 0.45mm;
+  overflow: hidden;
+}
+
+.comanda-manual-item {
+  display: flex;
+  align-items: center;
+  gap: 1mm;
+  font-size: 2.3mm;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.comanda-manual-item input[type='checkbox'] {
+  width: 3mm;
+  height: 3mm;
+  accent-color: #111111;
+  margin: 0;
+}
+
+@media (max-width: 980px) {
+  .comanda-manual-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  @page {
+    size: 105mm 70mm landscape;
+    margin: 0;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  #comanda-manual-print,
+  #comanda-manual-print * {
+    visibility: visible !important;
+  }
+
+  #comanda-manual-print {
+    position: fixed;
+    left: 0;
+    top: 0;
+    margin: 0;
+    width: 105mm;
+    height: 70mm;
+    border-radius: 0;
+  }
+
+  .no-print,
+  .admin-sidebar,
+  .admin-topbar,
+  .sidebar-overlay {
+    display: none !important;
+  }
+}
+

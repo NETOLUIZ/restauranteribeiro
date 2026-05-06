@@ -5,6 +5,7 @@ const {
   listarTodos,
   atualizarStatus,
   marcarImpresso,
+  deletar,
   statusPagamentoPublico,
   webhookMercadoPago,
   statusMercadoPago
@@ -22,5 +23,6 @@ router.post('/webhook/mercadopago', webhookMercadoPago);
 router.get('/', autenticar, apenasAdmin, listarTodos);
 router.put('/:id/status', autenticar, apenasAdmin, atualizarStatus);
 router.put('/:id/imprimir', autenticar, apenasAdmin, marcarImpresso);
+router.delete('/:id', autenticar, apenasAdmin, deletar);
 
 module.exports = router;

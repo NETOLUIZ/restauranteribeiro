@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { FiPrinter, FiCheck, FiFilter } from 'react-icons/fi';
+import { FiPrinter, FiCheck, FiFilter, FiTrash2 } from 'react-icons/fi';
 import { pedidoAvulsoAPI } from '../../services/api';
 import { COMANDA_PRINT_CSS, TELEFONE_RESTAURANTE, escapeHtml, imprimirHtml } from '../../utils/comandaPrint';
 
@@ -177,6 +177,19 @@ export default function PedidosAvulsos() {
     }
   };
 
+  const excluirPedido = async (id) => {
+    const confirmar = window.confirm(`Excluir o pedido #${id}? Essa acao nao pode ser desfeita.`);
+    if (!confirmar) return;
+
+    try {
+      await pedidoAvulsoAPI.deletar(id);
+      setPedidos((anterior) => anterior.filter((pedido) => pedido.id !== id));
+    } catch (err) {
+      console.error('Erro ao excluir pedido avulso:', err);
+      alert(err.response?.data?.erro || 'Nao foi possivel excluir o pedido.');
+    }
+  };
+
   if (carregando) return <div className="loading-spinner"><div className="spinner"></div></div>;
 
   return (
@@ -260,6 +273,10 @@ export default function PedidosAvulsos() {
                 )}
               </>
             )}
+
+            <button className="btn btn-sm btn-danger" onClick={() => excluirPedido(pedido.id)}>
+              <FiTrash2 size={14} /> Excluir Pedido
+            </button>
           </div>
         </div>
         );

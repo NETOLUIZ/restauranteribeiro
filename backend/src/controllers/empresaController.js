@@ -44,6 +44,10 @@ async function listar(req, res) {
         funcionarios: {
           select: { id: true, nome: true, email: true, ativo: true }
         },
+        funcionariosSalvos: {
+          where: { ativo: true },
+          select: { id: true, nome: true, ativo: true }
+        },
         _count: { select: { pedidos: true } }
       },
       orderBy: { nome: 'asc' }
@@ -209,12 +213,38 @@ async function adicionarFuncionario(req, res) {
 // Remover funcionario
 async function removerFuncionario(req, res) {
   try {
-    const { funcId } = req.params;
-    await prisma.usuario.update({
-      where: { id: parseInt(funcId, 10) },
-      data: { ativo: false }
+    const empresaId = parseInt(req.params.id, 10);
+    const funcId = parseInt(req.params.funcId, 10);
+
+    if (!Number.isInteger(empresaId) || !Number.isInteger(funcId)) {
+      return res.status(400).json({ erro: 'Parametros invalidos' });
+    }
+
+    const funcionarioSalvo = await prisma.empresaFuncionario.findFirst({
+      where: { id: funcId, empresaId }
     });
-    res.json({ mensagem: 'Funcionario desativado com sucesso' });
+
+    if (funcionarioSalvo) {
+      await prisma.empresaFuncionario.update({
+        where: { id: funcId },
+        data: { ativo: false }
+      });
+      return res.json({ mensagem: 'Funcionario salvo removido com sucesso' });
+    }
+
+    const funcionarioLogin = await prisma.usuario.findFirst({
+      where: { id: funcId, empresaId }
+    });
+
+    if (funcionarioLogin) {
+      await prisma.usuario.update({
+        where: { id: funcId },
+        data: { ativo: false }
+      });
+      return res.json({ mensagem: 'Funcionario desativado com sucesso' });
+    }
+
+    return res.status(404).json({ erro: 'Funcionario nao encontrado para esta empresa' });
   } catch (err) {
     console.error('Erro ao remover funcionario:', err);
     res.status(500).json({ erro: 'Erro interno do servidor' });

@@ -75,6 +75,14 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/admin/comanda-manual"
+            element={
+              <ProtectedRoute role="ADMIN" loginPath="/admin/login">
+                <AdminLayout paginaInicial="comanda-manual" />
+              </ProtectedRoute>
+            }
+          />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

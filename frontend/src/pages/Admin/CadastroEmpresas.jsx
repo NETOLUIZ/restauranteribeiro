@@ -151,6 +151,20 @@ export default function CadastroEmpresas() {
     }
   };
 
+  const excluirFuncionarioSalvo = async (empresa, funcionario) => {
+    const confirmar = window.confirm(
+      `Excluir o funcionario salvo "${funcionario.nome}" da empresa "${empresa.nome}"?`
+    );
+    if (!confirmar) return;
+
+    try {
+      await empresaAPI.removerFuncionario(empresa.id, funcionario.id);
+      carregar();
+    } catch (err) {
+      alert(err.response?.data?.erro || 'Erro ao excluir funcionario salvo');
+    }
+  };
+
   const abrirPedidoAdmin = (empresa) => {
     setModalPedidoEmpresa(empresa);
     setQuantidadeLote('1');
@@ -743,6 +757,46 @@ export default function CadastroEmpresas() {
               <span className="badge badge-info">{empresa.totalPedidos} pedidos/dia</span>
               <span className="badge badge-warning">{empresa._count?.pedidos || 0} pedidos feitos</span>
             </div>
+
+            <div style={{ marginTop: '12px' }}>
+              <div style={{ fontSize: '0.85rem', color: 'var(--cinza-600)', fontWeight: 700, marginBottom: '8px' }}>
+                Funcionarios salvos
+              </div>
+              {Array.isArray(empresa.funcionariosSalvos) && empresa.funcionariosSalvos.length > 0 ? (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {empresa.funcionariosSalvos.map((funcionario) => (
+                    <span
+                      key={`func-salvo-${empresa.id}-${funcionario.id}`}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '5px 10px',
+                        borderRadius: '999px',
+                        background: 'var(--verde-bg)',
+                        color: 'var(--verde-escuro)',
+                        fontSize: '0.8rem',
+                        fontWeight: 600
+                      }}
+                    >
+                      {funcionario.nome}
+                      <button
+                        onClick={() => excluirFuncionarioSalvo(empresa, funcionario)}
+                        style={{ fontWeight: 700, color: 'var(--verde-escuro)' }}
+                        id={`btn-excluir-func-salvo-${empresa.id}-${funcionario.id}`}
+                      >
+                        x
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ fontSize: '0.83rem', color: 'var(--cinza-500)' }}>
+                  Nenhum funcionario salvo.
+                </div>
+              )}
+            </div>
+
             <div style={{ marginTop: '12px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <button className="btn btn-sm btn-secondary" onClick={() => abrirEditar(empresa)}>
                 Editar Total de Pedidos

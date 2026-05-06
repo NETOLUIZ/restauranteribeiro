@@ -196,6 +196,26 @@ async function marcarImpresso(req, res) {
   }
 }
 
+async function deletar(req, res) {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!Number.isInteger(id)) {
+      return res.status(400).json({ erro: 'Pedido invalido' });
+    }
+
+    const pedidoExistente = await prisma.pedidoEmpresa.findUnique({ where: { id } });
+    if (!pedidoExistente) {
+      return res.status(404).json({ erro: 'Pedido nao encontrado' });
+    }
+
+    await prisma.pedidoEmpresa.delete({ where: { id } });
+    return res.sendStatus(204);
+  } catch (err) {
+    console.error('Erro ao deletar pedido empresa:', err);
+    return res.status(500).json({ erro: 'Erro interno do servidor' });
+  }
+}
+
 async function historico(req, res) {
   try {
     const { empresaId, semana, mes } = req.query;
@@ -239,4 +259,4 @@ async function historico(req, res) {
   }
 }
 
-module.exports = { criar, listarPorEmpresa, listarTodos, autorizar, marcarImpresso, historico };
+module.exports = { criar, listarPorEmpresa, listarTodos, autorizar, marcarImpresso, deletar, historico };

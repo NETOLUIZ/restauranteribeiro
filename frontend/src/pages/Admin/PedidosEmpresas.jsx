@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { FiBell, FiCheck, FiFilter, FiPrinter, FiSearch } from 'react-icons/fi';
+import { FiBell, FiCheck, FiFilter, FiPrinter, FiSearch, FiTrash2 } from 'react-icons/fi';
 import { pedidoEmpresaAPI } from '../../services/api';
 import { COMANDA_PRINT_CSS, TELEFONE_RESTAURANTE, escapeHtml, imprimirHtml } from '../../utils/comandaPrint';
 
@@ -269,6 +269,19 @@ export default function PedidosEmpresas() {
     }
   };
 
+  const excluirPedido = async (id) => {
+    const confirmar = window.confirm(`Excluir o pedido de empresa #${id}? Essa acao nao pode ser desfeita.`);
+    if (!confirmar) return;
+
+    try {
+      await pedidoEmpresaAPI.deletar(id);
+      recarregar();
+    } catch (err) {
+      console.error('Erro ao excluir pedido empresa:', err);
+      alert(err.response?.data?.erro || 'Nao foi possivel excluir o pedido.');
+    }
+  };
+
   if (carregando) return <div className="loading-spinner"><div className="spinner"></div></div>;
 
   const termoEmpresa = filtroEmpresa.trim().toLowerCase();
@@ -397,6 +410,10 @@ export default function PedidosEmpresas() {
                   </button>
                 </>
               )}
+
+              <button className="btn btn-sm btn-danger" onClick={() => excluirPedido(pedido.id)}>
+                <FiTrash2 size={14} /> Excluir Pedido
+              </button>
             </div>
           </div>
         );
