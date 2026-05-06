@@ -125,69 +125,76 @@ export default function ComandaManualPage() {
             </button>
           </div>
 
-          <article id="comanda-manual-print" className="comanda-manual-card">
-            <header className="comanda-manual-topo">
-              <div className="comanda-manual-titulo">R.Ribeiro</div>
-              <div className="comanda-manual-subinfo">WhatsApp: (85) 99658-6824</div>
-              <div className="comanda-manual-subinfo">Delivery: ribeirorestaurante.com</div>
-            </header>
+          <div className="comanda-manual-preview">
+            <article id="comanda-manual-print" className="comanda-manual-print comanda comanda-vazia">
+              <div className="comanda-vazia-conteudo">
+                <header className="comanda-vazia-topo">
+                  <div className="comanda-vazia-titulo">R.Ribeiro</div>
+                  <div className="comanda-vazia-subinfo">WhatsApp: (85) 99658-6824</div>
+                  <div className="comanda-vazia-subinfo">Delivery: ribeirorestaurante.com</div>
+                </header>
 
-            <section className="comanda-manual-campos">
-              <div className="comanda-manual-campo">
-                <span className="comanda-manual-label">NOME</span>
-                <span className="comanda-manual-valor">{nome.trim() || '-'}</span>
-              </div>
-              <div className="comanda-manual-campo">
-                <span className="comanda-manual-label">ENDERECO</span>
-                <span className="comanda-manual-valor">{endereco.trim() || '-'}</span>
-              </div>
-            </section>
+                <section className="comanda-vazia-campos">
+                  <div className="comanda-vazia-campo">
+                    <span className="comanda-vazia-label">Nome:</span>
+                    {nome.trim()
+                      ? <span className="comanda-vazia-valor">{nome.trim()}</span>
+                      : <span className="comanda-vazia-linha"></span>}
+                  </div>
+                  <div className="comanda-vazia-campo">
+                    <span className="comanda-vazia-label">Endereco:</span>
+                    {endereco.trim()
+                      ? <span className="comanda-vazia-valor">{endereco.trim()}</span>
+                      : <span className="comanda-vazia-linha"></span>}
+                  </div>
+                </section>
 
-            <section className="comanda-manual-colunas">
-              <div className="comanda-manual-coluna">
-                <div className="comanda-manual-coluna-titulo">PROTEINAS</div>
-                <div className="comanda-manual-lista">
-                  {itensProteina.map((item) => {
-                    const chave = `PROTEINA-${item.id}`;
-                    return (
-                      <label key={chave} className="comanda-manual-item">
-                        <input
-                          type="checkbox"
-                          checked={selecionados.has(chave)}
-                          onChange={() => alternarItem(chave)}
-                        />
-                        <span>{item.nome || '-'}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
+                <section className="comanda-vazia-colunas">
+                  <div className="comanda-vazia-coluna">
+                    <div className="comanda-vazia-coluna-titulo">PROTEINAS</div>
+                    <div className="comanda-vazia-lista">
+                      {itensProteina.map((item) => {
+                        const chave = `PROTEINA-${item.id}`;
+                        return (
+                          <label key={chave} className="comanda-vazia-item comanda-vazia-item-input">
+                            <input
+                              type="checkbox"
+                              checked={selecionados.has(chave)}
+                              onChange={() => alternarItem(chave)}
+                            />
+                            <span className="comanda-vazia-nome">{item.nome || '-'}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
 
-              <div className="comanda-manual-divisor" />
+                  <div className="comanda-vazia-divisor"></div>
 
-              <div className="comanda-manual-coluna">
-                <div className="comanda-manual-coluna-titulo">COMPLEMENTOS</div>
-                <div className="comanda-manual-lista">
-                  {itensComplemento.map((item) => {
-                    const chave = `COMPLEMENTO-${item.id}`;
-                    return (
-                      <label key={chave} className="comanda-manual-item">
-                        <input
-                          type="checkbox"
-                          checked={selecionados.has(chave)}
-                          onChange={() => alternarItem(chave)}
-                        />
-                        <span>{item.nome || '-'}</span>
-                      </label>
-                    );
-                  })}
-                </div>
+                  <div className="comanda-vazia-coluna">
+                    <div className="comanda-vazia-coluna-titulo">COMPLEMENTOS</div>
+                    <div className="comanda-vazia-lista">
+                      {itensComplemento.map((item) => {
+                        const chave = `COMPLEMENTO-${item.id}`;
+                        return (
+                          <label key={chave} className="comanda-vazia-item comanda-vazia-item-input">
+                            <input
+                              type="checkbox"
+                              checked={selecionados.has(chave)}
+                              onChange={() => alternarItem(chave)}
+                            />
+                            <span className="comanda-vazia-nome">{item.nome || '-'}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </section>
               </div>
-            </section>
-          </article>
+            </article>
+          </div>
         </>
       )}
     </div>
   );
 }
-
