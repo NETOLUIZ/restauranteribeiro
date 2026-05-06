@@ -43,7 +43,7 @@
 }
 
 .comanda-manual-preview {
-  --preview-scale: 1.35;
+  --preview-scale: 1.7;
   width: 100%;
   overflow: auto;
   display: flex;
@@ -242,14 +242,174 @@
   }
 
   .comanda-manual-preview {
-    --preview-scale: 1.18;
+    --preview-scale: 1.25;
   }
 }
 
 @media (min-width: 1400px) {
   .comanda-manual-preview {
-    --preview-scale: 1.55;
+    --preview-scale: 1.85;
   }
+}
+
+.comanda-vazia.media .comanda-vazia-titulo {
+  font-size: 7mm;
+}
+
+.comanda-vazia.media .comanda-vazia-subinfo {
+  font-size: 2.3mm;
+}
+
+.comanda-vazia.media .comanda-vazia-label {
+  font-size: 3.85mm;
+}
+
+.comanda-vazia.media .comanda-vazia-valor {
+  font-size: 2.9mm;
+}
+
+.comanda-vazia.media .comanda-vazia-coluna-titulo {
+  min-height: 5.2mm;
+  font-size: 3.1mm;
+  letter-spacing: 0.35mm;
+}
+
+.comanda-vazia.media .comanda-vazia-item {
+  min-height: 4.2mm;
+  grid-template-columns: 4.2mm minmax(0, 1fr);
+  gap: 1.2mm;
+}
+
+.comanda-vazia.media .comanda-vazia-item-input input[type='checkbox'] {
+  width: 3.9mm;
+  height: 3.9mm;
+}
+
+.comanda-vazia.media .comanda-vazia-nome {
+  font-size: 3.1mm;
+}
+
+.comanda-vazia.compacta .comanda-vazia-conteudo {
+  gap: 0.8mm;
+}
+
+.comanda-vazia.compacta .comanda-vazia-topo {
+  gap: 0.25mm;
+  padding-bottom: 0.6mm;
+}
+
+.comanda-vazia.compacta .comanda-vazia-titulo {
+  font-size: 6.35mm;
+}
+
+.comanda-vazia.compacta .comanda-vazia-subinfo {
+  font-size: 2.05mm;
+}
+
+.comanda-vazia.compacta .comanda-vazia-campos {
+  gap: 0.95mm;
+}
+
+.comanda-vazia.compacta .comanda-vazia-label {
+  font-size: 3.4mm;
+}
+
+.comanda-vazia.compacta .comanda-vazia-linha,
+.comanda-vazia.compacta .comanda-vazia-valor {
+  height: 2.9mm;
+}
+
+.comanda-vazia.compacta .comanda-vazia-valor {
+  font-size: 2.5mm;
+}
+
+.comanda-vazia.compacta .comanda-vazia-coluna-titulo {
+  min-height: 4.6mm;
+  font-size: 2.75mm;
+  letter-spacing: 0.2mm;
+}
+
+.comanda-vazia.compacta .comanda-vazia-lista {
+  padding-top: 0.55mm;
+}
+
+.comanda-vazia.compacta .comanda-vazia-item {
+  min-height: 3.45mm;
+  grid-template-columns: 3.5mm minmax(0, 1fr);
+  gap: 0.95mm;
+}
+
+.comanda-vazia.compacta .comanda-vazia-item-input input[type='checkbox'] {
+  width: 3.1mm;
+  height: 3.1mm;
+}
+
+.comanda-vazia.compacta .comanda-vazia-nome {
+  font-size: 2.6mm;
+}
+
+.comanda-vazia.micro .comanda-vazia-conteudo {
+  padding: 1.35mm 1.8mm;
+  gap: 0.55mm;
+}
+
+.comanda-vazia.micro .comanda-vazia-topo {
+  gap: 0.2mm;
+  padding-bottom: 0.45mm;
+}
+
+.comanda-vazia.micro .comanda-vazia-titulo {
+  font-size: 5.75mm;
+}
+
+.comanda-vazia.micro .comanda-vazia-subinfo {
+  font-size: 1.85mm;
+}
+
+.comanda-vazia.micro .comanda-vazia-campos {
+  gap: 0.65mm;
+}
+
+.comanda-vazia.micro .comanda-vazia-label {
+  font-size: 3.05mm;
+}
+
+.comanda-vazia.micro .comanda-vazia-linha,
+.comanda-vazia.micro .comanda-vazia-valor {
+  height: 2.45mm;
+}
+
+.comanda-vazia.micro .comanda-vazia-valor {
+  font-size: 2.2mm;
+}
+
+.comanda-vazia.micro .comanda-vazia-colunas {
+  gap: 1.2mm;
+}
+
+.comanda-vazia.micro .comanda-vazia-coluna-titulo {
+  min-height: 4mm;
+  font-size: 2.3mm;
+  letter-spacing: 0.08mm;
+}
+
+.comanda-vazia.micro .comanda-vazia-lista {
+  padding: 0.35mm 0.3mm 0;
+}
+
+.comanda-vazia.micro .comanda-vazia-item {
+  min-height: 0;
+  grid-template-columns: 2.85mm minmax(0, 1fr);
+  gap: 0.7mm;
+}
+
+.comanda-vazia.micro .comanda-vazia-item-input input[type='checkbox'] {
+  width: 2.5mm;
+  height: 2.5mm;
+}
+
+.comanda-vazia.micro .comanda-vazia-nome {
+  font-size: 2.1mm;
 }
 
 @media print {

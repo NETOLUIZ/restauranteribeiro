@@ -68,6 +68,14 @@ export default function ComandaManualPage() {
     [itensCardapio]
   );
   const semCardapio = !itensProteina.length && !itensComplemento.length;
+  const totalLinhas = Math.max(itensProteina.length, itensComplemento.length);
+  const densidade = totalLinhas > 10
+    ? 'micro'
+    : totalLinhas > 8
+      ? 'compacta'
+      : totalLinhas > 6
+        ? 'media'
+        : '';
 
   const alternarItem = (chaveItem) => {
     setSelecionados((anterior) => {
@@ -127,7 +135,7 @@ export default function ComandaManualPage() {
 
           <div className="comanda-manual-preview">
             <div className="comanda-manual-stage">
-              <article id="comanda-manual-print" className="comanda-manual-print comanda comanda-vazia">
+              <article id="comanda-manual-print" className={`comanda-manual-print comanda comanda-vazia ${densidade}`}>
                 <div className="comanda-vazia-conteudo">
                 <header className="comanda-vazia-topo">
                   <div className="comanda-vazia-titulo">R.Ribeiro</div>
