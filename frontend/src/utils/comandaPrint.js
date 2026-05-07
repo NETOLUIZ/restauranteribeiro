@@ -1,4 +1,20 @@
 export const TELEFONE_RESTAURANTE = '85996586824';
+export const NOME_EMPRESA_COMANDA = 'R.Ribeiro';
+export const SITE_RESTAURANTE = 'ribeirorestaurante.com';
+
+export const formatarTelefoneComanda = (telefone = '') => {
+  const digitos = String(telefone).replace(/\D/g, '');
+
+  if (digitos.length === 11) {
+    return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 7)}-${digitos.slice(7)}`;
+  }
+
+  if (digitos.length === 10) {
+    return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 6)}-${digitos.slice(6)}`;
+  }
+
+  return telefone;
+};
 
 export const escapeHtml = (value = '') =>
   String(value)
@@ -89,16 +105,40 @@ export const COMANDA_PRINT_CSS = `
 
   .comanda-topo {
     flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35mm;
     text-align: center;
+  }
+
+  .marca-destaque {
+    color: var(--preto-termico);
+    font-size: 7.2mm;
+    font-weight: 900;
+    line-height: 0.9;
+    letter-spacing: 0.32mm;
+    white-space: nowrap;
+    text-transform: uppercase;
   }
 
   .fone-destaque {
     color: var(--preto-termico);
-    font-size: 3.9mm;
+    font-size: 2.85mm;
     font-weight: 900;
-    letter-spacing: 0.65mm;
+    letter-spacing: 0.22mm;
     line-height: 1;
     text-align: center;
+  }
+
+  .site-destaque {
+    color: var(--preto-termico);
+    font-size: 2.55mm;
+    font-weight: 800;
+    letter-spacing: 0.08mm;
+    line-height: 1.05;
+    text-align: center;
+    white-space: nowrap;
   }
 
   .linha-divisoria {

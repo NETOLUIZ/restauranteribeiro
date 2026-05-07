@@ -1,11 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { FiBell, FiCheck, FiFilter, FiPrinter, FiSearch, FiTrash2 } from 'react-icons/fi';
 import { pedidoEmpresaAPI } from '../../services/api';
-import { COMANDA_PRINT_CSS, TELEFONE_RESTAURANTE, escapeHtml, imprimirHtml } from '../../utils/comandaPrint';
+import {
+  COMANDA_PRINT_CSS,
+  NOME_EMPRESA_COMANDA,
+  SITE_RESTAURANTE,
+  TELEFONE_RESTAURANTE,
+  escapeHtml,
+  formatarTelefoneComanda,
+  imprimirHtml
+} from '../../utils/comandaPrint';
 
 const INTERVALO_ATUALIZACAO_MS = 8000;
 
 const gerarHtmlComandas = (comandas) => {
+  const telefoneComanda = formatarTelefoneComanda(TELEFONE_RESTAURANTE);
   const cards = comandas.map((comanda) => {
     const itensHtml = Array.isArray(comanda.itens) && comanda.itens.length
       ? comanda.itens.map((item) => `<li>${escapeHtml(item?.nome || '-')}</li>`).join('')
@@ -15,7 +24,9 @@ const gerarHtmlComandas = (comandas) => {
       <article class="comanda">
         <div class="comanda-conteudo">
           <header class="comanda-topo">
-            <div class="fone-destaque">${TELEFONE_RESTAURANTE}</div>
+            <div class="marca-destaque">${escapeHtml(NOME_EMPRESA_COMANDA)}</div>
+            <div class="fone-destaque">WhatsApp: ${escapeHtml(telefoneComanda)}</div>
+            <div class="site-destaque">Delivery: ${escapeHtml(SITE_RESTAURANTE)}</div>
             <hr class="linha-divisoria" />
           </header>
 

@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { cardapioAPI } from '../../services/api';
+import { abrirImpressaoComandaChecklist } from '../../utils/comandaChecklistPrint';
+import { NOME_EMPRESA_COMANDA, SITE_RESTAURANTE, TELEFONE_RESTAURANTE, formatarTelefoneComanda } from '../../utils/comandaPrint';
 import '../../styles/comandaManualPage.css';
 
 const INTERVALO_ATUALIZACAO_MS = 8000;
@@ -68,6 +70,7 @@ export default function ComandaManualPage() {
     [itensCardapio]
   );
   const semCardapio = !itensProteina.length && !itensComplemento.length;
+  const telefoneComanda = formatarTelefoneComanda(TELEFONE_RESTAURANTE);
   const totalLinhas = Math.max(itensProteina.length, itensComplemento.length);
   const densidade = totalLinhas > 10
     ? 'micro'
@@ -86,6 +89,21 @@ export default function ComandaManualPage() {
         proximo.add(chaveItem);
       }
       return proximo;
+    });
+  };
+
+  const imprimirComandaManual = () => {
+    const proteinasSelecionadas = itensProteina.filter((item) => selecionados.has(`PROTEINA-${item.id}`));
+    const complementosSelecionados = itensComplemento.filter((item) => selecionados.has(`COMPLEMENTO-${item.id}`));
+
+    abrirImpressaoComandaChecklist({
+      tituloJanela: 'Comanda Manual',
+      nome: nome.trim(),
+      endereco: endereco.trim(),
+      itensProteina,
+      itensComplemento,
+      proteinasSelecionadas,
+      complementosSelecionados
     });
   };
 
@@ -128,7 +146,7 @@ export default function ComandaManualPage() {
                 />
               </label>
             </div>
-            <button className="btn btn-primary" onClick={() => window.print()} id="btn-imprimir-comanda-manual">
+            <button className="btn btn-primary" onClick={imprimirComandaManual} id="btn-imprimir-comanda-manual">
               Imprimir Comanda
             </button>
           </div>
@@ -138,9 +156,9 @@ export default function ComandaManualPage() {
               <article id="comanda-manual-print" className={`comanda-manual-print comanda comanda-vazia ${densidade}`}>
                 <div className="comanda-vazia-conteudo">
                 <header className="comanda-vazia-topo">
-                  <div className="comanda-vazia-titulo">R.Ribeiro</div>
-                  <div className="comanda-vazia-subinfo">WhatsApp: (85) 99658-6824</div>
-                  <div className="comanda-vazia-subinfo">Delivery: ribeirorestaurante.com</div>
+                  <div className="comanda-vazia-titulo">{NOME_EMPRESA_COMANDA}</div>
+                  <div className="comanda-vazia-subinfo">WhatsApp: {telefoneComanda}</div>
+                  <div className="comanda-vazia-subinfo">Delivery: {SITE_RESTAURANTE}</div>
                 </header>
 
                 <section className="comanda-vazia-campos">

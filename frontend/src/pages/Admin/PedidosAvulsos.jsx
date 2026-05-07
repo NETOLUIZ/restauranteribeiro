@@ -1,7 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { FiPrinter, FiCheck, FiFilter, FiTrash2 } from 'react-icons/fi';
 import { pedidoAvulsoAPI } from '../../services/api';
-import { COMANDA_PRINT_CSS, TELEFONE_RESTAURANTE, escapeHtml, imprimirHtml } from '../../utils/comandaPrint';
+import {
+  COMANDA_PRINT_CSS,
+  NOME_EMPRESA_COMANDA,
+  SITE_RESTAURANTE,
+  TELEFONE_RESTAURANTE,
+  escapeHtml,
+  formatarTelefoneComanda,
+  imprimirHtml
+} from '../../utils/comandaPrint';
 
 function formatarTamanhoMarmita(tamanhoMarmita) {
   if (tamanhoMarmita === 'GRANDE') return 'G';
@@ -16,6 +24,7 @@ function deveImprimirAutomaticamente(pedido) {
 }
 
 function gerarHtmlComanda(pedido) {
+  const telefoneComanda = formatarTelefoneComanda(TELEFONE_RESTAURANTE);
   const itensHtml = Array.isArray(pedido.itens) && pedido.itens.length
     ? pedido.itens.map((item) => `<li>${escapeHtml(item?.nome || '-')}</li>`).join('')
     : '<li>-</li>';
@@ -34,7 +43,9 @@ function gerarHtmlComanda(pedido) {
           <article class="comanda">
             <div class="comanda-conteudo">
               <header class="comanda-topo">
-                <div class="fone-destaque">${TELEFONE_RESTAURANTE}</div>
+                <div class="marca-destaque">${escapeHtml(NOME_EMPRESA_COMANDA)}</div>
+                <div class="fone-destaque">WhatsApp: ${escapeHtml(telefoneComanda)}</div>
+                <div class="site-destaque">Delivery: ${escapeHtml(SITE_RESTAURANTE)}</div>
                 <hr class="linha-divisoria" />
               </header>
 

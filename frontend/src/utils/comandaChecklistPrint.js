@@ -1,26 +1,18 @@
-import { COMANDA_PRINT_CSS, TELEFONE_RESTAURANTE, escapeHtml, imprimirHtml } from './comandaPrint';
+import {
+  COMANDA_PRINT_CSS,
+  NOME_EMPRESA_COMANDA,
+  SITE_RESTAURANTE,
+  TELEFONE_RESTAURANTE,
+  escapeHtml,
+  formatarTelefoneComanda,
+  imprimirHtml
+} from './comandaPrint';
 import {
   COMPLEMENTOS_COMANDA,
   PROTEINAS_COMANDA,
   normalizarChaveComanda,
   ordenarItensComanda
 } from '../constants/comandaOrder';
-
-const LINK_DELIVERY_COMANDA = 'ribeirorestaurante.com';
-
-const formatarTelefoneComanda = (telefone = '') => {
-  const digitos = String(telefone).replace(/\D/g, '');
-
-  if (digitos.length === 11) {
-    return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 7)}-${digitos.slice(7)}`;
-  }
-
-  if (digitos.length === 10) {
-    return `(${digitos.slice(0, 2)}) ${digitos.slice(2, 6)}-${digitos.slice(6)}`;
-  }
-
-  return telefone;
-};
 
 const criarSetMarcados = (itens = []) =>
   new Set(
@@ -93,9 +85,9 @@ const gerarCardComandaChecklist = ({
     <article class="comanda comanda-vazia ${densidade}">
       <div class="comanda-vazia-conteudo">
         <header class="comanda-vazia-topo">
-          <div class="comanda-vazia-titulo">R.Ribeiro</div>
+          <div class="comanda-vazia-titulo">${escapeHtml(NOME_EMPRESA_COMANDA)}</div>
           <div class="comanda-vazia-subinfo">WhatsApp: ${escapeHtml(whatsappComanda)}</div>
-          <div class="comanda-vazia-subinfo">Delivery: ${escapeHtml(LINK_DELIVERY_COMANDA)}</div>
+          <div class="comanda-vazia-subinfo">Delivery: ${escapeHtml(SITE_RESTAURANTE)}</div>
         </header>
 
         <section class="comanda-vazia-campos">
