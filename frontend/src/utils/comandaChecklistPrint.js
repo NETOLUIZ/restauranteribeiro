@@ -24,12 +24,12 @@ const criarSetMarcados = (itens = []) =>
 
 const obterNomeItem = (item) => (typeof item === 'string' ? item : item?.nome || '');
 
-const renderizarCampo = (label, valor) => `
+const renderizarCampo = (label, valor, classeValor = '') => `
   <div class="comanda-vazia-campo">
     <span class="comanda-vazia-label">${escapeHtml(label)}</span>
     ${
       valor
-        ? `<span class="comanda-vazia-valor">${escapeHtml(valor)}</span>`
+        ? `<span class="comanda-vazia-valor ${classeValor}">${escapeHtml(valor)}</span>`
         : '<span class="comanda-vazia-linha"></span>'
     }
   </div>
@@ -91,8 +91,8 @@ const gerarCardComandaChecklist = ({
         </header>
 
         <section class="comanda-vazia-campos">
-          ${renderizarCampo('Nome:', nome)}
-          ${renderizarCampo('Endereco:', endereco)}
+          ${renderizarCampo('Nome:', nome, 'comanda-vazia-valor-principal')}
+          ${renderizarCampo('Endereco:', endereco, 'comanda-vazia-valor-principal')}
         </section>
 
         <section class="comanda-vazia-colunas">
@@ -213,6 +213,11 @@ const COMANDA_CHECKLIST_PRINT_CSS = `
     line-height: 1;
     white-space: nowrap;
     text-overflow: ellipsis;
+  }
+
+  .comanda-vazia-valor-principal {
+    font-size: 3.5mm;
+    font-weight: 900;
   }
 
   .comanda-vazia-colunas {
@@ -347,6 +352,10 @@ const COMANDA_CHECKLIST_PRINT_CSS = `
     font-size: 2.9mm;
   }
 
+  .comanda-vazia.media .comanda-vazia-valor-principal {
+    font-size: 3.2mm;
+  }
+
   .comanda-vazia.media .comanda-vazia-coluna-titulo {
     min-height: 5.2mm;
     font-size: 3.1mm;
@@ -401,6 +410,10 @@ const COMANDA_CHECKLIST_PRINT_CSS = `
 
   .comanda-vazia.compacta .comanda-vazia-valor {
     font-size: 2.5mm;
+  }
+
+  .comanda-vazia.compacta .comanda-vazia-valor-principal {
+    font-size: 2.8mm;
   }
 
   .comanda-vazia.compacta .comanda-vazia-coluna-titulo {
@@ -467,6 +480,10 @@ const COMANDA_CHECKLIST_PRINT_CSS = `
 
   .comanda-vazia.micro .comanda-vazia-valor {
     font-size: 2.2mm;
+  }
+
+  .comanda-vazia.micro .comanda-vazia-valor-principal {
+    font-size: 2.45mm;
   }
 
   .comanda-vazia.micro .comanda-vazia-colunas {

@@ -160,6 +160,11 @@
   text-overflow: ellipsis;
 }
 
+.comanda-vazia-valor-principal {
+  font-size: 3.5mm;
+  font-weight: 900;
+}
+
 .comanda-vazia-colunas {
   flex: 1 1 auto;
   min-height: 0;
@@ -268,6 +273,10 @@
   font-size: 2.9mm;
 }
 
+.comanda-vazia.media .comanda-vazia-valor-principal {
+  font-size: 3.2mm;
+}
+
 .comanda-vazia.media .comanda-vazia-coluna-titulo {
   min-height: 5.2mm;
   font-size: 3.1mm;
@@ -321,6 +330,10 @@
 
 .comanda-vazia.compacta .comanda-vazia-valor {
   font-size: 2.5mm;
+}
+
+.comanda-vazia.compacta .comanda-vazia-valor-principal {
+  font-size: 2.8mm;
 }
 
 .comanda-vazia.compacta .comanda-vazia-coluna-titulo {
@@ -381,6 +394,10 @@
 
 .comanda-vazia.micro .comanda-vazia-valor {
   font-size: 2.2mm;
+}
+
+.comanda-vazia.micro .comanda-vazia-valor-principal {
+  font-size: 2.45mm;
 }
 
 .comanda-vazia.micro .comanda-vazia-colunas {

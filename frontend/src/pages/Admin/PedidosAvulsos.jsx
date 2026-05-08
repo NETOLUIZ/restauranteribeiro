@@ -23,12 +23,35 @@ function deveImprimirAutomaticamente(pedido) {
   return pedido.formaPagamento === 'PIX' && pedido.statusPagamento === 'CONFIRMADO';
 }
 
+const COMANDA_AVULSO_PRINT_CSS = `
+  .pedido-numero-topo {
+    width: 100%;
+    padding-left: 0.6mm;
+    font-size: 3.7mm;
+    font-weight: 900;
+    line-height: 1;
+    text-align: left;
+  }
+`;
+
+function limparCepEndereco(endereco = '') {
+  const texto = String(endereco || '').trim();
+
+  return texto
+    .replace(/\s*,?\s*CEP[:\s-]*\d{5}-?\d{3}\s*$/i, '')
+    .replace(/\s*,?\s*\d{5}-?\d{3}\s*$/i, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s*,\s*$/, '')
+    .trim();
+}
+
 function gerarHtmlComanda(pedido) {
   const telefoneComanda = formatarTelefoneComanda(TELEFONE_RESTAURANTE);
   const itensHtml = Array.isArray(pedido.itens) && pedido.itens.length
     ? pedido.itens.map((item) => `<li>${escapeHtml(item?.nome || '-')}</li>`).join('')
     : '<li>-</li>';
   const tamanhoMarmita = formatarTamanhoMarmita(pedido.tamanhoMarmita);
+  const enderecoSemCep = limparCepEndereco(pedido.endereco || '-');
 
   return `
     <html>
@@ -36,12 +59,15 @@ function gerarHtmlComanda(pedido) {
         <title>Comanda Pedido #${pedido.id}</title>
         <style>
           ${COMANDA_PRINT_CSS}
+          ${COMANDA_AVULSO_PRINT_CSS}
         </style>
       </head>
       <body>
         <div class="print-area">
           <article class="comanda">
             <div class="comanda-conteudo">
+              <div class="pedido-numero-topo">#${escapeHtml(pedido.id)}</div>
+
               <header class="comanda-topo">
                 <div class="marca-destaque">${escapeHtml(NOME_EMPRESA_COMANDA)}</div>
                 <div class="fone-destaque">WhatsApp: ${escapeHtml(telefoneComanda)}</div>
@@ -49,23 +75,14 @@ function gerarHtmlComanda(pedido) {
                 <hr class="linha-divisoria" />
               </header>
 
-              <section class="pedido-faixa">
-                <span class="pedido-titulo">PEDIDO:</span>
-                <strong class="pedido-numero">#${escapeHtml(pedido.id)}</strong>
-              </section>
-
               <section class="identificacao-card">
-                <div class="ident-linha">
-                  <span class="ident-label">&#127970; EMPRESA</span>
-                  <div class="ident-valor ident-empresa">PEDIDO AVULSO</div>
-                </div>
                 <div class="ident-linha">
                   <span class="ident-label">&#128100; NOME</span>
                   <div class="ident-valor ident-nome">${escapeHtml(pedido.nomeCliente || 'SEM NOME')}</div>
                 </div>
                 <div class="ident-linha">
                   <span class="ident-label">&#128205; ENDERECO</span>
-                  <div class="ident-valor ident-endereco">${escapeHtml(pedido.endereco || '-')}</div>
+                  <div class="ident-valor ident-endereco">${escapeHtml(enderecoSemCep || '-')}</div>
                 </div>
               </section>
 
