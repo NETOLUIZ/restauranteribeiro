@@ -13,7 +13,9 @@ import {
   FiCopy,
   FiClock,
   FiArrowLeft,
-  FiArrowRight
+  FiArrowRight,
+  FiDownload,
+  FiShare2
 } from 'react-icons/fi';
 import Navbar from '../components/Navbar';
 import CheckboxVerde from '../components/CheckboxVerde';
@@ -119,6 +121,16 @@ function montarEnderecoEntrega(dados) {
   return `${rua}, ${numero} - ${bairro}${complemento ? ` - Compl.: ${complemento}` : ''}${cep ? ` - CEP: ${cep}` : ''}`;
 }
 
+function formatarDataHoraComprovante(dataIso) {
+  const data = dataIso ? new Date(dataIso) : new Date();
+  if (Number.isNaN(data.getTime())) return '-';
+
+  return data.toLocaleString('pt-BR', {
+    dateStyle: 'short',
+    timeStyle: 'short'
+  });
+}
+
 export default function PedidoAvulso() {
   const location = useLocation();
 
@@ -135,6 +147,7 @@ export default function PedidoAvulso() {
   const [etapaAtual, setEtapaAtual] = useState(1);
   const [pixPagamento, setPixPagamento] = useState(null);
   const [pedidoDinheiro, setPedidoDinheiro] = useState(null);
+  const [comprovantePedido, setComprovantePedido] = useState(null);
   const [cepStatus, setCepStatus] = useState(null);
   const [cepBuscando, setCepBuscando] = useState(false);
   const [ultimoCepConsultado, setUltimoCepConsultado] = useState('');
@@ -308,6 +321,12 @@ export default function PedidoAvulso() {
           statusPedido: data.statusPagamento || 'PENDENTE'
         });
         setPedidoDinheiro(null);
+        setComprovantePedido({
+          pedidoId: pagamentoPix.pedidoId || data.pedidoId || data.id,
+          valorTotal: Number(data.valorTotal || valorTotal),
+          dataHora: data.createdAt || new Date().toISOString(),
+          formaPagamento: 'PIX'
+        });
         setMensagem({
           tipo: 'success',
           texto: 'Pedido enviado com sucesso! Aguardando pagamento via Pix.'
@@ -319,6 +338,12 @@ export default function PedidoAvulso() {
           valorTroco: data.valorTroco
         });
         setPixPagamento(null);
+        setComprovantePedido({
+          pedidoId: data.id || data.pedidoId,
+          valorTotal: Number(data.valorTotal || valorTotal),
+          dataHora: data.createdAt || new Date().toISOString(),
+          formaPagamento: 'DINHEIRO'
+        });
         setMensagem({
           tipo: 'success',
           texto: 'Pedido enviado com sucesso! O pagamento em dinheiro ficara pendente para confirmacao.'
@@ -339,6 +364,7 @@ export default function PedidoAvulso() {
     setDados(criarDadosEntregaVazios());
     setPixPagamento(null);
     setPedidoDinheiro(null);
+    setComprovantePedido(null);
     setMensagem(null);
     setEtapaAtual(1);
     setCepStatus(null);
@@ -367,6 +393,106 @@ export default function PedidoAvulso() {
       setMensagem({ tipo: 'success', texto: 'Codigo Pix copiado.' });
     } catch {
       setMensagem({ tipo: 'error', texto: 'Nao foi possivel copiar o codigo Pix.' });
+    }
+  };
+
+  const baixarComprovantePedido = () => {
+    if (!comprovantePedido?.pedidoId) return;
+
+    const statusComprovante = pixPagamento
+      ? statusPedidoPix
+      : pedidoDinheiro
+        ? statusPedidoDinheiro
+        : 'PENDENTE';
+    const statusTexto =
+      statusComprovante === 'CONFIRMADO'
+        ? 'Confirmado'
+        : statusComprovante === 'CANCELADO'
+          ? 'Cancelado'
+          : 'Pendente';
+    const textoComprovante = [
+      'Ribeiro Restaurante - Comprovante de Pedido',
+      `Pedido: #${comprovantePedido.pedidoId}`,
+      `Data: ${formatarDataHoraComprovante(comprovantePedido.dataHora)}`,
+      `Valor total: ${formatarMoeda(comprovantePedido.valorTotal)}`,
+      `Pagamento: ${comprovantePedido.formaPagamento === 'PIX' ? 'Pix' : 'Dinheiro'}`,
+      `Status: ${statusTexto}`
+    ].join('\n');
+
+    const arquivo = new Blob([textoComprovante], { type: 'text/plain;charset=utf-8' });
+    const url = window.URL.createObjectURL(arquivo);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `comprovante-pedido-${comprovantePedido.pedidoId}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    setMensagem({ tipo: 'success', texto: 'Comprovante baixado com sucesso.' });
+  };
+
+  const compartilharComprovantePedido = async () => {
+    if (!comprovantePedido?.pedidoId) return;
+
+    const statusComprovante = pixPagamento
+      ? statusPedidoPix
+      : pedidoDinheiro
+        ? statusPedidoDinheiro
+        : 'PENDENTE';
+    const statusTexto =
+      statusComprovante === 'CONFIRMADO'
+        ? 'Confirmado'
+        : statusComprovante === 'CANCELADO'
+          ? 'Cancelado'
+          : 'Pendente';
+    const textoComprovante = [
+      'Comprovante de pedido - Ribeiro Restaurante',
+      `Pedido #${comprovantePedido.pedidoId}`,
+      `Data: ${formatarDataHoraComprovante(comprovantePedido.dataHora)}`,
+      `Valor: ${formatarMoeda(comprovantePedido.valorTotal)}`,
+      `Pagamento: ${comprovantePedido.formaPagamento === 'PIX' ? 'Pix' : 'Dinheiro'}`,
+      `Status: ${statusTexto}`
+    ].join('\n');
+
+    if (navigator.share) {
+      try {
+        const arquivo = new File(
+          [textoComprovante],
+          `comprovante-pedido-${comprovantePedido.pedidoId}.txt`,
+          { type: 'text/plain' }
+        );
+
+        if (navigator.canShare?.({ files: [arquivo] })) {
+          await navigator.share({
+            title: `Comprovante Pedido #${comprovantePedido.pedidoId}`,
+            text: 'Segue o comprovante do pedido.',
+            files: [arquivo]
+          });
+        } else {
+          await navigator.share({
+            title: `Comprovante Pedido #${comprovantePedido.pedidoId}`,
+            text: textoComprovante
+          });
+        }
+
+        setMensagem({ tipo: 'success', texto: 'Comprovante compartilhado.' });
+        return;
+      } catch (error) {
+        if (error?.name === 'AbortError') {
+          return;
+        }
+      }
+    }
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(textoComprovante);
+        setMensagem({ tipo: 'success', texto: 'Compartilhamento indisponivel. Texto do comprovante copiado.' });
+      } else {
+        setMensagem({ tipo: 'error', texto: 'Seu navegador nao suporta compartilhamento automatico.' });
+      }
+    } catch {
+      setMensagem({ tipo: 'error', texto: 'Nao foi possivel compartilhar o comprovante.' });
     }
   };
 
@@ -502,6 +628,17 @@ export default function PedidoAvulso() {
   ];
   const statusPedidoPix = pixPagamento?.statusPedido || (pixPagamento?.status === 'approved' ? 'CONFIRMADO' : 'PENDENTE');
   const statusPedidoDinheiro = pedidoDinheiro?.statusPagamento || 'PENDENTE';
+  const statusComprovantePedido = pixPagamento
+    ? statusPedidoPix
+    : pedidoDinheiro
+      ? statusPedidoDinheiro
+      : 'PENDENTE';
+  const statusComprovantePedidoTexto =
+    statusComprovantePedido === 'CONFIRMADO'
+      ? 'Confirmado'
+      : statusComprovantePedido === 'CANCELADO'
+        ? 'Cancelado'
+        : 'Pendente';
   const statusPixTexto =
     statusPedidoPix === 'CONFIRMADO'
       ? 'Pagamento confirmado'
@@ -1036,6 +1173,47 @@ export default function PedidoAvulso() {
                           onClick={resetarPedido}
                         >
                           Novo pedido
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {comprovantePedido && (
+                    <div className="pedido-comprovante-card" aria-live="polite">
+                      <h4>Comprovante do pedido</h4>
+                      <div className="pedido-comprovante-grid">
+                        <div>
+                          <span className="pedido-comprovante-label">Numero do pedido</span>
+                          <strong>#{comprovantePedido.pedidoId}</strong>
+                        </div>
+                        <div>
+                          <span className="pedido-comprovante-label">Data da compra</span>
+                          <strong>{formatarDataHoraComprovante(comprovantePedido.dataHora)}</strong>
+                        </div>
+                        <div>
+                          <span className="pedido-comprovante-label">Valor da compra</span>
+                          <strong>{formatarMoeda(comprovantePedido.valorTotal)}</strong>
+                        </div>
+                        <div>
+                          <span className="pedido-comprovante-label">Status</span>
+                          <strong>{statusComprovantePedidoTexto}</strong>
+                        </div>
+                      </div>
+
+                      <div className="pedido-comprovante-acoes">
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={baixarComprovantePedido}
+                        >
+                          <FiDownload size={16} /> Baixar comprovante
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          onClick={compartilharComprovantePedido}
+                        >
+                          <FiShare2 size={16} /> Compartilhar
                         </button>
                       </div>
                     </div>

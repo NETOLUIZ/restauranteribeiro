@@ -13,8 +13,8 @@ export default function CadastroEmpresas() {
   const [modalSenha, setModalSenha] = useState(null);
   const [modalPedidoEmpresa, setModalPedidoEmpresa] = useState(null);
 
-  const [formEmpresa, setFormEmpresa] = useState({ nome: '', sigla: '', senha: '', totalPedidos: 40 });
-  const [formEditar, setFormEditar] = useState({ totalPedidos: 0 });
+  const [formEmpresa, setFormEmpresa] = useState({ nome: '', sigla: '', senha: '', totalPedidos: 40, valorMarmita: '0' });
+  const [formEditar, setFormEditar] = useState({ totalPedidos: 0, valorMarmita: '0' });
   const [formSenha, setFormSenha] = useState({ senha: '', confirmarSenha: '' });
   const [quantidadeLote, setQuantidadeLote] = useState('1');
   const [enderecoLote, setEnderecoLote] = useState('');
@@ -74,7 +74,7 @@ export default function CadastroEmpresas() {
 
     try {
       await empresaAPI.criar(formEmpresa);
-      setFormEmpresa({ nome: '', sigla: '', senha: '', totalPedidos: 40 });
+      setFormEmpresa({ nome: '', sigla: '', senha: '', totalPedidos: 40, valorMarmita: '0' });
       setModalEmpresa(false);
       carregar();
     } catch (err) {
@@ -84,7 +84,10 @@ export default function CadastroEmpresas() {
 
   const abrirEditar = (empresa) => {
     setModalEditar(empresa);
-    setFormEditar({ totalPedidos: empresa.totalPedidos || 0 });
+    setFormEditar({
+      totalPedidos: empresa.totalPedidos || 0,
+      valorMarmita: String(empresa.valorMarmita ?? 0)
+    });
   };
 
   const salvarEdicao = async () => {
@@ -92,7 +95,8 @@ export default function CadastroEmpresas() {
 
     try {
       await empresaAPI.atualizar(modalEditar.id, {
-        totalPedidos: parseInt(formEditar.totalPedidos, 10) || 0
+        totalPedidos: parseInt(formEditar.totalPedidos, 10) || 0,
+        valorMarmita: Number(String(formEditar.valorMarmita).replace(',', '.')) || 0
       });
       setModalEditar(null);
       carregar();
@@ -355,6 +359,18 @@ export default function CadastroEmpresas() {
                   id="input-total-pedidos"
                 />
               </div>
+              <div className="form-group">
+                <label className="form-label">Valor da Marmita (R$)</label>
+                <input
+                  className="form-input"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={formEmpresa.valorMarmita}
+                  onChange={e => setFormEmpresa({ ...formEmpresa, valorMarmita: e.target.value })}
+                  id="input-valor-marmita-empresa"
+                />
+              </div>
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setModalEmpresa(false)}>Cancelar</button>
@@ -384,6 +400,18 @@ export default function CadastroEmpresas() {
                   value={formEditar.totalPedidos}
                   onChange={e => setFormEditar({ totalPedidos: e.target.value })}
                   id="input-editar-total-pedidos"
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Valor da Marmita (R$)</label>
+                <input
+                  className="form-input"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={formEditar.valorMarmita}
+                  onChange={e => setFormEditar((anterior) => ({ ...anterior, valorMarmita: e.target.value }))}
+                  id="input-editar-valor-marmita"
                 />
               </div>
             </div>
@@ -755,6 +783,9 @@ export default function CadastroEmpresas() {
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
               <span className="badge badge-info">SIGLA: {empresa.sigla || '-'}</span>
               <span className="badge badge-info">{empresa.totalPedidos} pedidos/dia</span>
+              <span className="badge badge-info">
+                Valor marmita: {Number(empresa.valorMarmita || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              </span>
               <span className="badge badge-warning">{empresa._count?.pedidos || 0} pedidos feitos</span>
             </div>
 

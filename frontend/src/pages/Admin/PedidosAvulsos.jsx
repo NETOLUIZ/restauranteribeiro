@@ -235,13 +235,35 @@ export default function PedidosAvulsos() {
         Impressao automatica: dinheiro imprime assim que chega; Pix imprime apos confirmacao. Reimpressao continua disponivel.
       </p>
 
+      <div className="pedido-avulso-legenda" aria-label="Legenda de status visual dos pedidos avulsos">
+        <span className="pedido-avulso-legenda-item">
+          <span className="pedido-avulso-legenda-ponto novo" aria-hidden="true"></span>
+          Novo
+        </span>
+        <span className="pedido-avulso-legenda-item">
+          <span className="pedido-avulso-legenda-ponto processado" aria-hidden="true"></span>
+          Processado (Impresso/Autorizado)
+        </span>
+        <span className="pedido-avulso-legenda-item">
+          <span className="pedido-avulso-legenda-ponto cancelado" aria-hidden="true"></span>
+          Cancelado
+        </span>
+      </div>
+
       {pedidos.map(pedido => {
         const pedidoConfirmado = pedido.statusPagamento === 'CONFIRMADO';
+        const pedidoProcessado = pedido.impresso || (pedido.formaPagamento === 'DINHEIRO' && pedidoConfirmado);
+        const classeVisualCard =
+          pedido.statusPagamento === 'CANCELADO'
+            ? 'avulso-cancelado'
+            : pedidoProcessado
+              ? 'avulso-processado'
+              : 'avulso-novo';
         const podeImprimirManual =
           (pedido.formaPagamento === 'DINHEIRO' && pedido.statusPagamento !== 'CANCELADO') || pedidoConfirmado;
 
         return (
-        <div key={pedido.id} className={`pedido-admin-card ${pedido.statusPagamento.toLowerCase()}`} id={`pedido-avulso-${pedido.id}`}>
+        <div key={pedido.id} className={`pedido-admin-card ${pedido.statusPagamento.toLowerCase()} ${classeVisualCard}`} id={`pedido-avulso-${pedido.id}`}>
           <div className="pedido-admin-card-header">
             <div>
               <strong style={{ fontSize: '1rem' }}>Pedido #{pedido.id}</strong>

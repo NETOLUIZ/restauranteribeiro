@@ -63,7 +63,8 @@ async function main() {
         nome: 'Empresa Exemplo Ltda',
         sigla: 'EXEMPLO',
         senha: senhaEmpresa,
-        totalPedidos: 40
+        totalPedidos: 40,
+        valorMarmita: 20
       }
     });
   } else {
@@ -74,6 +75,7 @@ async function main() {
         sigla: 'EXEMPLO',
         senha: senhaEmpresa,
         totalPedidos: 40,
+        valorMarmita: 20,
         ativo: true
       }
     });

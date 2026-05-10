@@ -72,6 +72,7 @@ model Empresa {
   sigla              String?              @unique
   senha              String?
   totalPedidos       Int
+  valorMarmita       Float                @default(0)
   funcionarios       Usuario[]
   funcionariosSalvos EmpresaFuncionario[]
   pedidos            PedidoEmpresa[]

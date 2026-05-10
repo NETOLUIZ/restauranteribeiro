@@ -541,6 +541,61 @@
   min-height: 42px;
 }
 
+.pedido-comprovante-card {
+  margin-top: 18px;
+  border: 1px solid rgba(21, 138, 82, 0.22);
+  border-radius: var(--radius-md);
+  background: var(--branco);
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.pedido-comprovante-card h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--verde-escuro);
+}
+
+.pedido-comprovante-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+}
+
+.pedido-comprovante-grid > div {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--cinza-200);
+  border-radius: var(--radius-sm);
+  background: var(--cinza-50);
+}
+
+.pedido-comprovante-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--cinza-600);
+  text-transform: uppercase;
+  letter-spacing: 0.35px;
+}
+
+.pedido-comprovante-grid strong {
+  font-size: 0.92rem;
+  color: var(--preto);
+}
+
+.pedido-comprovante-acoes {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pedido-comprovante-acoes .btn {
+  min-height: 42px;
+}
+
 @keyframes pagamentoGlow {
   0%, 100% {
     box-shadow: 0 10px 20px rgba(21, 138, 82, 0.14);
@@ -800,6 +855,14 @@
   }
 
   .pix-acoes .btn {
+    width: 100%;
+  }
+
+  .pedido-comprovante-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pedido-comprovante-acoes .btn {
     width: 100%;
   }
 

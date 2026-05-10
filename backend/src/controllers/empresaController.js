@@ -8,6 +8,7 @@ function mapEmpresaPublic(empresa) {
     nome: empresa.nome,
     sigla: empresa.sigla,
     totalPedidos: empresa.totalPedidos,
+    valorMarmita: empresa.valorMarmita,
     ativo: empresa.ativo,
     createdAt: empresa.createdAt,
     updatedAt: empresa.updatedAt
@@ -49,6 +50,7 @@ async function listar(req, res) {
         nome: true,
         sigla: true,
         totalPedidos: true,
+        valorMarmita: true,
         ativo: true,
         createdAt: true,
         updatedAt: true,
@@ -73,7 +75,7 @@ async function listar(req, res) {
 // Criar empresa
 async function criar(req, res) {
   try {
-    const { nome, sigla, senha, totalPedidos } = req.body;
+    const { nome, sigla, senha, totalPedidos, valorMarmita } = req.body;
 
     if (!nome || !sigla || !senha) {
       return res.status(400).json({ erro: 'Informe nome, sigla e senha da empresa' });
@@ -82,6 +84,7 @@ async function criar(req, res) {
     const siglaNormalizada = String(sigla).trim().toUpperCase();
     const nomeNormalizado = String(nome).trim();
     const totalPedidosFinal = parseInt(totalPedidos, 10) || 40;
+    const valorMarmitaFinal = Number(valorMarmita);
 
     const existente = await prisma.empresa.findUnique({ where: { sigla: siglaNormalizada } });
     if (existente) {
@@ -95,7 +98,10 @@ async function criar(req, res) {
         nome: nomeNormalizado,
         sigla: siglaNormalizada,
         senha: senhaHash,
-        totalPedidos: totalPedidosFinal
+        totalPedidos: totalPedidosFinal,
+        valorMarmita: Number.isFinite(valorMarmitaFinal) && valorMarmitaFinal >= 0
+          ? Number(valorMarmitaFinal.toFixed(2))
+          : 0
       }
     });
 
@@ -110,11 +116,18 @@ async function criar(req, res) {
 async function atualizar(req, res) {
   try {
     const { id } = req.params;
-    const { nome, totalPedidos, ativo, sigla, senha } = req.body;
+    const { nome, totalPedidos, ativo, sigla, senha, valorMarmita } = req.body;
 
     const data = {};
     if (nome !== undefined) data.nome = String(nome).trim();
     if (totalPedidos !== undefined) data.totalPedidos = parseInt(totalPedidos, 10) || 0;
+    if (valorMarmita !== undefined) {
+      const valor = Number(valorMarmita);
+      if (!Number.isFinite(valor) || valor < 0) {
+        return res.status(400).json({ erro: 'Valor da marmita invalido' });
+      }
+      data.valorMarmita = Number(valor.toFixed(2));
+    }
     if (ativo !== undefined) data.ativo = !!ativo;
     if (sigla !== undefined) data.sigla = String(sigla).trim().toUpperCase();
     if (senha) data.senha = await bcrypt.hash(String(senha), 10);

@@ -243,13 +243,23 @@ async function historico(req, res) {
 
     const porEmpresa = {};
     pedidos.forEach((p) => {
-      const nomeEmpresa = p.empresa.nome;
-      if (!porEmpresa[nomeEmpresa]) {
-        porEmpresa[nomeEmpresa] = { total: 0, pedidos: [] };
+      const empresaId = String(p.empresa.id);
+      if (!porEmpresa[empresaId]) {
+        porEmpresa[empresaId] = {
+          empresaId: p.empresa.id,
+          nomeEmpresa: p.empresa.nome,
+          valorMarmita: Number(p.empresa.valorMarmita || 0),
+          total: 0,
+          totalValor: 0,
+          pedidos: []
+        };
       }
       const qtd = p.lotes.reduce((s, l) => s + l.quantidade, 0);
-      porEmpresa[nomeEmpresa].total += qtd;
-      porEmpresa[nomeEmpresa].pedidos.push(p);
+      porEmpresa[empresaId].total += qtd;
+      porEmpresa[empresaId].totalValor = Number(
+        (porEmpresa[empresaId].total * porEmpresa[empresaId].valorMarmita).toFixed(2)
+      );
+      porEmpresa[empresaId].pedidos.push(p);
     });
 
     res.json(porEmpresa);
