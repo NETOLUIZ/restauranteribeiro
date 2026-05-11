@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FiMenu, FiX, FiLogOut, FiClipboard } from 'react-icons/fi';
 import { useAuth } from '../context/useAuth';
 
@@ -9,7 +9,9 @@ export default function Navbar() {
     typeof window !== 'undefined' ? window.matchMedia('(max-width: 768px)').matches : false
   );
   const { usuario, logout } = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
+  const exibirBotaoSair = !!usuario && location.pathname !== '/';
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(max-width: 768px)');
@@ -50,7 +52,7 @@ export default function Navbar() {
           <Link to="/pedido">Fazer Pedido</Link>
           {!usuario && <Link to="/empresa/login">Area da Empresa</Link>}
           {usuario && usuario.role === 'EMPRESA_FUNC' && <Link to="/empresa/pedidos">Meus Pedidos</Link>}
-          {usuario && (
+          {exibirBotaoSair && (
             <button onClick={handleLogout} className="btn btn-sm btn-secondary">
               <FiLogOut size={16} /> Sair
             </button>
@@ -75,7 +77,7 @@ export default function Navbar() {
           <Link to="/pedido" onClick={() => setMenuAberto(false)}>Fazer Pedido</Link>
           {!usuario && <Link to="/empresa/login" onClick={() => setMenuAberto(false)}>Area da Empresa</Link>}
           {usuario && usuario.role === 'EMPRESA_FUNC' && <Link to="/empresa/pedidos" onClick={() => setMenuAberto(false)}>Meus Pedidos</Link>}
-          {usuario && (
+          {exibirBotaoSair && (
             <button onClick={handleLogout}>
               <FiLogOut size={16} /> Sair
             </button>
