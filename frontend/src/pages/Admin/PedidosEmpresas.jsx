@@ -53,7 +53,11 @@ const gerarHtmlComandas = (comandas) => {
   const telefoneComanda = formatarTelefoneComanda(TELEFONE_RESTAURANTE);
   const cards = comandas.map((comanda) => {
     const itensFormatados = agruparItensComQuantidade(comanda.itens);
-    const classeItens = itensFormatados.length > 12
+    const classeItens = itensFormatados.length > 24
+      ? 'itens-lista itens-lista-ultra'
+      : itensFormatados.length > 18
+      ? 'itens-lista itens-lista-nano'
+      : itensFormatados.length > 12
       ? 'itens-lista itens-lista-micro'
       : itensFormatados.length > 8
         ? 'itens-lista itens-lista-compacta'
@@ -63,17 +67,14 @@ const gerarHtmlComandas = (comandas) => {
     return `
       <article class="comanda">
         <div class="comanda-conteudo">
+          <div class="pedido-indice-topo">${comanda.numero}/${comandas.length}</div>
+
           <header class="comanda-topo">
             <div class="marca-destaque">${escapeHtml(NOME_EMPRESA_COMANDA)}</div>
             <div class="fone-destaque">WhatsApp: ${escapeHtml(telefoneComanda)}</div>
             <div class="site-destaque">Delivery: ${escapeHtml(SITE_RESTAURANTE)}</div>
             <hr class="linha-divisoria" />
           </header>
-
-          <section class="pedido-faixa">
-            <span class="pedido-titulo">PEDIDO:</span>
-            <strong class="pedido-numero">${comanda.numero}/${comandas.length}</strong>
-          </section>
 
           <section class="identificacao-card">
             <div class="ident-linha">
@@ -118,6 +119,26 @@ const gerarHtmlComandas = (comandas) => {
         <title>Comandas</title>
         <style>
           ${COMANDA_PRINT_CSS}
+          .comanda-conteudo {
+            position: relative;
+          }
+          .comanda-topo {
+            padding-top: 1.8mm;
+          }
+          .pedido-indice-topo {
+            position: absolute;
+            top: 0.75mm;
+            right: 1.2mm;
+            padding: 0.15mm 1.1mm 0.05mm;
+            border: 0.35mm solid #000;
+            border-radius: 0.9mm;
+            background: #fff;
+            color: #000;
+            font-size: 3.6mm;
+            font-weight: 900;
+            line-height: 1;
+            letter-spacing: 0.15mm;
+          }
           .itens-lista-compacta {
             font-size: 2.55mm;
             line-height: 1.05;
@@ -129,6 +150,27 @@ const gerarHtmlComandas = (comandas) => {
             line-height: 1.02;
             column-gap: 2.8mm;
             padding: 0.6mm 0.85mm 0.55mm 3.6mm;
+          }
+          .itens-lista-nano {
+            font-size: 1.95mm;
+            line-height: 1;
+            column-gap: 2.2mm;
+            padding: 0.45mm 0.7mm 0.45mm 3.2mm;
+          }
+          .itens-lista-nano li {
+            margin: 0 0 0.35mm;
+            padding-left: 0.1mm;
+          }
+          .itens-lista-ultra {
+            font-size: 1.8mm;
+            line-height: 0.98;
+            column-count: 1;
+            column-gap: 0;
+            padding: 0.4mm 0.65mm 0.4mm 3mm;
+          }
+          .itens-lista-ultra li {
+            margin: 0 0 0.28mm;
+            padding-left: 0.1mm;
           }
         </style>
       </head>
