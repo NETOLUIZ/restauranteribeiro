@@ -628,10 +628,22 @@ export default function PedidoAvulso() {
   ];
   const statusPedidoPix = pixPagamento?.statusPedido || (pixPagamento?.status === 'approved' ? 'CONFIRMADO' : 'PENDENTE');
   const statusPedidoDinheiro = pedidoDinheiro?.statusPagamento || 'PENDENTE';
+  const statusPedidoPixExibicao =
+    statusPedidoPix === 'CANCELADO'
+      ? 'CANCELADO'
+      : pixPagamento
+        ? 'CONFIRMADO'
+        : statusPedidoPix;
+  const statusPedidoDinheiroExibicao =
+    statusPedidoDinheiro === 'CANCELADO'
+      ? 'CANCELADO'
+      : pedidoDinheiro
+        ? 'CONFIRMADO'
+        : statusPedidoDinheiro;
   const statusComprovantePedido = pixPagamento
-    ? statusPedidoPix
+    ? statusPedidoPixExibicao
     : pedidoDinheiro
-      ? statusPedidoDinheiro
+      ? statusPedidoDinheiroExibicao
       : 'PENDENTE';
   const statusComprovantePedidoTexto =
     statusComprovantePedido === 'CONFIRMADO'
@@ -640,22 +652,22 @@ export default function PedidoAvulso() {
         ? 'Cancelado'
         : 'Pendente';
   const statusPixTexto =
-    statusPedidoPix === 'CONFIRMADO'
+    statusPedidoPixExibicao === 'CONFIRMADO'
       ? 'Pagamento confirmado'
-      : statusPedidoPix === 'CANCELADO'
+      : statusPedidoPixExibicao === 'CANCELADO'
         ? 'Pagamento cancelado'
         : 'Aguardando pagamento';
   const avisoPedidoCliente = (() => {
     if (pixPagamento) {
-      if (statusPedidoPix === 'CONFIRMADO') {
+      if (statusPedidoPixExibicao === 'CONFIRMADO') {
         return {
           classe: 'sucesso',
           titulo: `Pedido #${pixPagamento.pedidoId} confirmado com sucesso`,
-          texto: 'Pix aprovado. Agora e so aguardar o preparo e a entrega do seu pedido.'
+          texto: 'Pedido realizado e encaminhado para producao. Agora e so aguardar o preparo e a entrega.'
         };
       }
 
-      if (statusPedidoPix === 'CANCELADO') {
+      if (statusPedidoPixExibicao === 'CANCELADO') {
         return {
           classe: 'erro',
           titulo: `Pedido #${pixPagamento.pedidoId} com pagamento cancelado`,
@@ -666,23 +678,23 @@ export default function PedidoAvulso() {
       return {
         classe: 'pendente',
         titulo: `Pedido #${pixPagamento.pedidoId} enviado com sucesso`,
-        texto: 'Falta apenas pagar o Pix abaixo para confirmar o pedido no sistema.'
+        texto: 'Pedido realizado e encaminhado para producao. Falta apenas pagar o Pix abaixo para confirmar no sistema.'
       };
     }
 
     if (pedidoDinheiro) {
-      if (statusPedidoDinheiro === 'CONFIRMADO') {
+      if (statusPedidoDinheiroExibicao === 'CONFIRMADO') {
         return {
           classe: 'sucesso',
           titulo: `Pedido #${pedidoDinheiro.id} confirmado com sucesso`,
-          texto: 'Nossa equipe ja validou o pagamento em dinheiro. Agora e so aguardar a entrega.'
+          texto: 'Pedido realizado e encaminhado para producao. Agora e so aguardar a entrega.'
         };
       }
 
       return {
         classe: 'pendente',
         titulo: `Pedido #${pedidoDinheiro.id} enviado com sucesso`,
-        texto: 'Seu pedido foi registrado. O pagamento em dinheiro sera confirmado pela equipe.'
+        texto: 'Pedido realizado e encaminhado para producao. O pagamento em dinheiro sera confirmado pela equipe.'
       };
     }
 
@@ -1108,8 +1120,8 @@ export default function PedidoAvulso() {
 
                   {pixPagamento && (
                     <div className="pix-pagamento-card" aria-live="polite">
-                      <div className={`pix-status pix-status-${statusPedidoPix.toLowerCase()}`}>
-                        {statusPedidoPix === 'CONFIRMADO' ? <FiCheckCircle size={18} /> : <FiClock size={18} />}
+                      <div className={`pix-status pix-status-${statusPedidoPixExibicao.toLowerCase()}`}>
+                        {statusPedidoPixExibicao === 'CONFIRMADO' ? <FiCheckCircle size={18} /> : <FiClock size={18} />}
                         <span>{statusPixTexto}</span>
                       </div>
 
@@ -1155,11 +1167,12 @@ export default function PedidoAvulso() {
                     <div className="pix-pagamento-card" aria-live="polite">
                       <div className="pix-status">
                         <FiDollarSign size={18} />
-                        <span>Pagamento em dinheiro pendente</span>
+                        <span>Pagamento confirmado</span>
                       </div>
 
                       <div className="pag-textos">
                         <span className="pag-label">Pedido #{pedidoDinheiro.id} enviado</span>
+                        <span className="pag-desc">Pedido realizado e encaminhado para producao.</span>
                         <span className="pag-desc">A equipe vai confirmar o recebimento do dinheiro na entrega.</span>
                         {pedidoDinheiro.valorTroco != null && (
                           <span className="pag-desc">Troco para {formatarMoeda(pedidoDinheiro.valorTroco)}.</span>

@@ -34,9 +34,16 @@ export default function EmpresaLogin({ modo = 'empresa' }) {
     setCarregando(true);
 
     try {
+      const identificadorLimpo = identificador.trim();
+      if (!isAdminLogin && identificadorLimpo.includes('@')) {
+        setErro('No acesso da empresa, informe a sigla (ex: EXEMPLO). Para administrador, use /admin/login.');
+        setCarregando(false);
+        return;
+      }
+
       const credenciais = isAdminLogin
-        ? { email: identificador.trim().toLowerCase(), senha }
-        : { sigla: identificador.trim().toUpperCase(), senha };
+        ? { email: identificadorLimpo.toLowerCase(), senha }
+        : { sigla: identificadorLimpo.toUpperCase(), senha };
 
       const usuarioLogado = await login(credenciais);
 

@@ -1,6 +1,12 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
+function parseDataLocal(dataString) {
+  const [ano, mes, dia] = String(dataString || '').split('-').map((parte) => parseInt(parte, 10));
+  if (!ano || !mes || !dia) return null;
+  return new Date(ano, mes - 1, dia, 0, 0, 0, 0);
+}
+
 async function criar(req, res) {
   try {
     const isEmpresa = req.usuario.role === 'EMPRESA_FUNC';
@@ -218,17 +224,38 @@ async function deletar(req, res) {
 
 async function historico(req, res) {
   try {
-    const { empresaId, semana, mes } = req.query;
+    const { empresaId, semana, mes, dataInicio, dataFim } = req.query;
     const where = {};
 
     if (empresaId) where.empresaId = parseInt(empresaId, 10);
 
-    if (semana) {
+    if (dataInicio || dataFim) {
+      const inicioPeriodo = dataInicio ? parseDataLocal(dataInicio) : null;
+      const fimPeriodo = dataFim ? parseDataLocal(dataFim) : null;
+
+      if ((dataInicio && !inicioPeriodo) || (dataFim && !fimPeriodo)) {
+        return res.status(400).json({ erro: 'Datas invalidas para o filtro do historico' });
+      }
+
+      const createdAt = {};
+      if (inicioPeriodo) {
+        createdAt.gte = inicioPeriodo;
+      }
+      if (fimPeriodo) {
+        const fimExclusivo = new Date(fimPeriodo);
+        fimExclusivo.setDate(fimExclusivo.getDate() + 1);
+        createdAt.lt = fimExclusivo;
+      }
+
+      where.createdAt = createdAt;
+    }
+
+    if (!where.createdAt && semana) {
       const inicioSemana = new Date(semana);
       const fimSemana = new Date(semana);
       fimSemana.setDate(fimSemana.getDate() + 7);
       where.createdAt = { gte: inicioSemana, lt: fimSemana };
-    } else if (mes) {
+    } else if (!where.createdAt && mes) {
       const [ano, mesNum] = mes.split('-');
       const inicioMes = new Date(parseInt(ano, 10), parseInt(mesNum, 10) - 1, 1);
       const fimMes = new Date(parseInt(ano, 10), parseInt(mesNum, 10), 1);
@@ -237,7 +264,23 @@ async function historico(req, res) {
 
     const pedidos = await prisma.pedidoEmpresa.findMany({
       where,
-      include: { lotes: true, empresa: true },
+      select: {
+        id: true,
+        createdAt: true,
+        status: true,
+        lotes: {
+          select: {
+            quantidade: true
+          }
+        },
+        empresa: {
+          select: {
+            id: true,
+            nome: true,
+            valorMarmita: true
+          }
+        }
+      },
       orderBy: { createdAt: 'desc' }
     });
 
@@ -254,12 +297,18 @@ async function historico(req, res) {
           pedidos: []
         };
       }
+
       const qtd = p.lotes.reduce((s, l) => s + l.quantidade, 0);
       porEmpresa[empresaId].total += qtd;
       porEmpresa[empresaId].totalValor = Number(
         (porEmpresa[empresaId].total * porEmpresa[empresaId].valorMarmita).toFixed(2)
       );
-      porEmpresa[empresaId].pedidos.push(p);
+      porEmpresa[empresaId].pedidos.push({
+        id: p.id,
+        createdAt: p.createdAt,
+        status: p.status,
+        lotes: p.lotes
+      });
     });
 
     res.json(porEmpresa);

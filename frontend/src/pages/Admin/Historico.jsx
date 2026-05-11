@@ -2,15 +2,29 @@ import { useState, useEffect } from 'react';
 import { FiCalendar, FiSearch } from 'react-icons/fi';
 import { pedidoEmpresaAPI, empresaAPI } from '../../services/api';
 
+function formatarDataInput(data) {
+  const ano = data.getFullYear();
+  const mes = String(data.getMonth() + 1).padStart(2, '0');
+  const dia = String(data.getDate()).padStart(2, '0');
+  return `${ano}-${mes}-${dia}`;
+}
+
+function primeiroDiaMes(data = new Date()) {
+  return formatarDataInput(new Date(data.getFullYear(), data.getMonth(), 1));
+}
+
+function ultimoDiaMes(data = new Date()) {
+  return formatarDataInput(new Date(data.getFullYear(), data.getMonth() + 1, 0));
+}
+
 export default function Historico() {
   const [historico, setHistorico] = useState({});
   const [empresas, setEmpresas] = useState([]);
   const [valoresMarmita, setValoresMarmita] = useState({});
   const [salvandoEmpresaId, setSalvandoEmpresaId] = useState(null);
   const [filtroEmpresa, setFiltroEmpresa] = useState('');
-  const [filtroTipo, setFiltroTipo] = useState('mes');
-  const [filtroMes, setFiltroMes] = useState(new Date().toISOString().slice(0, 7));
-  const [filtroSemana, setFiltroSemana] = useState(new Date().toISOString().slice(0, 10));
+  const [filtroDataInicio, setFiltroDataInicio] = useState(() => primeiroDiaMes(new Date()));
+  const [filtroDataFim, setFiltroDataFim] = useState(() => ultimoDiaMes(new Date()));
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
@@ -21,10 +35,11 @@ export default function Historico() {
     let ativo = true;
     const params = {};
 
-    if (filtroTipo === 'semana') {
-      params.semana = filtroSemana;
-    } else {
-      params.mes = filtroMes;
+    if (filtroDataInicio) {
+      params.dataInicio = filtroDataInicio;
+    }
+    if (filtroDataFim) {
+      params.dataFim = filtroDataFim;
     }
     if (filtroEmpresa) params.empresaId = filtroEmpresa;
 
@@ -50,7 +65,7 @@ export default function Historico() {
     return () => {
       ativo = false;
     };
-  }, [filtroEmpresa, filtroMes, filtroSemana, filtroTipo]);
+  }, [filtroDataFim, filtroDataInicio, filtroEmpresa]);
 
   const formatarMoeda = (valor) => Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -92,42 +107,28 @@ export default function Historico() {
   return (
     <div id="historico-admin">
       <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
-        <div className="form-group" style={{ margin: 0, minWidth: '180px' }}>
-          <label className="form-label"><FiCalendar size={14} /> Periodo</label>
-          <select
-            className="form-select"
-            value={filtroTipo}
-            onChange={e => setFiltroTipo(e.target.value)}
-            id="filtro-tipo-periodo"
-          >
-            <option value="mes">Mes</option>
-            <option value="semana">Semana</option>
-          </select>
+        <div className="form-group" style={{ margin: 0, minWidth: '220px' }}>
+          <label className="form-label"><FiCalendar size={14} /> Data inicial</label>
+          <input
+            className="form-input"
+            type="date"
+            value={filtroDataInicio}
+            onChange={e => setFiltroDataInicio(e.target.value)}
+            id="filtro-data-inicial"
+          />
         </div>
 
-        {filtroTipo === 'mes' ? (
-          <div className="form-group" style={{ margin: 0, minWidth: '200px' }}>
-            <label className="form-label"><FiCalendar size={14} /> Mes</label>
-            <input
-              className="form-input"
-              type="month"
-              value={filtroMes}
-              onChange={e => setFiltroMes(e.target.value)}
-              id="filtro-mes"
-            />
-          </div>
-        ) : (
-          <div className="form-group" style={{ margin: 0, minWidth: '220px' }}>
-            <label className="form-label"><FiCalendar size={14} /> Inicio da Semana</label>
-            <input
-              className="form-input"
-              type="date"
-              value={filtroSemana}
-              onChange={e => setFiltroSemana(e.target.value)}
-              id="filtro-semana"
-            />
-          </div>
-        )}
+        <div className="form-group" style={{ margin: 0, minWidth: '220px' }}>
+          <label className="form-label"><FiCalendar size={14} /> Data final</label>
+          <input
+            className="form-input"
+            type="date"
+            value={filtroDataFim}
+            min={filtroDataInicio || undefined}
+            onChange={e => setFiltroDataFim(e.target.value)}
+            id="filtro-data-final"
+          />
+        </div>
 
         <div className="form-group" style={{ margin: 0, minWidth: '200px' }}>
           <label className="form-label"><FiSearch size={14} /> Empresa</label>
