@@ -335,7 +335,7 @@ export default function PedidoAvulso() {
         });
         setMensagem({
           tipo: 'success',
-          texto: 'Pedido enviado com sucesso! Aguardando pagamento via Pix.'
+          texto: 'Pix gerado com sucesso. O pedido sera liberado apos a confirmacao do pagamento.'
         });
       } else {
         setPedidoDinheiro({
@@ -672,7 +672,7 @@ export default function PedidoAvulso() {
       ? 'Pagamento confirmado'
       : statusPedidoPixExibicao === 'CANCELADO'
         ? 'Pagamento cancelado'
-        : 'Aguardando pagamento';
+        : 'Aguardando pagamento para liberar pedido';
   const avisoPedidoCliente = (() => {
     if (pixPagamento) {
       if (statusPedidoPixExibicao === 'CONFIRMADO') {
@@ -693,8 +693,8 @@ export default function PedidoAvulso() {
 
       return {
         classe: 'pendente',
-        titulo: `Pedido #${pixPagamento.pedidoId} enviado com sucesso`,
-        texto: 'Pedido realizado e encaminhado para producao. Falta apenas pagar o Pix abaixo para confirmar no sistema.'
+        titulo: `Pedido #${pixPagamento.pedidoId} aguardando pagamento Pix`,
+        texto: 'O pedido so sera liberado para producao apos a confirmacao do pagamento Pix.'
       };
     }
 
