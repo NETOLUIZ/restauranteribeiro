@@ -149,6 +149,7 @@ export default function PedidoAvulso() {
   const [pixPagamento, setPixPagamento] = useState(null);
   const [pedidoDinheiro, setPedidoDinheiro] = useState(null);
   const [comprovantePedido, setComprovantePedido] = useState(null);
+  const [confirmacaoFinal, setConfirmacaoFinal] = useState(false);
   const [cepStatus, setCepStatus] = useState(null);
   const [cepBuscando, setCepBuscando] = useState(false);
   const [ultimoCepConsultado, setUltimoCepConsultado] = useState('');
@@ -284,6 +285,10 @@ export default function PedidoAvulso() {
       setEtapaAtual(3);
       return;
     }
+    if (!validarEtapa(4)) {
+      setEtapaAtual(4);
+      return;
+    }
 
     setEnviando(true);
     try {
@@ -350,7 +355,7 @@ export default function PedidoAvulso() {
           texto: 'Pedido enviado com sucesso! O pagamento em dinheiro ficara pendente para confirmacao.'
         });
       }
-      setEtapaAtual(3);
+      setEtapaAtual(4);
     } catch (err) {
       setMensagem({ tipo: 'error', texto: err.response?.data?.erro || 'Erro ao enviar pedido' });
     }
@@ -366,6 +371,7 @@ export default function PedidoAvulso() {
     setPixPagamento(null);
     setPedidoDinheiro(null);
     setComprovantePedido(null);
+    setConfirmacaoFinal(false);
     setMensagem(null);
     setEtapaAtual(1);
     setCepStatus(null);
@@ -623,11 +629,18 @@ export default function PedidoAvulso() {
     !!normalizarCampo(dados.bairro);
   const pagamentoValido = ['PIX', 'DINHEIRO'].includes(formaPagamento) && trocoValido;
   const etapaAtualCompleta =
-    etapaAtual === 1 ? etapaItensValida : etapaAtual === 2 ? dadosEntregaValidos : pagamentoValido;
+    etapaAtual === 1
+      ? etapaItensValida
+      : etapaAtual === 2
+        ? dadosEntregaValidos
+        : etapaAtual === 3
+          ? pagamentoValido
+          : confirmacaoFinal;
   const etapasCheckout = [
     { numero: 1, titulo: 'Marmita' },
     { numero: 2, titulo: 'Entrega' },
-    { numero: 3, titulo: 'Pagamento' }
+    { numero: 3, titulo: 'Pagamento' },
+    { numero: 4, titulo: 'Finalizacao' }
   ];
   const statusPedidoPix = pixPagamento?.statusPedido || (pixPagamento?.status === 'approved' ? 'CONFIRMADO' : 'PENDENTE');
   const statusPedidoDinheiro = pedidoDinheiro?.statusPagamento || 'PENDENTE';
@@ -776,13 +789,26 @@ export default function PedidoAvulso() {
       return true;
     }
 
+    if (etapa === 4) {
+      if (!confirmacaoFinal) {
+        if (mostrarErro) {
+          setMensagem({
+            tipo: 'error',
+            texto: 'Confirme os dados do pedido para finalizar.'
+          });
+        }
+        return false;
+      }
+      return true;
+    }
+
     return true;
   }
 
   const avancarEtapa = () => {
     if (!validarEtapa(etapaAtual)) return;
     setMensagem(null);
-    setEtapaAtual((atual) => Math.min(3, atual + 1));
+    setEtapaAtual((atual) => Math.min(4, atual + 1));
   };
 
   const voltarEtapa = () => {
@@ -1236,9 +1262,59 @@ export default function PedidoAvulso() {
                   )}
                 </div>
               )}
+
+              {etapaAtual === 4 && (
+                <div className="pedido-section" id="secao-finalizacao">
+                  <h3><span className="icon"><FiCheckCircle /></span> Finalizacao e confirmacao</h3>
+
+                  <div className="pedido-finalizacao-grid">
+                    <div>
+                      <span className="pedido-finalizacao-label">Marmita</span>
+                      <strong>{marmitaSelecionada.titulo || '-'}</strong>
+                    </div>
+                    <div>
+                      <span className="pedido-finalizacao-label">Quantidade</span>
+                      <strong>{quantidade}</strong>
+                    </div>
+                    <div>
+                      <span className="pedido-finalizacao-label">Pagamento</span>
+                      <strong>{formaPagamento === 'PIX' ? 'Pix' : 'Dinheiro'}</strong>
+                    </div>
+                    <div>
+                      <span className="pedido-finalizacao-label">Total</span>
+                      <strong>{formatarMoeda(valorTotal)}</strong>
+                    </div>
+                    <div className="full">
+                      <span className="pedido-finalizacao-label">Cliente</span>
+                      <strong>{normalizarCampo(dados.nomeCliente) || '-'}</strong>
+                    </div>
+                    <div className="full">
+                      <span className="pedido-finalizacao-label">Entrega</span>
+                      <strong>{montarEnderecoEntrega(dados)}</strong>
+                    </div>
+                    {normalizarCampo(dados.observacao) && (
+                      <div className="full">
+                        <span className="pedido-finalizacao-label">Observacao</span>
+                        <strong>{normalizarCampo(dados.observacao)}</strong>
+                      </div>
+                    )}
+                  </div>
+
+                  <label className="pedido-finalizacao-check">
+                    <input
+                      type="checkbox"
+                      checked={confirmacaoFinal}
+                      onChange={(e) => setConfirmacaoFinal(e.target.checked)}
+                      id="check-confirmacao-final"
+                      disabled={!!pixPagamento || !!pedidoDinheiro}
+                    />
+                    <span>Confirmo os dados e desejo finalizar o pedido.</span>
+                  </label>
+                </div>
+              )}
             </div>
 
-            <div className={`pedido-resumo checkout-resumo ${etapaAtual === 3 ? 'checkout-resumo-final' : ''}`}>
+            <div className={`pedido-resumo checkout-resumo ${etapaAtual === 4 ? 'checkout-resumo-final' : ''}`}>
               <div className="resumo-card" id="resumo-pedido">
                 <h3>Resumo do Pedido</h3>
 
@@ -1311,7 +1387,7 @@ export default function PedidoAvulso() {
               <span className="checkout-actions-spacer" aria-hidden="true"></span>
             )}
 
-            {etapaAtual < 3 ? (
+            {etapaAtual < 4 ? (
               <button
                 type="button"
                 className="btn btn-primary btn-lg"

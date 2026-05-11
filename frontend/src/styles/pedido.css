@@ -62,7 +62,7 @@
 
 .checkout-steps {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 24px;
 }
@@ -594,6 +594,53 @@
 
 .pedido-comprovante-acoes .btn {
   min-height: 42px;
+}
+
+.pedido-finalizacao-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+}
+
+.pedido-finalizacao-grid > div {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--cinza-200);
+  border-radius: var(--radius-sm);
+  background: var(--cinza-50);
+}
+
+.pedido-finalizacao-grid .full {
+  grid-column: 1 / -1;
+}
+
+.pedido-finalizacao-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--cinza-600);
+  text-transform: uppercase;
+  letter-spacing: 0.35px;
+}
+
+.pedido-finalizacao-grid strong {
+  font-size: 0.92rem;
+  color: var(--preto);
+  line-height: 1.35;
+}
+
+.pedido-finalizacao-check {
+  margin-top: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.9rem;
+  color: var(--cinza-800);
+  font-weight: 600;
+}
+
+.pedido-finalizacao-check input[type='checkbox'] {
+  margin-top: 2px;
 }
 
 @keyframes pagamentoGlow {
