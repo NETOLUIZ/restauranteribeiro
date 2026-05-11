@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { cardapioAPI } from '../../services/api';
 import { abrirImpressaoComandaChecklist } from '../../utils/comandaChecklistPrint';
 import { NOME_EMPRESA_COMANDA, SITE_RESTAURANTE, TELEFONE_RESTAURANTE, formatarTelefoneComanda } from '../../utils/comandaPrint';
+import { ordenarComplementosComPrioridade } from '../../constants/comandaOrder';
 import '../../styles/comandaManualPage.css';
 
 const INTERVALO_ATUALIZACAO_MS = 8000;
@@ -66,7 +67,9 @@ export default function ComandaManualPage() {
     [itensCardapio]
   );
   const itensComplemento = useMemo(
-    () => itensCardapio.filter((item) => ehComplemento(item)),
+    () => ordenarComplementosComPrioridade(
+      itensCardapio.filter((item) => ehComplemento(item))
+    ),
     [itensCardapio]
   );
   const semCardapio = !itensProteina.length && !itensComplemento.length;

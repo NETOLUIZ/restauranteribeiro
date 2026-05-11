@@ -21,6 +21,7 @@ import Navbar from '../components/Navbar';
 import CheckboxVerde from '../components/CheckboxVerde';
 import WhatsAppButton from '../components/WhatsAppButton';
 import { cardapioAPI, pedidoAvulsoAPI, marmitaAPI } from '../services/api';
+import { ordenarComplementosComPrioridade } from '../constants/comandaOrder';
 import '../styles/pedido.css';
 
 function extrairMensagemCheckout(search = '') {
@@ -558,7 +559,9 @@ export default function PedidoAvulso() {
   };
 
   const proteinas = cardapio.filter(i => i.tipo === 'PROTEINA');
-  const complementos = cardapio.filter(i => i.tipo === 'COMPLEMENTO');
+  const complementos = ordenarComplementosComPrioridade(
+    cardapio.filter(i => i.tipo === 'COMPLEMENTO')
+  );
   const opcoesMarmita = [
     {
       tamanho: 'GRANDE',

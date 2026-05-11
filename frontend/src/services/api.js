@@ -24,10 +24,15 @@ api.interceptors.response.use(
       localStorage.removeItem('token');
       localStorage.removeItem('usuario');
       const path = window.location.pathname || '/';
-      if (!path.includes('login')) {
-        if (path.startsWith('/admin')) {
+      const emTelaLogin = path.includes('login');
+      const rotaAdminProtegida = path.startsWith('/admin');
+      const rotaEmpresaProtegida = path.startsWith('/empresa');
+
+      // Em rotas publicas (ex: "/"), nao forcamos redirecionamento para login de empresa.
+      if (!emTelaLogin) {
+        if (rotaAdminProtegida) {
           window.location.href = '/admin/login';
-        } else {
+        } else if (rotaEmpresaProtegida) {
           window.location.href = '/empresa/login';
         }
       }

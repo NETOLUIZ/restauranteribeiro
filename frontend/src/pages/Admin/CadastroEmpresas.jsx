@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { FiPlus, FiShoppingBag, FiX, FiUser, FiMapPin, FiPackage, FiSend, FiTrash2, FiKey } from 'react-icons/fi';
 import CheckboxVerde from '../../components/CheckboxVerde';
 import { empresaAPI, cardapioAPI, pedidoEmpresaAPI } from '../../services/api';
+import { ordenarComplementosComPrioridade } from '../../constants/comandaOrder';
 
 export default function CadastroEmpresas() {
   const [empresas, setEmpresas] = useState([]);
@@ -298,7 +299,9 @@ export default function CadastroEmpresas() {
   if (carregando) return <div className="loading-spinner"><div className="spinner"></div></div>;
 
   const proteinas = cardapio.filter((item) => item.tipo === 'PROTEINA');
-  const complementos = cardapio.filter((item) => item.tipo === 'COMPLEMENTO');
+  const complementos = ordenarComplementosComPrioridade(
+    cardapio.filter((item) => item.tipo === 'COMPLEMENTO')
+  );
 
   return (
     <div id="cadastro-empresas">

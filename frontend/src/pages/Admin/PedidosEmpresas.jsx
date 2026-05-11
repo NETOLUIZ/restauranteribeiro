@@ -13,12 +13,52 @@ import {
 
 const INTERVALO_ATUALIZACAO_MS = 8000;
 
+const obterNomeItem = (item) => {
+  if (typeof item === 'string') return item.trim();
+  if (!item || typeof item !== 'object') return '';
+
+  const candidato = item.nome || item.descricao || item.item || item.titulo || '';
+  return String(candidato).trim();
+};
+
+const agruparItensComQuantidade = (itens = []) => {
+  const itensNormalizados = (Array.isArray(itens) ? itens : [])
+    .map(obterNomeItem)
+    .filter(Boolean);
+
+  if (!itensNormalizados.length) return ['-'];
+
+  const agregados = [];
+  const posicoes = new Map();
+
+  itensNormalizados.forEach((nome) => {
+    const chave = nome.toLocaleLowerCase('pt-BR');
+    const indiceExistente = posicoes.get(chave);
+
+    if (indiceExistente === undefined) {
+      posicoes.set(chave, agregados.length);
+      agregados.push({ nome, quantidade: 1 });
+      return;
+    }
+
+    agregados[indiceExistente].quantidade += 1;
+  });
+
+  return agregados.map((item) => (
+    item.quantidade > 1 ? `${item.quantidade}x ${item.nome}` : item.nome
+  ));
+};
+
 const gerarHtmlComandas = (comandas) => {
   const telefoneComanda = formatarTelefoneComanda(TELEFONE_RESTAURANTE);
   const cards = comandas.map((comanda) => {
-    const itensHtml = Array.isArray(comanda.itens) && comanda.itens.length
-      ? comanda.itens.map((item) => `<li>${escapeHtml(item?.nome || '-')}</li>`).join('')
-      : '<li>-</li>';
+    const itensFormatados = agruparItensComQuantidade(comanda.itens);
+    const classeItens = itensFormatados.length > 12
+      ? 'itens-lista itens-lista-micro'
+      : itensFormatados.length > 8
+        ? 'itens-lista itens-lista-compacta'
+        : 'itens-lista';
+    const itensHtml = itensFormatados.map((item) => `<li>${escapeHtml(item)}</li>`).join('');
 
     return `
       <article class="comanda">
@@ -52,7 +92,7 @@ const gerarHtmlComandas = (comandas) => {
 
           <section class="itens-bloco">
             <div class="itens-faixa">ITENS:</div>
-            <ul class="itens-lista">
+            <ul class="${classeItens}">
               ${itensHtml}
             </ul>
           </section>
@@ -78,6 +118,18 @@ const gerarHtmlComandas = (comandas) => {
         <title>Comandas</title>
         <style>
           ${COMANDA_PRINT_CSS}
+          .itens-lista-compacta {
+            font-size: 2.55mm;
+            line-height: 1.05;
+            column-gap: 4mm;
+            padding: 0.65mm 0.95mm 0.65mm 4mm;
+          }
+          .itens-lista-micro {
+            font-size: 2.2mm;
+            line-height: 1.02;
+            column-gap: 2.8mm;
+            padding: 0.6mm 0.85mm 0.55mm 3.6mm;
+          }
         </style>
       </head>
       <body>
@@ -426,7 +478,7 @@ export default function PedidosEmpresas() {
               {pedido.lotes.map((lote, i) => (
                 <div key={lote.id} style={{ padding: '10px', margin: '8px 0', background: 'var(--cinza-50)', borderRadius: '8px' }}>
                   <p><strong>Lote {i + 1}:</strong> {lote.quantidade}x para {lote.endereco}</p>
-                  <p style={{ fontSize: '0.85rem' }}><strong>Itens:</strong> {Array.isArray(lote.itens) ? lote.itens.map((it) => it.nome).join(', ') : '-'}</p>
+                  <p style={{ fontSize: '0.85rem' }}><strong>Itens:</strong> {agruparItensComQuantidade(lote.itens).join(', ')}</p>
                   {lote.nomes && Array.isArray(lote.nomes) && lote.nomes.length > 0 && (
                     <p style={{ fontSize: '0.85rem' }}><strong>Nomes:</strong> {lote.nomes.join(', ')}</p>
                   )}

@@ -9,6 +9,7 @@ import Footer from '../components/Footer';
 import homePatternBg from '../assets/home-pattern-bg.jpg';
 import imagemCardMarmita from '../assets/marmita-card-home.png';
 import { cardapioAPI, bannerAPI, marmitaAPI } from '../services/api';
+import { ordenarComplementosComPrioridade } from '../constants/comandaOrder';
 import '../styles/home.css';
 
 export default function Home() {
@@ -63,7 +64,9 @@ export default function Home() {
   };
 
   const proteinas = removerDuplicadosPorNome(cardapio.filter(i => i.tipo === 'PROTEINA'));
-  const complementos = removerDuplicadosPorNome(cardapio.filter(i => i.tipo === 'COMPLEMENTO'));
+  const complementos = ordenarComplementosComPrioridade(
+    removerDuplicadosPorNome(cardapio.filter(i => i.tipo === 'COMPLEMENTO'))
+  );
   const grande = marmitas.find(item => item.tamanho === 'GRANDE');
   const pequena = marmitas.find(item => item.tamanho === 'PEQUENA');
 

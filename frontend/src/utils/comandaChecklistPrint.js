@@ -8,9 +8,9 @@ import {
   imprimirHtml
 } from './comandaPrint';
 import {
-  COMPLEMENTOS_COMANDA,
   PROTEINAS_COMANDA,
   normalizarChaveComanda,
+  ordenarComplementosComPrioridade,
   ordenarItensComanda
 } from '../constants/comandaOrder';
 
@@ -79,7 +79,7 @@ const gerarCardComandaChecklist = ({
   const proteinasMarcadas = criarSetMarcados(proteinasSelecionadas);
   const complementosMarcados = criarSetMarcados(complementosSelecionados);
   const itensProteinaOrdenados = ordenarItensComanda(itensProteina, PROTEINAS_COMANDA);
-  const itensComplementoOrdenados = ordenarItensComanda(itensComplemento, COMPLEMENTOS_COMANDA);
+  const itensComplementoOrdenados = ordenarComplementosComPrioridade(itensComplemento);
 
   return `
     <article class="comanda comanda-vazia ${densidade}">

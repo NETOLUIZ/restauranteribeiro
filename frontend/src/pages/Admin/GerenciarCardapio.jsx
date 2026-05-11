@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { FiPlus, FiEdit2, FiTrash2, FiToggleLeft, FiToggleRight, FiPrinter } from 'react-icons/fi';
 import { cardapioAPI } from '../../services/api';
 import { abrirImpressaoComandaChecklist } from '../../utils/comandaChecklistPrint';
-import { COMPLEMENTOS_COMANDA, PROTEINAS_COMANDA, ordenarItensComanda } from '../../constants/comandaOrder';
+import { PROTEINAS_COMANDA, ordenarComplementosComPrioridade, ordenarItensComanda } from '../../constants/comandaOrder';
 
 export default function GerenciarCardapio() {
   const [itens, setItens] = useState([]);
@@ -86,9 +86,8 @@ export default function GerenciarCardapio() {
       itensAtivos.filter((item) => item.tipo === 'PROTEINA'),
       PROTEINAS_COMANDA
     );
-    const complementosAtivos = ordenarItensComanda(
-      itensAtivos.filter((item) => item.tipo === 'COMPLEMENTO'),
-      COMPLEMENTOS_COMANDA
+    const complementosAtivos = ordenarComplementosComPrioridade(
+      itensAtivos.filter((item) => item.tipo === 'COMPLEMENTO')
     );
 
     if (!proteinasAtivas.length && !complementosAtivos.length) {
@@ -113,9 +112,8 @@ export default function GerenciarCardapio() {
     itens.filter((item) => item.tipo === 'PROTEINA'),
     PROTEINAS_COMANDA
   );
-  const complementos = ordenarItensComanda(
-    itens.filter((item) => item.tipo === 'COMPLEMENTO'),
-    COMPLEMENTOS_COMANDA
+  const complementos = ordenarComplementosComPrioridade(
+    itens.filter((item) => item.tipo === 'COMPLEMENTO')
   );
 
   return (

@@ -223,15 +223,15 @@ export const COMANDA_PRINT_CSS = `
   }
 
   .ident-empresa {
-    font-size: 3.55mm;
+    font-size: 3.2mm;
     text-transform: uppercase;
-    letter-spacing: 0.25mm;
+    letter-spacing: 0.2mm;
   }
 
   .ident-nome {
-    font-size: 3.6mm;
+    font-size: 3.25mm;
     text-transform: uppercase;
-    letter-spacing: 0.25mm;
+    letter-spacing: 0.2mm;
   }
 
   .ident-endereco {

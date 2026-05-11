@@ -6,14 +6,49 @@ import Navbar from '../components/Navbar';
 import CheckboxVerde from '../components/CheckboxVerde';
 import { useAuth } from '../context/useAuth';
 import { cardapioAPI, empresaAPI, pedidoEmpresaAPI } from '../services/api';
+import { ordenarComplementosComPrioridade } from '../constants/comandaOrder';
 import { escapeHtml, imprimirHtml } from '../utils/comandaPrint';
 import '../styles/empresa.css';
 
+const obterNomeItem = (item) => {
+  if (typeof item === 'string') return item.trim();
+  if (!item || typeof item !== 'object') return '';
+  return String(item.nome || item.descricao || item.item || item.titulo || '').trim();
+};
+
+const agruparItensComQuantidade = (itens = []) => {
+  const itensNormalizados = (Array.isArray(itens) ? itens : [])
+    .map(obterNomeItem)
+    .filter(Boolean);
+
+  if (!itensNormalizados.length) return ['-'];
+
+  const acumulado = [];
+  const posicoes = new Map();
+
+  itensNormalizados.forEach((nome) => {
+    const chave = nome.toLocaleLowerCase('pt-BR');
+    const indice = posicoes.get(chave);
+
+    if (indice === undefined) {
+      posicoes.set(chave, acumulado.length);
+      acumulado.push({ nome, quantidade: 1 });
+      return;
+    }
+
+    acumulado[indice].quantidade += 1;
+  });
+
+  return acumulado.map((item) => (
+    item.quantidade > 1 ? `${item.quantidade}x ${item.nome}` : item.nome
+  ));
+};
+
 const gerarHtmlLotesPdf = ({ empresaNome, lotes, totalNosLotes, totalDoDia, observacao }) => {
   const lotesHtml = lotes.map((lote, index) => {
-    const itensHtml = Array.isArray(lote.itens) && lote.itens.length
-      ? lote.itens.map((item) => `<li>${escapeHtml(item?.nome || '-')}</li>`).join('')
-      : '<li>-</li>';
+    const itensHtml = agruparItensComQuantidade(lote.itens)
+      .map((item) => `<li>${escapeHtml(item)}</li>`)
+      .join('');
 
     return `
       <section class="pdf-lote">
@@ -442,7 +477,9 @@ export default function EmpresaPedidos() {
   };
 
   const proteinas = cardapio.filter(i => i.tipo === 'PROTEINA');
-  const complementos = cardapio.filter(i => i.tipo === 'COMPLEMENTO');
+  const complementos = ordenarComplementosComPrioridade(
+    cardapio.filter(i => i.tipo === 'COMPLEMENTO')
+  );
 
   return (
     <>

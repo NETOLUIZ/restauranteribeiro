@@ -15,6 +15,7 @@ import {
 import CheckboxVerde from '../../components/CheckboxVerde';
 import { aiOrderAPI, cardapioAPI, empresaAPI, pedidoEmpresaAPI } from '../../services/api';
 import { abrirImpressaoComandasChecklist } from '../../utils/comandaChecklistPrint';
+import { ordenarComplementosComPrioridade } from '../../constants/comandaOrder';
 import './PedidoIA.css';
 
 const criarComandaVazia = () => ({
@@ -253,7 +254,9 @@ export default function PedidoIA() {
   );
 
   const complementosDisponiveis = useMemo(
-    () => cardapioAtivo.filter((item) => item.tipo === 'COMPLEMENTO').map((item) => item.nome),
+    () => ordenarComplementosComPrioridade(
+      cardapioAtivo.filter((item) => item.tipo === 'COMPLEMENTO')
+    ).map((item) => item.nome),
     [cardapioAtivo]
   );
 

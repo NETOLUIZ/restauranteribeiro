@@ -27,6 +27,25 @@ export const normalizarChaveComanda = (valor = '') =>
     .trim();
 
 const obterNomeItem = (item) => (typeof item === 'string' ? item : item?.nome || '');
+const COMPLEMENTOS_PRIORITARIOS = ['arroz', 'feijao', 'macarrao'];
+
+const obterPrioridadeComplemento = (nome = '') => {
+  const chave = normalizarChaveComanda(nome);
+  const indice = COMPLEMENTOS_PRIORITARIOS.findIndex((prefixo) => chave.startsWith(prefixo));
+  return indice === -1 ? Number.MAX_SAFE_INTEGER : indice;
+};
+
+export const ordenarComplementosComPrioridade = (itens = []) =>
+  [...itens].sort((a, b) => {
+    const nomeA = obterNomeItem(a);
+    const nomeB = obterNomeItem(b);
+    const prioridadeA = obterPrioridadeComplemento(nomeA);
+    const prioridadeB = obterPrioridadeComplemento(nomeB);
+
+    if (prioridadeA !== prioridadeB) return prioridadeA - prioridadeB;
+
+    return nomeA.localeCompare(nomeB, 'pt-BR');
+  });
 
 export const ordenarItensComanda = (itens = [], referencia = []) => {
   const posicoes = new Map(
