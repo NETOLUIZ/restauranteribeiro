@@ -113,6 +113,7 @@ function gerarHtmlComanda(pedido) {
 export default function PedidosAvulsos() {
   const [pedidos, setPedidos] = useState([]);
   const [filtroStatus, setFiltroStatus] = useState('');
+  const [filtroDiaSemana, setFiltroDiaSemana] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const imprimindoRef = useRef(new Set());
   const carregandoPedidosRef = useRef(false);
@@ -218,6 +219,19 @@ export default function PedidosAvulsos() {
     }
   };
 
+  const opcoesDiaSemana = [
+    { sigla: 'SEG', dia: 1 },
+    { sigla: 'TER', dia: 2 },
+    { sigla: 'QUA', dia: 3 },
+    { sigla: 'QUI', dia: 4 },
+    { sigla: 'SEX', dia: 5 }
+  ];
+
+  const pedidosFiltrados = pedidos.filter((pedido) => {
+    if (filtroDiaSemana === null) return true;
+    return new Date(pedido.createdAt).getDay() === filtroDiaSemana;
+  });
+
   if (carregando) return <div className="loading-spinner"><div className="spinner"></div></div>;
 
   return (
@@ -229,6 +243,28 @@ export default function PedidosAvulsos() {
           <option value="CONFIRMADO">Confirmado</option>
           <option value="CANCELADO">Cancelado</option>
         </select>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+          {opcoesDiaSemana.map((opcao) => (
+            <button
+              key={opcao.sigla}
+              type="button"
+              className={`btn btn-sm ${filtroDiaSemana === opcao.dia ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => setFiltroDiaSemana(opcao.dia)}
+              id={`filtro-dia-avulso-${opcao.sigla.toLowerCase()}`}
+            >
+              {opcao.sigla}
+            </button>
+          ))}
+          <button
+            type="button"
+            className={`btn btn-sm ${filtroDiaSemana === null ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setFiltroDiaSemana(null)}
+            id="filtro-dia-avulso-todos"
+          >
+            Todos
+          </button>
+        </div>
       </div>
 
       <p style={{ color: 'var(--cinza-600)', marginBottom: '16px' }}>
@@ -250,7 +286,7 @@ export default function PedidosAvulsos() {
         </span>
       </div>
 
-      {pedidos.map(pedido => {
+      {pedidosFiltrados.map(pedido => {
         const pedidoConfirmado = pedido.statusPagamento === 'CONFIRMADO';
         const pedidoProcessado = pedido.impresso || (pedido.formaPagamento === 'DINHEIRO' && pedidoConfirmado);
         const classeVisualCard =
@@ -332,7 +368,7 @@ export default function PedidosAvulsos() {
         );
       })}
 
-      {pedidos.length === 0 && (
+      {pedidosFiltrados.length === 0 && (
         <div style={{ textAlign: 'center', padding: '60px', color: 'var(--cinza-400)' }}>
           <FiFilter size={48} style={{ marginBottom: '16px', opacity: 0.3 }} />
           <p>Nenhum pedido encontrado</p>

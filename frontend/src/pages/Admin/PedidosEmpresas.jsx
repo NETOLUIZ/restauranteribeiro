@@ -143,6 +143,7 @@ export default function PedidosEmpresas() {
   const [pedidos, setPedidos] = useState([]);
   const [filtroStatus, setFiltroStatus] = useState('');
   const [filtroEmpresa, setFiltroEmpresa] = useState('');
+  const [filtroDiaSemana, setFiltroDiaSemana] = useState(null);
   const [carregando, setCarregando] = useState(true);
   const [mensagemAviso, setMensagemAviso] = useState(null);
   const [pendentesAutorizacao, setPendentesAutorizacao] = useState(0);
@@ -295,9 +296,18 @@ export default function PedidosEmpresas() {
 
   if (carregando) return <div className="loading-spinner"><div className="spinner"></div></div>;
 
+  const opcoesDiaSemana = [
+    { sigla: 'SEG', dia: 1 },
+    { sigla: 'TER', dia: 2 },
+    { sigla: 'QUA', dia: 3 },
+    { sigla: 'QUI', dia: 4 },
+    { sigla: 'SEX', dia: 5 }
+  ];
+
   const termoEmpresa = filtroEmpresa.trim().toLowerCase();
   const pedidosFiltrados = pedidos.filter((pedido) => {
     if (filtroStatus && pedido.status !== filtroStatus) return false;
+    if (filtroDiaSemana !== null && new Date(pedido.createdAt).getDay() !== filtroDiaSemana) return false;
     if (!termoEmpresa) return true;
 
     const nomeEmpresa = (pedido.empresa?.nome || '').toLowerCase();
@@ -327,6 +337,29 @@ export default function PedidosEmpresas() {
           <option value="AUTORIZADO">Autorizado</option>
           <option value="IMPRESSO">Impresso</option>
         </select>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+          {opcoesDiaSemana.map((opcao) => (
+            <button
+              key={opcao.sigla}
+              type="button"
+              className={`btn btn-sm ${filtroDiaSemana === opcao.dia ? 'btn-primary' : 'btn-secondary'}`}
+              onClick={() => setFiltroDiaSemana(opcao.dia)}
+              id={`filtro-dia-empresa-${opcao.sigla.toLowerCase()}`}
+            >
+              {opcao.sigla}
+            </button>
+          ))}
+          <button
+            type="button"
+            className={`btn btn-sm ${filtroDiaSemana === null ? 'btn-primary' : 'btn-secondary'}`}
+            onClick={() => setFiltroDiaSemana(null)}
+            id="filtro-dia-empresa-todos"
+          >
+            Todos
+          </button>
+        </div>
+
         <div style={{ position: 'relative', width: '100%', maxWidth: '320px' }}>
           <FiSearch
             size={16}

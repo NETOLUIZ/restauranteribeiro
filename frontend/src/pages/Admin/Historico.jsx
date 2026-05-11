@@ -20,6 +20,7 @@ function ultimoDiaMes(data = new Date()) {
 export default function Historico() {
   const [historico, setHistorico] = useState({});
   const [empresas, setEmpresas] = useState([]);
+  const [erroHistorico, setErroHistorico] = useState('');
   const [valoresMarmita, setValoresMarmita] = useState({});
   const [salvandoEmpresaId, setSalvandoEmpresaId] = useState(null);
   const [filtroEmpresa, setFiltroEmpresa] = useState('');
@@ -51,6 +52,7 @@ export default function Historico() {
     pedidoEmpresaAPI.historico(params)
       .then(({ data }) => {
         if (!ativo) return;
+        setErroHistorico('');
 
         setHistorico(data || {});
 
@@ -62,6 +64,9 @@ export default function Historico() {
       })
       .catch((err) => {
         console.error('Erro:', err);
+        if (!ativo) return;
+        setHistorico({});
+        setErroHistorico(err.response?.data?.erro || 'Erro ao carregar historico. Verifique o backend.');
       })
       .finally(() => {
         if (ativo) setCarregando(false);
@@ -140,6 +145,21 @@ export default function Historico() {
 
   return (
     <div id="historico-admin">
+      {erroHistorico && (
+        <div
+          style={{
+            marginBottom: '16px',
+            padding: '12px 14px',
+            borderRadius: '8px',
+            background: 'var(--vermelho-light)',
+            color: 'var(--vermelho)',
+            fontWeight: 600
+          }}
+        >
+          {erroHistorico}
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
         <div className="form-group" style={{ margin: 0, minWidth: '220px' }}>
           <label className="form-label"><FiCalendar size={14} /> Data inicial</label>
