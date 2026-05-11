@@ -25,6 +25,11 @@ export default function Historico() {
   const [filtroEmpresa, setFiltroEmpresa] = useState('');
   const [filtroDataInicio, setFiltroDataInicio] = useState(() => primeiroDiaMes(new Date()));
   const [filtroDataFim, setFiltroDataFim] = useState(() => ultimoDiaMes(new Date()));
+  const [filtrosAplicados, setFiltrosAplicados] = useState(() => ({
+    dataInicio: primeiroDiaMes(new Date()),
+    dataFim: ultimoDiaMes(new Date()),
+    empresaId: ''
+  }));
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
@@ -35,13 +40,13 @@ export default function Historico() {
     let ativo = true;
     const params = {};
 
-    if (filtroDataInicio) {
-      params.dataInicio = filtroDataInicio;
+    if (filtrosAplicados.dataInicio) {
+      params.dataInicio = filtrosAplicados.dataInicio;
     }
-    if (filtroDataFim) {
-      params.dataFim = filtroDataFim;
+    if (filtrosAplicados.dataFim) {
+      params.dataFim = filtrosAplicados.dataFim;
     }
-    if (filtroEmpresa) params.empresaId = filtroEmpresa;
+    if (filtrosAplicados.empresaId) params.empresaId = filtrosAplicados.empresaId;
 
     pedidoEmpresaAPI.historico(params)
       .then(({ data }) => {
@@ -65,7 +70,36 @@ export default function Historico() {
     return () => {
       ativo = false;
     };
-  }, [filtroDataFim, filtroDataInicio, filtroEmpresa]);
+  }, [filtrosAplicados]);
+
+  const buscarHistorico = () => {
+    if (filtroDataInicio && filtroDataFim && filtroDataInicio > filtroDataFim) {
+      alert('A data inicial nao pode ser maior que a data final.');
+      return;
+    }
+
+    setCarregando(true);
+    setFiltrosAplicados({
+      dataInicio: filtroDataInicio,
+      dataFim: filtroDataFim,
+      empresaId: filtroEmpresa
+    });
+  };
+
+  const limparFiltros = () => {
+    const dataInicioPadrao = primeiroDiaMes(new Date());
+    const dataFimPadrao = ultimoDiaMes(new Date());
+
+    setFiltroDataInicio(dataInicioPadrao);
+    setFiltroDataFim(dataFimPadrao);
+    setFiltroEmpresa('');
+    setCarregando(true);
+    setFiltrosAplicados({
+      dataInicio: dataInicioPadrao,
+      dataFim: dataFimPadrao,
+      empresaId: ''
+    });
+  };
 
   const formatarMoeda = (valor) => Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
@@ -143,6 +177,27 @@ export default function Historico() {
               <option key={emp.id} value={emp.id}>{emp.nome}</option>
             ))}
           </select>
+        </div>
+
+        <div className="form-group" style={{ margin: 0, alignSelf: 'end' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={buscarHistorico}
+              id="btn-buscar-historico"
+            >
+              <FiSearch size={16} /> Buscar
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={limparFiltros}
+              id="btn-limpar-historico"
+            >
+              Limpar filtros
+            </button>
+          </div>
         </div>
       </div>
 
