@@ -1124,8 +1124,8 @@ export default function PedidoAvulso() {
                   </div>
                   <p className="pagamento-hint">
                     {formaPagamento === 'PIX'
-                      ? 'Ao enviar o pedido, o QR Code Pix aparece aqui para pagamento.'
-                      : 'Ao enviar o pedido, ele ficara pendente para pagamento em dinheiro na entrega.'}
+                      ? 'Escolha o metodo e siga para a etapa de finalizacao para enviar o pedido.'
+                      : 'Escolha o metodo e siga para a etapa de finalizacao para enviar o pedido.'}
                   </p>
 
                   {formaPagamento === 'DINHEIRO' && !pedidoDinheiro && !pixPagamento && (
@@ -1310,6 +1310,120 @@ export default function PedidoAvulso() {
                     />
                     <span>Confirmo os dados e desejo finalizar o pedido.</span>
                   </label>
+
+                  {pixPagamento && (
+                    <div className="pix-pagamento-card" aria-live="polite">
+                      <div className={`pix-status pix-status-${statusPedidoPixExibicao.toLowerCase()}`}>
+                        {statusPedidoPixExibicao === 'CONFIRMADO' ? <FiCheckCircle size={18} /> : <FiClock size={18} />}
+                        <span>{statusPixTexto}</span>
+                      </div>
+
+                      {pixPagamento.qrCodeBase64 && (
+                        <img
+                          className="pix-qrcode"
+                          src={`data:image/png;base64,${pixPagamento.qrCodeBase64}`}
+                          alt="QR Code Pix para pagamento"
+                        />
+                      )}
+
+                      <div className="pix-copia">
+                        <label htmlFor="pix-copia-codigo-final">Pix copia e cola</label>
+                        <textarea
+                          id="pix-copia-codigo-final"
+                          value={pixPagamento.copiaecola || ''}
+                          readOnly
+                          rows={4}
+                        />
+                      </div>
+
+                      <div className="pix-acoes">
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          onClick={copiarCodigoPix}
+                          disabled={!pixPagamento.copiaecola}
+                        >
+                          <FiCopy size={16} /> Copiar codigo Pix
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={resetarPedido}
+                        >
+                          Novo pedido
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {pedidoDinheiro && (
+                    <div className="pix-pagamento-card" aria-live="polite">
+                      <div className="pix-status">
+                        <FiDollarSign size={18} />
+                        <span>Pagamento confirmado</span>
+                      </div>
+
+                      <div className="pag-textos">
+                        <span className="pag-label">Pedido #{pedidoDinheiro.id} enviado</span>
+                        <span className="pag-desc">Pedido realizado e encaminhado para producao.</span>
+                        <span className="pag-desc">A equipe vai confirmar o recebimento do dinheiro na entrega.</span>
+                        {pedidoDinheiro.valorTroco != null && (
+                          <span className="pag-desc">Troco para {formatarMoeda(pedidoDinheiro.valorTroco)}.</span>
+                        )}
+                      </div>
+
+                      <div className="pix-acoes">
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={resetarPedido}
+                        >
+                          Novo pedido
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {comprovantePedido && (
+                    <div className="pedido-comprovante-card" aria-live="polite">
+                      <h4>Comprovante do pedido</h4>
+                      <div className="pedido-comprovante-grid">
+                        <div>
+                          <span className="pedido-comprovante-label">Numero do pedido</span>
+                          <strong>#{comprovantePedido.pedidoId}</strong>
+                        </div>
+                        <div>
+                          <span className="pedido-comprovante-label">Data da compra</span>
+                          <strong>{formatarDataHoraComprovante(comprovantePedido.dataHora)}</strong>
+                        </div>
+                        <div>
+                          <span className="pedido-comprovante-label">Valor da compra</span>
+                          <strong>{formatarMoeda(comprovantePedido.valorTotal)}</strong>
+                        </div>
+                        <div>
+                          <span className="pedido-comprovante-label">Status</span>
+                          <strong>{statusComprovantePedidoTexto}</strong>
+                        </div>
+                      </div>
+
+                      <div className="pedido-comprovante-acoes">
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={baixarComprovantePedido}
+                        >
+                          <FiDownload size={16} /> Baixar comprovante
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          onClick={compartilharComprovantePedido}
+                        >
+                          <FiShare2 size={16} /> Compartilhar
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
