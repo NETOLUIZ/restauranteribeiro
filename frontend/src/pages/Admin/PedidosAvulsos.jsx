@@ -24,13 +24,27 @@ function deveImprimirAutomaticamente(pedido) {
 }
 
 const COMANDA_AVULSO_PRINT_CSS = `
-  .pedido-numero-topo {
+  .comanda-topo-linha {
     width: 100%;
-    padding-left: 0.6mm;
-    font-size: 3.7mm;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2mm;
+    padding: 0.2mm 0.6mm 0;
+  }
+
+  .pedido-numero-topo {
+    font-size: 3.9mm;
     font-weight: 900;
     line-height: 1;
-    text-align: left;
+  }
+
+  .pedido-tamanho-topo {
+    font-size: 5.2mm;
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: 0.15mm;
+    text-transform: uppercase;
   }
 `;
 
@@ -66,7 +80,10 @@ function gerarHtmlComanda(pedido) {
         <div class="print-area">
           <article class="comanda">
             <div class="comanda-conteudo">
-              <div class="pedido-numero-topo">#${escapeHtml(pedido.id)}</div>
+              <div class="comanda-topo-linha">
+                <div class="pedido-numero-topo">#${escapeHtml(pedido.id)}</div>
+                <div class="pedido-tamanho-topo">TAM: ${escapeHtml(tamanhoMarmita)}</div>
+              </div>
 
               <header class="comanda-topo">
                 <div class="marca-destaque">${escapeHtml(NOME_EMPRESA_COMANDA)}</div>
@@ -93,7 +110,7 @@ function gerarHtmlComanda(pedido) {
 
               <section class="info-extra">
                 <p><strong>Pagamento:</strong> ${escapeHtml(pedido.formaPagamento || '-')}</p>
-                <p><strong>Qtd/Marmita:</strong> ${escapeHtml(pedido.quantidade || '-')} / ${escapeHtml(tamanhoMarmita)}</p>
+                <p><strong>Quantidade:</strong> ${escapeHtml(pedido.quantidade || '-')}</p>
                 <p><strong>Telefone:</strong> ${escapeHtml(pedido.telefone || '-')}</p>
                 ${pedido.observacao ? `<p class="info-obs"><strong>Obs:</strong> ${escapeHtml(pedido.observacao)}</p>` : ''}
               </section>
