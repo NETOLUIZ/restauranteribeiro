@@ -314,6 +314,7 @@ export default function PedidosEmpresas() {
     const siglaEmpresa = (pedido.empresa?.sigla || '').toLowerCase();
     return nomeEmpresa.includes(termoEmpresa) || siglaEmpresa.includes(termoEmpresa);
   });
+  const pendentesNoFiltro = pedidosFiltrados.filter((pedido) => pedido.status === 'ENVIADO').length;
 
   return (
     <div id="pedidos-empresas-admin">
@@ -383,13 +384,15 @@ export default function PedidosEmpresas() {
         </div>
       </div>
 
-      <div className={`pedido-empresa-alerta ${pendentesAutorizacao > 0 ? 'ativo' : ''}`}>
+      <div className={`pedido-empresa-alerta ${pendentesNoFiltro > 0 ? 'ativo' : ''}`}>
         <div className="pedido-empresa-alerta-icone">
           <FiBell size={18} />
         </div>
         <div className="pedido-empresa-alerta-texto">
-          <strong>{pendentesAutorizacao} pedido(s) aguardando autorizacao</strong>
-          <span>A tela verifica novos pedidos automaticamente a cada {INTERVALO_ATUALIZACAO_MS / 1000} segundos.</span>
+          <strong>{pendentesNoFiltro} pedido(s) aguardando autorizacao no filtro atual</strong>
+          <span>
+            Total geral pendente: {pendentesAutorizacao}. A tela verifica novos pedidos automaticamente a cada {INTERVALO_ATUALIZACAO_MS / 1000} segundos.
+          </span>
         </div>
       </div>
 
