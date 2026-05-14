@@ -1,18 +1,6 @@
-import { useEffect, useState, useContext } from 'react';
+import { useEffect, useState } from 'react';
 import { authAPI } from '../services/api';
 import { AuthContext } from './auth-context';
-
-export { AuthContext } from './auth-context';
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-
-  if (!context) {
-    throw new Error('useAuth deve ser usado dentro de AuthProvider');
-  }
-
-  return context;
-}
 
 export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(() => {
@@ -37,7 +25,6 @@ export function AuthProvider({ children }) {
     const token = localStorage.getItem('token');
 
     if (!token) {
-      setCarregando(false);
       return;
     }
 

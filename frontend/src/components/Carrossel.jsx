@@ -30,14 +30,12 @@ export default function Carrossel({ banners = [] }) {
   }, [totalSlides]);
 
   useEffect(() => {
-    setSlideAtual(0);
-  }, [totalSlides]);
-
-  useEffect(() => {
     if (totalSlides <= 1) return undefined;
     const timer = setInterval(proximoSlide, 5000);
     return () => clearInterval(timer);
   }, [totalSlides, proximoSlide]);
+
+  const slideExibido = totalSlides > 0 ? Math.min(slideAtual, totalSlides - 1) : 0;
 
   if (!totalSlides) {
     return (
@@ -63,7 +61,7 @@ export default function Carrossel({ banners = [] }) {
   return (
     <div className="carrossel" id="carrossel-banners">
       {bannersVisiveis.map((banner, i) => (
-        <div key={banner.id} className={`carrossel-slide ${i === slideAtual ? 'ativo' : ''}`}>
+        <div key={banner.id} className={`carrossel-slide ${i === slideExibido ? 'ativo' : ''}`}>
           <img
             src={resolverImagem(banner.imagemUrl)}
             alt={banner.titulo || 'Banner'}
@@ -95,7 +93,7 @@ export default function Carrossel({ banners = [] }) {
           {bannersVisiveis.map((banner, i) => (
             <button
               key={banner.id}
-              className={`carrossel-dot ${i === slideAtual ? 'ativo' : ''}`}
+              className={`carrossel-dot ${i === slideExibido ? 'ativo' : ''}`}
               onClick={() => setSlideAtual(i)}
               aria-label={`Slide ${i + 1}`}
             />

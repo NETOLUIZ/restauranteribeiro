@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FiClipboard, FiShoppingBag, FiTruck } from 'react-icons/fi';
+import { FiClipboard, FiMapPin, FiShoppingBag, FiTruck } from 'react-icons/fi';
 import { GiKnifeFork } from 'react-icons/gi';
 import Navbar from '../components/Navbar';
 import Carrossel from '../components/Carrossel';
@@ -109,6 +109,9 @@ export default function Home() {
               </Link>
               <Link to="/empresa/login" className="btn btn-hero-secondary" id="btn-area-empresa">
                 <FiTruck size={20} /> Area da Empresa
+              </Link>
+              <Link to="/entregador/login" className="btn btn-hero-secondary" id="btn-area-entregador">
+                <FiMapPin size={20} /> Area do Entregador
               </Link>
             </div>
           </div>

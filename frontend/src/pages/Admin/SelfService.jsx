@@ -76,13 +76,18 @@ export default function SelfService() {
   }, [busca, filtroData, filtroStatus]);
 
   useEffect(() => {
-    carregar();
+    const initTimer = window.setTimeout(() => {
+      void carregar();
+    }, 0);
 
     const intervalo = window.setInterval(() => {
       carregar(true);
     }, 8000);
 
-    return () => window.clearInterval(intervalo);
+    return () => {
+      window.clearTimeout(initTimer);
+      window.clearInterval(intervalo);
+    };
   }, [carregar]);
 
   const totais = useMemo(() => ({

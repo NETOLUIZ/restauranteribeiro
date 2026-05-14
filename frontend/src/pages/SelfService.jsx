@@ -45,7 +45,10 @@ export default function SelfService() {
   const [reserva, setReserva] = useState(null);
 
   useEffect(() => {
-    setTipoPrato(obterTipoPratoInicial(location.search));
+    const initTimer = window.setTimeout(() => {
+      setTipoPrato(obterTipoPratoInicial(location.search));
+    }, 0);
+    return () => window.clearTimeout(initTimer);
   }, [location.search]);
 
   useEffect(() => {

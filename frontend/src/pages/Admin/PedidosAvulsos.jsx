@@ -46,6 +46,11 @@ const COMANDA_AVULSO_PRINT_CSS = `
     letter-spacing: 0.15mm;
     text-transform: uppercase;
   }
+
+  .comanda-topo {
+    margin-top: -1.25mm;
+    gap: 0.2mm;
+  }
 `;
 
 function limparCepEndereco(endereco = '') {
@@ -196,12 +201,15 @@ export default function PedidosAvulsos() {
   }, [filtroStatus]);
 
   useEffect(() => {
-    carregar();
+    const initTimer = window.setTimeout(() => {
+      void carregar();
+    }, 0);
     const intervalo = window.setInterval(() => {
       carregar(true);
     }, 5000);
 
     return () => {
+      window.clearTimeout(initTimer);
       window.clearInterval(intervalo);
     };
   }, [carregar]);

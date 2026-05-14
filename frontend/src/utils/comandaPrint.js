@@ -115,7 +115,7 @@ export const COMANDA_PRINT_CSS = `
   .marca-destaque {
     color: var(--preto-termico);
     font-size: 7.2mm;
-    font-weight: 900;
+    font-weight: 600;
     line-height: 0.9;
     letter-spacing: 0.32mm;
     white-space: nowrap;
@@ -125,7 +125,7 @@ export const COMANDA_PRINT_CSS = `
   .fone-destaque {
     color: var(--preto-termico);
     font-size: 2.85mm;
-    font-weight: 900;
+    font-weight: 600;
     letter-spacing: 0.22mm;
     line-height: 1;
     text-align: center;
@@ -134,7 +134,7 @@ export const COMANDA_PRINT_CSS = `
   .site-destaque {
     color: var(--preto-termico);
     font-size: 2.55mm;
-    font-weight: 800;
+    font-weight: 600;
     letter-spacing: 0.08mm;
     line-height: 1.05;
     text-align: center;
@@ -217,7 +217,7 @@ export const COMANDA_PRINT_CSS = `
   .ident-valor {
     min-width: 0;
     color: var(--preto-termico);
-    font-weight: 900;
+    font-weight: 600;
     line-height: 1.05;
     word-break: break-word;
   }
@@ -229,13 +229,13 @@ export const COMANDA_PRINT_CSS = `
   }
 
   .ident-nome {
-    font-size: 3.25mm;
+    font-size: 1.95mm;
     text-transform: uppercase;
     letter-spacing: 0.2mm;
   }
 
   .ident-endereco {
-    font-size: 3.65mm;
+    font-size: 1.95mm;
     letter-spacing: 0.18mm;
   }
 

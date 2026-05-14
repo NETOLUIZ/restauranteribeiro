@@ -7,6 +7,9 @@ import SelfService from './pages/SelfService';
 import EmpresaLogin from './pages/EmpresaLogin';
 import EmpresaPedidos from './pages/EmpresaPedidos';
 import AdminLayout from './pages/Admin/AdminLayout';
+import EntregadorControlePage from './pages/Entregador/EntregadorControlePage';
+import EntregadorLoginPage from './pages/Entregador/EntregadorLoginPage';
+import { isEntregadorAutenticado } from './components/controle/entregadorAccess';
 import './styles/global.css';
 
 function ProtectedRoute({ children, role, loginPath = '/empresa/login' }) {
@@ -30,6 +33,13 @@ function ProtectedRoute({ children, role, loginPath = '/empresa/login' }) {
     return <Navigate to="/" replace />;
   }
   
+  return children;
+}
+
+function ProtectedEntregadorRoute({ children }) {
+  if (!isEntregadorAutenticado()) {
+    return <Navigate to="/entregador/login" replace />;
+  }
   return children;
 }
 
@@ -76,11 +86,28 @@ function App() {
             }
           />
           <Route
+            path="/admin/controle-diario"
+            element={
+              <ProtectedRoute role="ADMIN" loginPath="/admin/login">
+                <AdminLayout paginaInicial="controle-diario" />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/admin/comanda-manual"
             element={
               <ProtectedRoute role="ADMIN" loginPath="/admin/login">
                 <AdminLayout paginaInicial="comanda-manual" />
               </ProtectedRoute>
+            }
+          />
+          <Route path="/entregador/login" element={<EntregadorLoginPage />} />
+          <Route
+            path="/entregador/controle-diario"
+            element={
+              <ProtectedEntregadorRoute>
+                <EntregadorControlePage />
+              </ProtectedEntregadorRoute>
             }
           />
           <Route path="*" element={<Navigate to="/" replace />} />

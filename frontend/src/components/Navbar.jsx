@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FiMenu, FiX, FiLogOut, FiClipboard } from 'react-icons/fi';
+import { FiMenu, FiX, FiLogOut, FiClipboard, FiMapPin } from 'react-icons/fi';
 import { useAuth } from '../context/useAuth';
 
 export default function Navbar() {
@@ -50,6 +50,9 @@ export default function Navbar() {
             <FiClipboard size={16} /> <span>Self-service</span>
           </Link>
           <Link to="/pedido">Fazer Pedido</Link>
+          <Link to="/entregador/login">
+            <FiMapPin size={16} /> <span>Area do Entregador</span>
+          </Link>
           {!usuario && <Link to="/empresa/login">Area da Empresa</Link>}
           {usuario && usuario.role === 'EMPRESA_FUNC' && <Link to="/empresa/pedidos">Meus Pedidos</Link>}
           {exibirBotaoSair && (
@@ -75,6 +78,9 @@ export default function Navbar() {
             <FiClipboard size={18} /> <span>Self-service</span>
           </Link>
           <Link to="/pedido" onClick={() => setMenuAberto(false)}>Fazer Pedido</Link>
+          <Link to="/entregador/login" onClick={() => setMenuAberto(false)}>
+            <FiMapPin size={18} /> <span>Area do Entregador</span>
+          </Link>
           {!usuario && <Link to="/empresa/login" onClick={() => setMenuAberto(false)}>Area da Empresa</Link>}
           {usuario && usuario.role === 'EMPRESA_FUNC' && <Link to="/empresa/pedidos" onClick={() => setMenuAberto(false)}>Meus Pedidos</Link>}
           {exibirBotaoSair && (

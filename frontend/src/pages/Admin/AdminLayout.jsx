@@ -10,6 +10,7 @@ import {
   FiList,
   FiLogOut,
   FiMenu,
+  FiMapPin,
   FiPrinter,
   FiShoppingBag,
   FiTruck,
@@ -28,6 +29,7 @@ import ControleDinheiro from './ControleDinheiro';
 import SelfService from './SelfService';
 import PedidoIA from '../PedidoIA/PedidoIA';
 import ComandaManualPage from './ComandaManualPage';
+import ControleDiarioPage from './ControleDiarioPage';
 import '../../styles/admin.css';
 
 const PAGINAS = [
@@ -37,6 +39,7 @@ const PAGINAS = [
   { id: 'divider1', divider: true },
   { id: 'self-service', label: 'Self-service', icon: <FiClipboard />, componente: SelfService, rota: '/admin/self-service' },
   { id: 'comanda-manual', label: 'Comanda Manual', icon: <FiPrinter />, componente: ComandaManualPage, rota: '/admin/comanda-manual' },
+  { id: 'controle-diario', label: 'Controle Diario', icon: <FiMapPin />, componente: ControleDiarioPage, rota: '/admin/controle-diario' },
   { id: 'pedido-ia', label: 'Pedido por IA', icon: <FiCpu />, componente: PedidoIA, rota: '/admin/pedido-ia' },
   { id: 'avulsos', label: 'Pedidos Avulsos', icon: <FiShoppingBag />, componente: PedidosAvulsos },
   { id: 'empresas-pedidos', label: 'Pedidos Empresas', icon: <FiTruck />, componente: PedidosEmpresas },

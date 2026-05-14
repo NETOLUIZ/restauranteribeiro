@@ -19,8 +19,29 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middlewares
+const frontendUrlsEnv = (process.env.FRONTEND_URL || '')
+  .split(',')
+  .map((url) => url.trim())
+  .filter(Boolean);
+
+const allowedOrigins = new Set([
+  ...frontendUrlsEnv,
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5174',
+  'http://localhost:5175',
+  'http://127.0.0.1:5175'
+]);
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin(origin, callback) {
+    // Permite chamadas sem Origin (curl, server-to-server) e os origins permitidos
+    if (!origin || allowedOrigins.has(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error(`CORS bloqueado para origem: ${origin}`));
+  },
   credentials: true
 }));
 app.use(express.json());
