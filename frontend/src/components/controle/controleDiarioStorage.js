@@ -1,3 +1,5 @@
+import { controleDiarioAPI } from '../../services/api';
+
 const CONTROLE_DIARIO_STORAGE_KEY = 'ribeiro.controle.diario.v2';
 
 const LOCAIS_FIXOS = {
@@ -46,6 +48,8 @@ export const formatarDataControle = (dataIso = obterDataHojeISO()) => {
   if (!ano || !mes || !dia) return dataIso;
   return `${dia}/${mes}/${ano}`;
 };
+
+const dataIsoValida = (dataIso = '') => /^\d{4}-\d{2}-\d{2}$/.test(String(dataIso || '').trim());
 
 const lerStorageBruto = () => {
   if (typeof window === 'undefined') return { controlesPorData: {} };
@@ -100,38 +104,23 @@ const mergearComBase = (controleSalvo = {}) => {
   }, {});
 };
 
-export const carregarControleDiario = (dataIso = obterDataHojeISO()) => {
-  const payload = lerStorageBruto();
-  const controleSalvo = payload?.controlesPorData?.[dataIso];
+const montarControle = ({ dataIso = obterDataHojeISO(), updatedAt = null, secoes = {} } = {}) => ({
+  data: dataIso,
+  updatedAt: updatedAt || null,
+  secoes: mergearComBase(secoes)
+});
 
-  return {
-    data: dataIso,
-    updatedAt: controleSalvo?.updatedAt || null,
-    secoes: mergearComBase(controleSalvo?.secoes || {})
-  };
-};
-
-export const carregarControleDiarioMaisRecente = () => {
-  const payload = lerStorageBruto();
-  const controlesPorData = payload?.controlesPorData || {};
-  const datas = Object.keys(controlesPorData).sort();
-  const dataMaisRecente = datas[datas.length - 1];
-  if (!dataMaisRecente) {
-    return carregarControleDiario(obterDataHojeISO());
-  }
-  return carregarControleDiario(dataMaisRecente);
-};
-
-export const salvarControleDiario = ({ dataIso = obterDataHojeISO(), secoes }) => {
+const salvarControleLocal = ({ dataIso = obterDataHojeISO(), secoes, updatedAt } = {}) => {
+  const data = dataIsoValida(dataIso) ? dataIso : obterDataHojeISO();
   const payload = lerStorageBruto();
   const secoesSanitizadas = mergearComBase(secoes || {});
-  const atualizadoEm = new Date().toISOString();
+  const atualizadoEm = updatedAt || new Date().toISOString();
 
   const proximoPayload = {
     ...payload,
     controlesPorData: {
       ...(payload.controlesPorData || {}),
-      [dataIso]: {
+      [data]: {
         secoes: secoesSanitizadas,
         updatedAt: atualizadoEm
       }
@@ -139,7 +128,116 @@ export const salvarControleDiario = ({ dataIso = obterDataHojeISO(), secoes }) =
   };
 
   salvarStorageBruto(proximoPayload);
-  return { data: dataIso, updatedAt: atualizadoEm, secoes: secoesSanitizadas };
+  return montarControle({ dataIso: data, updatedAt: atualizadoEm, secoes: secoesSanitizadas });
+};
+
+const carregarControleDiarioLocal = (dataIso = obterDataHojeISO()) => {
+  const data = dataIsoValida(dataIso) ? dataIso : obterDataHojeISO();
+  const payload = lerStorageBruto();
+  const controleSalvo = payload?.controlesPorData?.[data];
+
+  return montarControle({
+    dataIso: data,
+    updatedAt: controleSalvo?.updatedAt || null,
+    secoes: controleSalvo?.secoes || {}
+  });
+};
+
+const carregarControleDiarioMaisRecenteLocal = () => {
+  const payload = lerStorageBruto();
+  const controlesPorData = payload?.controlesPorData || {};
+  const datas = Object.keys(controlesPorData).sort();
+  const dataMaisRecente = datas[datas.length - 1];
+  if (!dataMaisRecente) {
+    return montarControle({ dataIso: obterDataHojeISO() });
+  }
+  return carregarControleDiarioLocal(dataMaisRecente);
+};
+
+export const carregarControleDiario = async (dataIso = obterDataHojeISO()) => {
+  const data = dataIsoValida(dataIso) ? dataIso : obterDataHojeISO();
+
+  try {
+    const { data: resposta } = await controleDiarioAPI.obterPorData(data);
+    const controle = resposta?.controle;
+
+    if (!controle) {
+      return montarControle({ dataIso: data });
+    }
+
+    const controleFinal = montarControle({
+      dataIso: controle?.data || data,
+      updatedAt: controle?.updatedAt || null,
+      secoes: controle?.secoes || {}
+    });
+
+    salvarControleLocal({
+      dataIso: controleFinal.data,
+      updatedAt: controleFinal.updatedAt,
+      secoes: controleFinal.secoes
+    });
+
+    return controleFinal;
+  } catch {
+    return carregarControleDiarioLocal(data);
+  }
+};
+
+export const carregarControleDiarioMaisRecente = async () => {
+  try {
+    const { data: resposta } = await controleDiarioAPI.obterMaisRecente();
+    const controle = resposta?.controle;
+
+    if (!controle) {
+      return montarControle({ dataIso: obterDataHojeISO() });
+    }
+
+    const controleFinal = montarControle({
+      dataIso: controle?.data || obterDataHojeISO(),
+      updatedAt: controle?.updatedAt || null,
+      secoes: controle?.secoes || {}
+    });
+
+    salvarControleLocal({
+      dataIso: controleFinal.data,
+      updatedAt: controleFinal.updatedAt,
+      secoes: controleFinal.secoes
+    });
+
+    return controleFinal;
+  } catch {
+    return carregarControleDiarioMaisRecenteLocal();
+  }
+};
+
+export const salvarControleDiario = async ({ dataIso = obterDataHojeISO(), secoes }) => {
+  const data = dataIsoValida(dataIso) ? dataIso : obterDataHojeISO();
+  const secoesSanitizadas = mergearComBase(secoes || {});
+
+  try {
+    const { data: resposta } = await controleDiarioAPI.salvar(data, secoesSanitizadas);
+    const controle = resposta?.controle;
+
+    if (!controle) {
+      return salvarControleLocal({ dataIso: data, secoes: secoesSanitizadas });
+    }
+
+    const controleFinal = montarControle({
+      dataIso: controle?.data || data,
+      updatedAt: controle?.updatedAt || null,
+      secoes: controle?.secoes || secoesSanitizadas
+    });
+
+    salvarControleLocal({
+      dataIso: controleFinal.data,
+      updatedAt: controleFinal.updatedAt,
+      secoes: controleFinal.secoes
+    });
+
+    return controleFinal;
+  } catch {
+    return salvarControleLocal({ dataIso: data, secoes: secoesSanitizadas });
+  }
 };
 
 export const limparQuantidadesControle = (secoes = criarControleBase()) =>

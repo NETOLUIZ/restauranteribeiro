@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { FiPrinter, FiRefreshCw, FiSave, FiTrash2 } from 'react-icons/fi';
 import PlanilhaRegiao from '../../components/controle/PlanilhaRegiao';
 import ResumoControle from '../../components/controle/ResumoControle';
@@ -15,8 +15,31 @@ import '../../styles/controleDiario.css';
 
 export default function ControleDiarioPage() {
   const [dataControle] = useState(() => obterDataHojeISO());
-  const [estadoControle, setEstadoControle] = useState(() => carregarControleDiario(dataControle));
+  const [estadoControle, setEstadoControle] = useState(() => ({
+    data: dataControle,
+    updatedAt: null,
+    secoes: limparQuantidadesControle()
+  }));
+  const [carregando, setCarregando] = useState(true);
   const [statusOperacao, setStatusOperacao] = useState('');
+
+  useEffect(() => {
+    let ativo = true;
+
+    async function carregarDadosIniciais() {
+      setCarregando(true);
+      const carregado = await carregarControleDiario(dataControle);
+      if (!ativo) return;
+      setEstadoControle(carregado);
+      setCarregando(false);
+    }
+
+    carregarDadosIniciais();
+
+    return () => {
+      ativo = false;
+    };
+  }, [dataControle]);
 
   const secoes = estadoControle.secoes;
   const { totaisPorSecao, totalGeral } = useMemo(
@@ -85,8 +108,8 @@ export default function ControleDiarioPage() {
     }
   };
 
-  const salvarControle = () => {
-    const salvo = salvarControleDiario({
+  const salvarControle = async () => {
+    const salvo = await salvarControleDiario({
       dataIso: dataControle,
       secoes: estadoControle.secoes
     });
@@ -105,8 +128,11 @@ export default function ControleDiarioPage() {
     setStatusOperacao('Quantidades limpas. Clique em Salvar Controle para persistir.');
   };
 
-  const atualizarDados = () => {
-    setEstadoControle(carregarControleDiario(dataControle));
+  const atualizarDados = async () => {
+    setCarregando(true);
+    const carregado = await carregarControleDiario(dataControle);
+    setEstadoControle(carregado);
+    setCarregando(false);
     setStatusOperacao('Dados recarregados do ultimo salvamento.');
   };
 
@@ -147,6 +173,12 @@ export default function ControleDiarioPage() {
       {statusOperacao && (
         <div className="controle-diario-status no-print" role="status">
           {statusOperacao}
+        </div>
+      )}
+
+      {carregando && (
+        <div className="controle-diario-status no-print" role="status">
+          Carregando controle diario...
         </div>
       )}
 

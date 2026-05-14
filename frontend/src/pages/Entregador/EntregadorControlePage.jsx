@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { FiLogOut, FiPrinter, FiRefreshCw } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
@@ -18,17 +18,43 @@ import '../../styles/controleDiario.css';
 
 export default function EntregadorControlePage() {
   const navigate = useNavigate();
-  const [estadoControle, setEstadoControle] = useState(() => {
+  const [estadoControle, setEstadoControle] = useState(() => ({
+    data: obterDataHojeISO(),
+    updatedAt: null,
+    secoes: {}
+  }));
+  const [carregando, setCarregando] = useState(true);
+
+  const carregarControleParaEntregador = async () => {
     const hoje = obterDataHojeISO();
-    const controleHoje = carregarControleDiario(hoje);
+    const controleHoje = await carregarControleDiario(hoje);
     const secoesHoje = filtrarSomenteLinhasPreenchidas(controleHoje.secoes);
     const temDadosHoje =
       (secoesHoje.fortaleza?.length || 0) +
       (secoesHoje.eusebio?.length || 0) +
       (secoesHoje.entidades?.length || 0) > 0;
 
-    return temDadosHoje ? controleHoje : carregarControleDiarioMaisRecente();
-  });
+    if (temDadosHoje) return controleHoje;
+    return carregarControleDiarioMaisRecente();
+  };
+
+  useEffect(() => {
+    let ativo = true;
+
+    async function carregarInicial() {
+      setCarregando(true);
+      const controle = await carregarControleParaEntregador();
+      if (!ativo) return;
+      setEstadoControle(controle);
+      setCarregando(false);
+    }
+
+    carregarInicial();
+
+    return () => {
+      ativo = false;
+    };
+  }, []);
 
   const secoesPreenchidas = useMemo(
     () => filtrarSomenteLinhasPreenchidas(estadoControle.secoes),
@@ -40,16 +66,11 @@ export default function EntregadorControlePage() {
     [estadoControle.secoes]
   );
 
-  const atualizar = () => {
-    const hoje = obterDataHojeISO();
-    const controleHoje = carregarControleDiario(hoje);
-    const secoesHoje = filtrarSomenteLinhasPreenchidas(controleHoje.secoes);
-    const temDadosHoje =
-      (secoesHoje.fortaleza?.length || 0) +
-      (secoesHoje.eusebio?.length || 0) +
-      (secoesHoje.entidades?.length || 0) > 0;
-
-    setEstadoControle(temDadosHoje ? controleHoje : carregarControleDiarioMaisRecente());
+  const atualizar = async () => {
+    setCarregando(true);
+    const controle = await carregarControleParaEntregador();
+    setEstadoControle(controle);
+    setCarregando(false);
   };
 
   const imprimirControle = () => {
@@ -97,7 +118,11 @@ export default function EntregadorControlePage() {
 
           <div className="controle-diario-content print-area">
             <div className="controle-diario-planilhas">
-              {temDados ? (
+              {carregando ? (
+                <div className="controle-vazio">
+                  Carregando controle diario...
+                </div>
+              ) : temDados ? (
                 <>
                   {linhasFortaleza.length > 0 && (
                     <>

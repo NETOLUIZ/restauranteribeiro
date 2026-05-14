@@ -191,3 +191,11 @@ model MarmitaCard {
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
 }
+
+model ControleDiario {
+  id        Int      @id @default(autoincrement())
+  data      String   @unique
+  secoes    Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

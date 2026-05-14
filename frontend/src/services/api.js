@@ -133,3 +133,10 @@ export const selfServiceAPI = {
   listar: (params) => api.get('/self-service', { params }),
   marcarRetirado: (id) => api.put(`/self-service/${id}/retirar`)
 };
+
+// Controle diario
+export const controleDiarioAPI = {
+  obterPorData: (dataIso) => api.get(`/controle-diario/${dataIso}`),
+  obterMaisRecente: () => api.get('/controle-diario/mais-recente'),
+  salvar: (dataIso, secoes) => api.put(`/controle-diario/${dataIso}`, { secoes })
+};
