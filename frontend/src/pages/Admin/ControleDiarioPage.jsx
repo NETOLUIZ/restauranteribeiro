@@ -109,12 +109,20 @@ export default function ControleDiarioPage() {
   };
 
   const salvarControle = async () => {
-    const salvo = await salvarControleDiario({
-      dataIso: dataControle,
-      secoes: estadoControle.secoes
-    });
-    setEstadoControle((atual) => ({ ...atual, updatedAt: salvo.updatedAt, secoes: salvo.secoes }));
-    setStatusOperacao('Controle salvo com sucesso.');
+    try {
+      const salvo = await salvarControleDiario({
+        dataIso: dataControle,
+        secoes: estadoControle.secoes
+      });
+      setEstadoControle((atual) => ({ ...atual, updatedAt: salvo.updatedAt, secoes: salvo.secoes }));
+      setStatusOperacao('Controle salvo com sucesso.');
+    } catch (erro) {
+      const controleLocal = erro?.localControle;
+      if (controleLocal) {
+        setEstadoControle(controleLocal);
+      }
+      setStatusOperacao('Erro ao sincronizar com o servidor. Controle salvo apenas neste aparelho.');
+    }
   };
 
   const limparControle = () => {

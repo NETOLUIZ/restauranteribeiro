@@ -25,15 +25,38 @@ const frontendUrlsEnv = (process.env.FRONTEND_URL || '')
   .map((url) => url.trim())
   .filter(Boolean);
 
-const allowedOrigins = new Set([
-  ...frontendUrlsEnv,
+const allowedOrigins = new Set();
+
+function registrarOrigem(origem) {
+  const valor = String(origem || '').trim();
+  if (!valor) return;
+  allowedOrigins.add(valor);
+
+  try {
+    const url = new URL(valor);
+    const { protocol, hostname, port } = url;
+    if (!hostname) return;
+
+    const hostAlternativo = hostname.startsWith('www.')
+      ? hostname.slice(4)
+      : `www.${hostname}`;
+
+    const porta = port ? `:${port}` : '';
+    allowedOrigins.add(`${protocol}//${hostAlternativo}${porta}`);
+  } catch {
+    // Ignora origem invalida de configuracao.
+  }
+}
+
+frontendUrlsEnv.forEach(registrarOrigem);
+[
   'http://localhost:5173',
   'http://127.0.0.1:5173',
   'http://localhost:5174',
   'http://127.0.0.1:5174',
   'http://localhost:5175',
   'http://127.0.0.1:5175'
-]);
+].forEach(registrarOrigem);
 
 app.use(cors({
   origin(origin, callback) {
@@ -41,7 +64,8 @@ app.use(cors({
     if (!origin || allowedOrigins.has(origin)) {
       return callback(null, true);
     }
-    return callback(new Error(`CORS bloqueado para origem: ${origin}`));
+    // Para origem nao autorizada, nao quebra API com 500; o navegador bloqueia pelo CORS.
+    return callback(null, false);
   },
   credentials: true
 }));

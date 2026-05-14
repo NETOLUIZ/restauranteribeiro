@@ -235,8 +235,13 @@ export const salvarControleDiario = async ({ dataIso = obterDataHojeISO(), secoe
     });
 
     return controleFinal;
-  } catch {
-    return salvarControleLocal({ dataIso: data, secoes: secoesSanitizadas });
+  } catch (erro) {
+    const controleLocal = salvarControleLocal({ dataIso: data, secoes: secoesSanitizadas });
+    const erroSync = new Error('Falha ao sincronizar controle diario com servidor.');
+    erroSync.code = 'CONTROLE_DIARIO_SYNC_FAILED';
+    erroSync.cause = erro;
+    erroSync.localControle = controleLocal;
+    throw erroSync;
   }
 };
 
