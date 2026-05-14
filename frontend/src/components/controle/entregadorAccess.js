@@ -1,5 +1,5 @@
 const ENTREGADOR_AUTH_KEY = 'ribeiro.entregador.auth.v1';
-const SENHA_PADRAO_ENTREGADOR = 'entregador123';
+const SENHA_PADRAO_ENTREGADOR = '213141';
 
 export const obterSenhaEntregador = () =>
   String(import.meta.env.VITE_ENTREGADOR_SENHA || SENHA_PADRAO_ENTREGADOR);
