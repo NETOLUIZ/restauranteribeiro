@@ -1,4 +1,5 @@
 import { linhaPreenchida } from './controleDiarioStorage';
+import { FiTrash2 } from 'react-icons/fi';
 
 export default function LinhaControle({
   secaoKey,
@@ -7,7 +8,9 @@ export default function LinhaControle({
   quantidade,
   somenteLeitura = false,
   onQuantidadeChange,
-  onEnterNoCampo
+  onEnterNoCampo,
+  podeExcluir = false,
+  onExcluirLocal
 }) {
   const linhaAtiva = linhaPreenchida(quantidade);
   const inputKey = `${secaoKey}-${indice}`;
@@ -38,6 +41,23 @@ export default function LinhaControle({
           />
         )}
       </td>
+      {!somenteLeitura && (
+        <td className="controle-col-acoes">
+          {podeExcluir ? (
+            <button
+              type="button"
+              className="controle-remover-local-btn no-print"
+              onClick={() => onExcluirLocal?.()}
+              aria-label={`Excluir local ${local}`}
+              title="Excluir local"
+            >
+              <FiTrash2 size={14} />
+            </button>
+          ) : (
+            <span className="controle-sem-acao">-</span>
+          )}
+        </td>
+      )}
     </tr>
   );
 }

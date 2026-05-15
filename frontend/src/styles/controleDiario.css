@@ -28,6 +28,31 @@
   font-size: 0.88rem;
 }
 
+.controle-diario-filtro-data {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.controle-diario-filtro-data label {
+  font-size: 0.82rem;
+  color: var(--cinza-700);
+  font-weight: 700;
+}
+
+.controle-diario-filtro-data input,
+.controle-diario-filtro-data select {
+  min-height: 38px;
+  border: 1px solid var(--cinza-300);
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: var(--branco);
+  color: var(--cinza-800);
+  font-size: 0.88rem;
+}
+
 .controle-diario-toolbar-acoes {
   display: flex;
   flex-wrap: wrap;
@@ -175,6 +200,11 @@
   text-align: center;
 }
 
+.controle-col-acoes {
+  width: 72px;
+  text-align: center;
+}
+
 .controle-quantidade-input {
   width: 100%;
   min-height: 38px;
@@ -200,6 +230,28 @@
   background: #eff8f1;
   font-weight: 700;
   color: var(--cinza-800);
+}
+
+.controle-remover-local-btn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #efc4c4;
+  background: #fff5f5;
+  color: #b42318;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.controle-remover-local-btn:hover {
+  background: #ffe5e5;
+}
+
+.controle-sem-acao {
+  color: var(--cinza-400);
+  font-weight: 700;
 }
 
 .controle-resumo {

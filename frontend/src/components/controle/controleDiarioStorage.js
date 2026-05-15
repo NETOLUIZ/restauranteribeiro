@@ -154,6 +154,20 @@ const carregarControleDiarioMaisRecenteLocal = () => {
   return carregarControleDiarioLocal(dataMaisRecente);
 };
 
+const carregarHistoricoControlesLocal = (limit = 90) => {
+  const limiteFinal = Number.isInteger(limit) && limit > 0 ? limit : 90;
+  const payload = lerStorageBruto();
+  const controlesPorData = payload?.controlesPorData || {};
+
+  return Object.entries(controlesPorData)
+    .map(([data, controle]) => ({
+      data,
+      updatedAt: controle?.updatedAt || null
+    }))
+    .sort((a, b) => String(b.data).localeCompare(String(a.data)))
+    .slice(0, limiteFinal);
+};
+
 export const carregarControleDiario = async (dataIso = obterDataHojeISO()) => {
   const data = dataIsoValida(dataIso) ? dataIso : obterDataHojeISO();
 
@@ -207,6 +221,23 @@ export const carregarControleDiarioMaisRecente = async () => {
     return controleFinal;
   } catch {
     return carregarControleDiarioMaisRecenteLocal();
+  }
+};
+
+export const carregarHistoricoControles = async (limit = 90) => {
+  const limiteFinal = Number.isInteger(limit) && limit > 0 ? limit : 90;
+  try {
+    const { data: resposta } = await controleDiarioAPI.historico(limiteFinal);
+    const historico = Array.isArray(resposta?.historico) ? resposta.historico : [];
+    return historico
+      .map((item) => ({
+        data: String(item?.data || ''),
+        updatedAt: item?.updatedAt || null
+      }))
+      .filter((item) => dataIsoValida(item.data))
+      .sort((a, b) => String(b.data).localeCompare(String(a.data)));
+  } catch {
+    return carregarHistoricoControlesLocal(limiteFinal);
   }
 };
 
@@ -289,5 +320,11 @@ export const filtrarSomenteLinhasPreenchidas = (secoes = {}) =>
     acc[secao] = itens.filter((item) => linhaPreenchida(item?.quantidade));
     return acc;
   }, {});
+
+export const localEhFixo = (secaoKey = '', local = '') => {
+  const locaisSecao = Array.isArray(LOCAIS_FIXOS?.[secaoKey]) ? LOCAIS_FIXOS[secaoKey] : [];
+  const chaveLocal = normalizarChaveLocal(local);
+  return locaisSecao.some((item) => normalizarChaveLocal(item) === chaveLocal);
+};
 
 export const nomesSecoesControle = NOMES_SECOES;

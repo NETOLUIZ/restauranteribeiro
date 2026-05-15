@@ -46,6 +46,29 @@ async function obterMaisRecente(req, res) {
   }
 }
 
+async function obterHistorico(req, res) {
+  try {
+    const limiteInformado = Number.parseInt(req.query?.limit, 10);
+    const limit = Number.isInteger(limiteInformado) && limiteInformado > 0
+      ? Math.min(limiteInformado, 365)
+      : 90;
+
+    const controles = await prisma.controleDiario.findMany({
+      select: {
+        data: true,
+        updatedAt: true
+      },
+      orderBy: { data: 'desc' },
+      take: limit
+    });
+
+    return res.json({ historico: controles });
+  } catch (err) {
+    console.error('Erro ao buscar historico do controle diario:', err);
+    return res.status(500).json({ erro: 'Erro interno do servidor' });
+  }
+}
+
 async function salvar(req, res) {
   try {
     const data = String(req.params.data || '').trim();
@@ -75,5 +98,6 @@ async function salvar(req, res) {
 module.exports = {
   obterPorData,
   obterMaisRecente,
+  obterHistorico,
   salvar
 };

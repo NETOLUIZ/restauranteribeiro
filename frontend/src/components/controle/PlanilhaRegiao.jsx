@@ -8,7 +8,9 @@ export default function PlanilhaRegiao({
   onAtualizarQuantidade,
   onEnterNoCampo,
   colunaLocalTitulo = 'Local',
-  onAdicionarLocal
+  onAdicionarLocal,
+  onExcluirLocal,
+  podeExcluirLocal
 }) {
   return (
     <section className="controle-regiao">
@@ -31,6 +33,7 @@ export default function PlanilhaRegiao({
             <tr>
               <th>{colunaLocalTitulo}</th>
               <th>Quantidade</th>
+              {!somenteLeitura && <th>Acoes</th>}
             </tr>
           </thead>
           <tbody>
@@ -44,6 +47,8 @@ export default function PlanilhaRegiao({
                 somenteLeitura={somenteLeitura}
                 onQuantidadeChange={(valor) => onAtualizarQuantidade?.(indice, valor)}
                 onEnterNoCampo={onEnterNoCampo}
+                podeExcluir={Boolean(podeExcluirLocal?.(indice, linha))}
+                onExcluirLocal={() => onExcluirLocal?.(indice, linha)}
               />
             ))}
           </tbody>

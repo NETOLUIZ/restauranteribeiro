@@ -138,5 +138,6 @@ export const selfServiceAPI = {
 export const controleDiarioAPI = {
   obterPorData: (dataIso) => api.get(`/controle-diario/${dataIso}`),
   obterMaisRecente: () => api.get('/controle-diario/mais-recente'),
+  historico: (limit = 90) => api.get('/controle-diario/historico', { params: { limit } }),
   salvar: (dataIso, secoes) => api.put(`/controle-diario/${dataIso}`, { secoes })
 };
