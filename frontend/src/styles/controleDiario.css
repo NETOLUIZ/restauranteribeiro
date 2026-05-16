@@ -81,6 +81,10 @@
   align-items: start;
 }
 
+.controle-diario-content-somente-lista {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .controle-diario-planilhas {
   display: grid;
   gap: 12px;

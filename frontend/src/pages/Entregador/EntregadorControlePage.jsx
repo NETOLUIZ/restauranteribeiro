@@ -3,14 +3,12 @@ import { FiLogOut, FiPrinter, FiRefreshCw } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import PlanilhaRegiao from '../../components/controle/PlanilhaRegiao';
-import ResumoControle from '../../components/controle/ResumoControle';
 import {
   calcularTotaisControle,
   carregarControleDiario,
   carregarControleDiarioMaisRecente,
   filtrarSomenteLinhasPreenchidas,
   formatarDataControle,
-  nomesSecoesControle,
   obterDataHojeISO
 } from '../../components/controle/controleDiarioStorage';
 import { sairAreaEntregador } from '../../components/controle/entregadorAccess';
@@ -61,7 +59,7 @@ export default function EntregadorControlePage() {
     [estadoControle.secoes]
   );
 
-  const { totaisPorSecao, totalGeral } = useMemo(
+  const { totaisPorSecao } = useMemo(
     () => calcularTotaisControle(estadoControle.secoes),
     [estadoControle.secoes]
   );
@@ -116,7 +114,7 @@ export default function EntregadorControlePage() {
             </div>
           </div>
 
-          <div className="controle-diario-content print-area">
+          <div className="controle-diario-content controle-diario-content-somente-lista print-area">
             <div className="controle-diario-planilhas">
               {carregando ? (
                 <div className="controle-vazio">
@@ -169,13 +167,6 @@ export default function EntregadorControlePage() {
                 </div>
               )}
             </div>
-
-            <ResumoControle
-              totaisPorSecao={totaisPorSecao}
-              totalGeral={totalGeral}
-              nomesSecoes={nomesSecoesControle}
-              ocultarTotalGeral
-            />
           </div>
         </div>
       </div>
