@@ -6,7 +6,7 @@ async function main() {
   console.log('Iniciando seed do banco de dados...');
 
   // Criar admin
-  const senhaAdmin = await bcrypt.hash('admin123', 10);
+  const senhaAdmin = await bcrypt.hash('@10@2030', 10);
   const admin = await prisma.usuario.upsert({
     where: { email: 'admin@ribeirorestaurante.com' },
     update: {
