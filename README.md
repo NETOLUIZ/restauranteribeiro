@@ -69,15 +69,6 @@ npm run dev
 
 O frontend estará em `http://localhost:5173` e o backend em `http://localhost:3001`.
 
-## Acesso
-
-### Admin
-- **E-mail**: admin@ribeirorestaurante.com
-- **Senha**: admin123
-
-### Funcionário Empresa (teste)
-- **E-mail**: funcionario@empresa.com
-- **Senha**: func123
 
 ## Funcionalidades
 
