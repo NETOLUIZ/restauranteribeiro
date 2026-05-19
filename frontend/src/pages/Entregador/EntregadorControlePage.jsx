@@ -131,7 +131,6 @@ export default function EntregadorControlePage() {
                         somenteLeitura
                         colunaLocalTitulo="Local"
                       />
-                      <div className="controle-total-secao">Total Fortaleza: <strong>{totaisPorSecao.fortaleza || 0}</strong></div>
                     </>
                   )}
 
@@ -144,7 +143,6 @@ export default function EntregadorControlePage() {
                         somenteLeitura
                         colunaLocalTitulo="Local"
                       />
-                      <div className="controle-total-secao">Total Eusebio: <strong>{totaisPorSecao.eusebio || 0}</strong></div>
                     </>
                   )}
 
